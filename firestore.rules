@@ -1,22 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null
+        && request.auth.token.email_verified == true;
+    }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function myApproval() { return /databases/$(database)/documents/approved/$(myEmail()); }
+    function isApproved() { return signedIn() && exists(myApproval()); }
+    function isAdmin() { return isApproved() && get(myApproval()).data.admin == true; }
+
+    // approved/{email}: who may add games. admin:true also lets them approve others.
+    match /approved/{em} {
+      allow get: if signedIn() && (em == myEmail() || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() && em == em.lower()
+        && request.resource.data.keys().hasOnly(['admin', 'addedBy'])
+        && request.resource.data.admin is bool;
+      allow delete: if isAdmin() && em != myEmail();
+    }
+
     match /games/{id} {
       allow read: if true;
-      allow create: if request.auth != null
+      allow create: if isApproved()
         && request.resource.data.owner == request.auth.uid
         && request.resource.data.title is string && request.resource.data.title.size() <= 60
         && request.resource.data.desc is string && request.resource.data.desc.size() <= 140
         && request.resource.data.chunks is int && request.resource.data.chunks <= 70
         && request.resource.data.complete == false;
-      allow update: if request.auth != null && resource.data.owner == request.auth.uid
+      allow update: if isApproved() && resource.data.owner == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['complete']);
-      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+      allow delete: if isAdmin() || (isApproved() && resource.data.owner == request.auth.uid);
 
       match /parts/{n} {
         allow read: if true;
-        allow write: if request.auth != null
+        allow create, update: if isApproved()
           && get(/databases/$(database)/documents/games/$(id)).data.owner == request.auth.uid;
+        allow delete: if isAdmin() || (isApproved()
+          && get(/databases/$(database)/documents/games/$(id)).data.owner == request.auth.uid);
       }
     }
   }

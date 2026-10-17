@@ -65,6 +65,16 @@ input[type=text]{font:500 15px var(--body);background:var(--bg);color:var(--fg);
 input[type=text]:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
 .msg{font-size:13px;margin:0;color:var(--muted)}
 .msg.err{color:var(--hot)} .msg.good{color:var(--ok)}
+.who{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.manage{margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;max-width:640px}
+.manage h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
+.manage p{margin:0;color:var(--muted);font-size:14px}
+.people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.people li{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--panel-2);border-radius:8px}
+.people .em{font-family:var(--mono);font-size:13px;overflow-wrap:anywhere;min-width:0}
+.check{flex-direction:row;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.addrow input[type=text]{flex:1;min-width:0;width:auto}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:420px){.grid{grid-template-columns:1fr}}
 </style>
@@ -74,11 +84,12 @@ input[type=text]:focus{outline:2px solid var(--accent);outline-offset:0;border-c
   <header>
     <div>
       <h1>Danny's <span>Arcade</span></h1>
-      <p class="sub">Every game here is one HTML file. Click a game to play it in a new tab, or drop in a new file and it shows up for everyone who visits.</p>
+      <p class="sub">Every game here is one HTML file. Click a game to play it in a new tab. Approved players can drop in new games, and they show up for everyone.</p>
     </div>
     <div class="count" id="count">2 games</div>
   </header>
   <div class="grid" id="grid"></div>
+  <section class="manage" id="manage" hidden></section>
 </div>
 
 <!-- Shared storage for added games. Fill in firebase-config.js to switch it on (see README.md). -->
@@ -102,7 +113,9 @@ const $ = s => document.querySelector(s);
 const grid = $("#grid");
 const textCache = new Map();
 let added = [];            // [{id, title, desc, size, chunks, owner, addedAt}]
-let fs = null, uid = null, store = "loading";   // store: loading | ready | off
+let fs = null, uid = null, email = null, store = "loading";   // store: loading | ready | off
+let access = "out";        // out (signed out) | pending (signed in, not approved) | approved | admin
+let people = [], unsubPeople = null;
 let pending = null, confirmId = null;
 
 function fmtSize(n){ return n >= 1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB"; }
@@ -147,12 +160,13 @@ function card(game){
     ...(game.tags||["Added"]).map(t=>el("span",{class:"tag"+(t==="Added"?" new":"")},t)),
     el("span",{class:"tag"},fmtSize(game.size||0)));
   const meta=el("div",{class:"meta"}, el("h2",{},game.title), game.desc?el("p",{},game.desc):null);
-  if (game.id && uid && game.owner===uid){
+  const mine = uid && game.owner===uid && (access==="approved"||access==="admin");
+  if (game.id && (mine || access==="admin")){
     if (confirmId===game.id){
       meta.append(el("div",{class:"confirm"},"Remove for everyone?",
         el("button",{class:"btn small danger",type:"button",onclick:()=>removeGame(game)},"Remove"),
         el("button",{class:"btn small",type:"button",onclick:()=>{confirmId=null;render();}},"Keep")));
-    } else meta.append(el("div",{}, el("button",{class:"linkish",type:"button",onclick:()=>{confirmId=game.id;render();}},"Remove (you added this)")));
+    } else meta.append(el("div",{}, el("button",{class:"linkish",type:"button",onclick:()=>{confirmId=game.id;render();}},mine?"Remove (you added this)":"Remove")));
   }
   meta.append(tags);
   return el("article",{class:"card"}, cover, meta);
@@ -163,6 +177,17 @@ function addCard(){
   if (store!=="ready"){
     const why = store==="loading" ? "Connecting…" : "Adding games isn't switched on yet. Fill in firebase-config.js to turn it on.";
     box.append(el("div",{class:"drop",style:"cursor:default"}, el("span",{class:"plus"},"+"), el("b",{},"Add a game"), el("span",{},why)));
+    return box;
+  }
+  if (access==="out" || access==="pending"){
+    const signedOut = access==="out";
+    box.append(el("div",{class:"drop",style:"cursor:default"}, el("span",{class:"plus"},"+"), el("b",{},"Add a game"),
+      el("span",{}, signedOut ? "Only approved players can add games. Sign in to add one."
+        : "You're signed in as "+email+". Ask Danny to approve this email, then refresh this page.")));
+    box.append(el("div",{class:"meta"},
+      signedOut ? el("div",{class:"row"}, el("button",{class:"btn primary",type:"button",onclick:signIn},"Sign in with Google"))
+                : el("div",{}, el("button",{class:"linkish",type:"button",onclick:signOut},"Sign out")),
+      el("p",{class:"msg",id:"addmsg",role:"status"})));
     return box;
   }
   const input=el("input",{type:"file",id:"gamefile",accept:".html,.htm,text/html","aria-label":"Choose an HTML game file",onchange:e=>pick(e.target.files[0])});
@@ -180,7 +205,8 @@ function addCard(){
         el("button",{class:"btn primary",type:"button",id:"addbtn",onclick:upload},"Add to arcade"),
         el("button",{class:"btn small",type:"button",onclick:()=>{pending=null;setMsg("");render();}},"Cancel")));
   }
-  meta.append(el("p",{class:"msg",id:"addmsg",role:"status"}));
+  meta.append(el("p",{class:"msg",id:"addmsg",role:"status"}),
+    el("div",{class:"who"},"Signed in as "+email+" · ", el("button",{class:"linkish",type:"button",onclick:signOut},"Sign out")));
   box.append(drop, meta);
   return box;
 }
@@ -194,6 +220,7 @@ function render(){
   if (keepName!=null && $("#gname")) $("#gname").value=keepName;
   if (keepDesc!=null && $("#gdesc")) $("#gdesc").value=keepDesc;
   setMsg(lastMsg.text,lastMsg.kind);
+  renderManage();
   const n=BUILTIN.length+added.length;
   $("#count").textContent = n+" game"+(n===1?"":"s");
 }
@@ -268,6 +295,56 @@ async function openAdded(game){
   }
 }
 
+/* Approvals live in approved/{email}: {admin: bool}. Admins (Danny first, set up in the Firebase console) approve others here. */
+function renderManage(){
+  const box=$("#manage");
+  box.hidden = access!=="admin";
+  if (box.hidden) return;
+  const keep=$("#newemail")?.value, keepAdmin=$("#newadmin")?.checked;
+  box.replaceChildren(
+    el("h2",{},"Who can add games"),
+    el("p",{},"People on this list can add games after signing in with Google. Turn on \"Can approve\" to let someone manage this list too."),
+    el("ul",{class:"people"}, ...people.map(pp=>el("li",{},
+      el("span",{class:"em"}, pp.email + (pp.admin?"  ·  can approve":"") + (pp.email===email?"  (you)":"")),
+      pp.email===email ? null : el("button",{class:"btn small danger",type:"button",onclick:()=>unapprove(pp.email)},"Remove")))),
+    el("div",{class:"addrow"},
+      el("input",{type:"text",id:"newemail",placeholder:"friend@gmail.com","aria-label":"Email to approve",autocomplete:"off"}),
+      el("label",{class:"check",for:"newadmin"}, el("input",{type:"checkbox",id:"newadmin"}), "Can approve"),
+      el("button",{class:"btn",type:"button",onclick:approve},"Approve")),
+    el("p",{class:"msg",id:"managemsg",role:"status"}));
+  if (keep!=null) $("#newemail").value=keep;
+  if (keepAdmin) $("#newadmin").checked=true;
+}
+async function approve(){
+  const em=($("#newemail").value||"").trim().toLowerCase();
+  const m=$("#managemsg");
+  if (!/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(em)){ m.textContent="Enter a full email address, like friend@gmail.com."; m.className="msg err"; return; }
+  try{
+    await fs.doc("approved/"+em).set({admin:$("#newadmin").checked, addedBy:email});
+    $("#newemail").value=""; $("#newadmin").checked=false;
+    $("#managemsg").textContent=em+" can now add games."; $("#managemsg").className="msg good";
+  }catch(e){ console.error(e); m.textContent="Couldn't approve "+em+". Try again."; m.className="msg err"; }
+}
+async function unapprove(em){
+  try{ await fs.doc("approved/"+em).delete(); }catch(e){ console.error(e); }
+}
+function watchPeople(){
+  if (unsubPeople){ unsubPeople(); unsubPeople=null; }
+  people=[];
+  if (access!=="admin") return;
+  unsubPeople=fs.collection("approved").onSnapshot(snap=>{
+    people=snap.docs.map(d=>({email:d.id,admin:d.data().admin===true})).sort((a,b)=>a.email.localeCompare(b.email));
+    render();
+  },e=>console.error(e));
+}
+function signIn(){
+  firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{
+    console.error(e);
+    if (e?.code!=="auth/popup-closed-by-user" && e?.code!=="auth/cancelled-popup-request") setMsg("Sign-in didn't work. Try again.","err");
+  });
+}
+function signOut(){ pending=null; firebase.auth().signOut(); }
+
 render();
 try{ document.fonts.load("170px Bungee").then(render,()=>{}); }catch{}
 
@@ -277,9 +354,15 @@ try{ document.fonts.load("170px Bungee").then(render,()=>{}); }catch{}
   try{
     firebase.initializeApp(cfg);
     fs=firebase.firestore();
-    const cred=await firebase.auth().signInAnonymously();
-    uid=cred.user.uid;
-    store="ready"; render();
+    firebase.auth().onAuthStateChanged(async u=>{
+      uid=u?.uid||null; email=u?.email?.toLowerCase()||null;
+      if (!u) access="out";
+      else {
+        try{ const d=await fs.doc("approved/"+email).get(); access = !d.exists ? "pending" : d.data().admin===true ? "admin" : "approved"; }
+        catch(e){ console.error(e); access="pending"; }
+      }
+      store="ready"; lastMsg={text:"",kind:""}; watchPeople(); render();
+    });
     fs.collection("games").where("complete","==",true).onSnapshot(snap=>{
       added=snap.docs.map(s=>{ const v=s.data(); return {id:s.id,title:String(v.title||"Untitled game").slice(0,60),desc:String(v.desc||"").slice(0,140),size:Number(v.size)||0,chunks:Number(v.chunks)||0,owner:v.owner,addedAt:v.addedAt?.toMillis?.()||0}; })
         .sort((a,b)=>a.addedAt-b.addedAt);
