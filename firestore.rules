@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /games/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() <= 60
+        && request.resource.data.desc is string && request.resource.data.desc.size() <= 140
+        && request.resource.data.chunks is int && request.resource.data.chunks <= 70
+        && request.resource.data.complete == false;
+      allow update: if request.auth != null && resource.data.owner == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['complete']);
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+
+      match /parts/{n} {
+        allow read: if true;
+        allow write: if request.auth != null
+          && get(/databases/$(database)/documents/games/$(id)).data.owner == request.auth.uid;
+      }
+    }
+  }
+}
