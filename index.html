@@ -3,12 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Danny's Arcade</title>
+<title>Game Hub</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#13122a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: an arcade shelf. Header strip, then a wrapping grid of game cards; each game opens in its own tab. */
+/* Layout: a game shelf. Header strip, then a wrapping grid of game cards; each game opens in its own tab. */
 :root{
   --bg:#13122a; --panel:#1d1b3d; --panel-2:#272452; --line:#3a3670;
   --fg:#f2f0ff; --muted:#a9a5d6; --accent:#ffc934; --accent-ink:#221a00;
@@ -83,7 +87,7 @@ input[type=text]:focus{outline:2px solid var(--accent);outline-offset:0;border-c
 <div class="wrap">
   <header>
     <div>
-      <h1>Danny's <span>Arcade</span></h1>
+      <h1>Game <span>Hub</span></h1>
       <p class="sub">Every game here is one HTML file. Click a game to play it in a new tab. Approved players can drop in new games, and they show up for everyone.</p>
     </div>
     <div class="count" id="count">2 games</div>
@@ -202,7 +206,7 @@ function addCard(){
       el("label",{for:"gname"},"Name", el("input",{type:"text",id:"gname",maxlength:"60",value:pending.title})),
       el("label",{for:"gdesc"},"One-line description", el("input",{type:"text",id:"gdesc",maxlength:"140",placeholder:"What kind of game is it?"})),
       el("div",{class:"row"},
-        el("button",{class:"btn primary",type:"button",id:"addbtn",onclick:upload},"Add to arcade"),
+        el("button",{class:"btn primary",type:"button",id:"addbtn",onclick:upload},"Add to Game Hub"),
         el("button",{class:"btn small",type:"button",onclick:()=>{pending=null;setMsg("");render();}},"Cancel")));
   }
   meta.append(el("p",{class:"msg",id:"addmsg",role:"status"}),
@@ -256,10 +260,10 @@ async function upload(){
     }
     await ref.update({complete:true});
     textCache.set(ref.id,text);
-    pending=null; setMsg(title+" is in the arcade for everyone.","good"); render();
+    pending=null; setMsg(title+" is in Game Hub for everyone.","good"); render();
   }catch(e){
     console.error(e);
-    setMsg(e?.code==="resource-exhausted" ? "The arcade hit its free daily limit. Try again tomorrow." : "The upload didn't go through. Try again.","err");
+    setMsg(e?.code==="resource-exhausted" ? "Game Hub hit its free daily limit. Try again tomorrow." : "The upload didn't go through. Try again.","err");
     if ($("#addbtn")) $("#addbtn").disabled=false;
   }
 }
