@@ -115,7 +115,6 @@ const CHUNK = 300000;      // characters per Firestore part; stays under the 1 M
 
 const $ = s => document.querySelector(s);
 const grid = $("#grid");
-const textCache = new Map();
 let added = [];            // [{id, title, desc, size, chunks, owner, addedAt}]
 let fs = null, uid = null, email = null, store = "loading";   // store: loading | ready | off
 let access = "out";        // out (signed out) | pending (signed in, not approved) | approved | admin
@@ -159,7 +158,7 @@ function card(game){
   drawCover(cv, game.title, game.hue ?? hashHue(game.title), game.hue2 ?? (hashHue(game.title)+150)%360);
   const cover = game.file
     ? el("a",{class:"cover",href:game.file,target:"_blank",rel:"noopener","aria-label":"Play "+game.title+" in a new tab"}, cv, el("span",{class:"playhint"},"Play ↗"))
-    : el("button",{class:"cover",type:"button","aria-label":"Play "+game.title+" in a new tab",onclick:()=>openAdded(game)}, cv, el("span",{class:"playhint"},"Play ↗"));
+    : el("a",{class:"cover",href:"play.html#"+encodeURIComponent(game.id),target:"_blank",rel:"noopener","aria-label":"Play "+game.title+" in a new tab"}, cv, el("span",{class:"playhint"},"Play ↗"));
   const tags=el("div",{class:"tags"},
     ...(game.tags||["Added"]).map(t=>el("span",{class:"tag"+(t==="Added"?" new":"")},t)),
     el("span",{class:"tag"},fmtSize(game.size||0)));
@@ -259,7 +258,6 @@ async function upload(){
       await ref.collection("parts").doc(String(i)).set({d:text.slice(i*CHUNK,(i+1)*CHUNK)});
     }
     await ref.update({complete:true});
-    textCache.set(ref.id,text);
     pending=null; setMsg(title+" is in Game Hub for everyone.","good"); render();
   }catch(e){
     console.error(e);
@@ -276,27 +274,6 @@ async function removeGame(game){
     await ref.delete();
   }catch(e){ console.error(e); setMsg("Couldn't remove "+game.title+". Try again.","err"); }
   render();
-}
-
-async function gameText(game){
-  if (textCache.has(game.id)) return textCache.get(game.id);
-  const snap=await fs.collection("games").doc(game.id).collection("parts").get();
-  const parts=snap.docs.map(d=>[Number(d.id),d.data().d||""]).sort((a,b)=>a[0]-b[0]);
-  if (parts.length!==game.chunks) throw new Error("missing parts");
-  const t=parts.map(p=>p[1]).join(""); textCache.set(game.id,t); return t;
-}
-
-/* Open the tab inside the click so popup blockers allow it, then point it at the game once downloaded. */
-async function openAdded(game){
-  const w=window.open("","_blank");
-  if (w){ w.document.title=game.title; w.document.body.style.cssText="background:#13122a;color:#a9a5d6;font:16px system-ui;display:grid;place-items:center;height:100vh;margin:0"; w.document.body.textContent="Loading "+game.title+"…"; }
-  try{
-    const url=URL.createObjectURL(new Blob([await gameText(game)],{type:"text/html"}));
-    if (w) w.location.replace(url); else location.href=url;
-  }catch(e){
-    console.error(e);
-    if (w) w.document.body.textContent="This game couldn't be loaded. It may have been removed.";
-  }
 }
 
 /* Approvals live in approved/{email}: {admin: bool}. Admins (Danny first, set up in the Firebase console) approve others here. */

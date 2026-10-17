@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loading… · Game Hub</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<style>
+  html,body{height:100%;margin:0}
+  body{background:#13122a;color:#a9a5d6;font:16px system-ui,sans-serif;display:grid;place-items:center;text-align:center;padding:0 16px}
+  a{color:#ffc934}
+</style>
+</head>
+<body>
+<p id="status">Loading game…</p>
+<!-- Opens a game someone added to Game Hub: play.html#<game id>. Loads its pieces from Firestore and swaps this page for the game. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+(async()=>{
+  const status=document.getElementById("status");
+  const fail=msg=>{ status.innerHTML=""; status.append(msg+" ", Object.assign(document.createElement("a"),{href:"./",textContent:"Back to Game Hub"})); };
+  const id=decodeURIComponent(location.hash.slice(1));
+  if (!id || !window.firebase || !window.FIREBASE_CONFIG?.apiKey) return fail("This game link doesn't work.");
+  try{
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    const ref=firebase.firestore().collection("games").doc(id);
+    const meta=await ref.get();
+    if (!meta.exists || !meta.data().complete) return fail("This game isn't in Game Hub anymore.");
+    const {title, chunks}=meta.data();
+    document.title=(title||"Game")+" · Game Hub";
+    status.textContent="Loading "+(title||"game")+"…";
+    const snap=await ref.collection("parts").get();
+    const parts=snap.docs.map(d=>[Number(d.id),d.data().d||""]).sort((a,b)=>a[0]-b[0]);
+    if (parts.length!==chunks) return fail("This game didn't finish uploading.");
+    const html=parts.map(p=>p[1]).join("");
+    document.open(); document.write(html); document.close();
+  }catch(e){
+    console.error(e);
+    fail(e?.code==="resource-exhausted" ? "Game Hub hit its free daily limit. Try again tomorrow." : "This game couldn't be loaded. Check your connection and try again.");
+  }
+})();
+</script>
+</body>
+</html>
