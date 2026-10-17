@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Danny's Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: an arcade shelf. Header strip, then a wrapping grid of game cards; each game opens in its own tab. */
+:root{
+  --bg:#13122a; --panel:#1d1b3d; --panel-2:#272452; --line:#3a3670;
+  --fg:#f2f0ff; --muted:#a9a5d6; --accent:#ffc934; --accent-ink:#221a00;
+  --hot:#ff6b5a; --ok:#5fe0a8;
+  --display:"Bungee","Arial Black",Impact,sans-serif;
+  --body:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.05) 1px,transparent 0);background-size:22px 22px}
+.wrap{max-width:1120px;margin:0 auto;padding-block:calc(28px + env(safe-area-inset-top,0px)) 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:28px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,52px);line-height:1;margin:0;letter-spacing:.01em;text-wrap:balance}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:8px 0 0;max-width:60ch}
+.count{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.card{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.cover{position:relative;aspect-ratio:16/10;max-width:100%;display:block;width:100%;border:0;padding:0;cursor:pointer;background:var(--panel-2)}
+.cover canvas{display:block;width:100%;height:100%}
+.cover:focus-visible,.btn:focus-visible,.drop:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.cover .playhint{position:absolute;inset:auto 12px 12px auto;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-size:13px;padding:6px 12px;border-radius:999px;transform:translateY(4px);opacity:.92;transition:transform .15s}
+.cover:hover .playhint{transform:none;opacity:1}
+.meta{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.meta h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0;line-height:1.15;overflow-wrap:anywhere}
+.meta p{margin:0;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:4px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--panel-2);color:var(--muted)}
+.tag.new{color:var(--ok)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.btn{font:600 14px/1 var(--body);border-radius:9px;padding:10px 14px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-family:var(--display);font-weight:400;letter-spacing:.02em}
+.btn.danger{color:var(--hot)}
+.btn.small{padding:7px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:default}
+.linkish{background:none;border:0;color:var(--muted);font:500 13px var(--body);cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.linkish:hover{color:var(--hot)}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--hot)}
+.add{border-style:dashed;background:transparent}
+.add .meta{gap:12px}
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;aspect-ratio:16/10;max-width:100%;border-bottom:1px dashed var(--line);color:var(--muted);cursor:pointer;padding:16px}
+.drop.over{background:var(--panel)}
+.drop b{font-family:var(--display);font-weight:400;color:var(--fg);font-size:18px}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.plus{font-family:var(--display);font-size:40px;line-height:1;color:var(--accent)}
+label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input[type=text]{font:500 15px var(--body);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;text-transform:none;letter-spacing:0}
+input[type=text]:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.msg{font-size:13px;margin:0;color:var(--muted)}
+.msg.err{color:var(--hot)} .msg.good{color:var(--ok)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Danny's <span>Arcade</span></h1>
+      <p class="sub">Every game here is one HTML file. Click a game to play it in a new tab, or drop in a new file and it shows up for everyone who visits.</p>
+    </div>
+    <div class="count" id="count">2 games</div>
+  </header>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Shared storage for added games. Fill in firebase-config.js to switch it on (see README.md). -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+const BUILTIN = [
+  { key:"rocketarena", title:"Rocket Arena", file:"games/rocketarena.html", size:3884464, hue:18, hue2:205,
+    desc:"Rocket-powered car soccer. Boost, jump and score against bots or friends online.",
+    tags:["Car soccer","Bots","Online"] },
+  { key:"buildfight", title:"Build Fight", file:"games/buildfight.html", size:123202, hue:46, hue2:265,
+    desc:"Third-person build-and-shoot duels with walls, ramps, edits, three guns and a pickaxe.",
+    tags:["Shooter","Building","Online"] },
+];
+const MAX_BYTES = 20 * 1024 * 1024;
+const CHUNK = 300000;      // characters per Firestore part; stays under the 1 MiB document limit
+
+const $ = s => document.querySelector(s);
+const grid = $("#grid");
+const textCache = new Map();
+let added = [];            // [{id, title, desc, size, chunks, owner, addedAt}]
+let fs = null, uid = null, store = "loading";   // store: loading | ready | off
+let pending = null, confirmId = null;
+
+function fmtSize(n){ return n >= 1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB"; }
+function hashHue(s){ let h=0; for (const c of s) h=(h*31+c.charCodeAt(0))>>>0; return h%360; }
+function el(tag, props={}, ...kids){
+  const e=document.createElement(tag);
+  for (const [k,v] of Object.entries(props)){
+    if (k==="class") e.className=v; else if (k.startsWith("on")) e.addEventListener(k.slice(2),v);
+    else if (v!==undefined && v!==null && v!==false) e.setAttribute(k, v===true?"":v);
+  }
+  for (const k of kids.flat()) if (k!=null) e.append(k.nodeType?k:document.createTextNode(k));
+  return e;
+}
+
+/* Cover art: diagonal speed bands plus the game's initials, drawn per title. */
+function drawCover(canvas, title, hue, hue2){
+  const w=640,h=400; canvas.width=w; canvas.height=h;
+  const g=canvas.getContext("2d");
+  const grd=g.createLinearGradient(0,0,w,h);
+  grd.addColorStop(0,`hsl(${hue2} 55% 18%)`); grd.addColorStop(1,`hsl(${hue2} 60% 9%)`);
+  g.fillStyle=grd; g.fillRect(0,0,w,h);
+  g.save(); g.translate(w*.62,h*.5); g.rotate(-0.42);
+  for (let i=0;i<7;i++){
+    g.fillStyle=`hsla(${hue} 95% ${58-i*4}% / ${0.9-i*0.11})`;
+    g.fillRect(-w, -h*.9 + i*58, w*2, 30 - i*2);
+  }
+  g.restore();
+  g.fillStyle="rgba(0,0,0,.35)"; g.fillRect(0,h-130,w,130);
+  const initials=title.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
+  g.font=`170px Bungee, Impact, sans-serif`;
+  g.fillStyle=`hsl(${hue} 100% 62%)`; g.fillText(initials, 34, h-34);
+  g.strokeStyle="rgba(0,0,0,.55)"; g.lineWidth=5; g.strokeText(initials, 34, h-34);
+}
+
+function card(game){
+  const cv=el("canvas",{"aria-hidden":"true"});
+  drawCover(cv, game.title, game.hue ?? hashHue(game.title), game.hue2 ?? (hashHue(game.title)+150)%360);
+  const cover = game.file
+    ? el("a",{class:"cover",href:game.file,target:"_blank",rel:"noopener","aria-label":"Play "+game.title+" in a new tab"}, cv, el("span",{class:"playhint"},"Play ↗"))
+    : el("button",{class:"cover",type:"button","aria-label":"Play "+game.title+" in a new tab",onclick:()=>openAdded(game)}, cv, el("span",{class:"playhint"},"Play ↗"));
+  const tags=el("div",{class:"tags"},
+    ...(game.tags||["Added"]).map(t=>el("span",{class:"tag"+(t==="Added"?" new":"")},t)),
+    el("span",{class:"tag"},fmtSize(game.size||0)));
+  const meta=el("div",{class:"meta"}, el("h2",{},game.title), game.desc?el("p",{},game.desc):null);
+  if (game.id && uid && game.owner===uid){
+    if (confirmId===game.id){
+      meta.append(el("div",{class:"confirm"},"Remove for everyone?",
+        el("button",{class:"btn small danger",type:"button",onclick:()=>removeGame(game)},"Remove"),
+        el("button",{class:"btn small",type:"button",onclick:()=>{confirmId=null;render();}},"Keep")));
+    } else meta.append(el("div",{}, el("button",{class:"linkish",type:"button",onclick:()=>{confirmId=game.id;render();}},"Remove (you added this)")));
+  }
+  meta.append(tags);
+  return el("article",{class:"card"}, cover, meta);
+}
+
+function addCard(){
+  const box=el("article",{class:"card add"});
+  if (store!=="ready"){
+    const why = store==="loading" ? "Connecting…" : "Adding games isn't switched on yet. Fill in firebase-config.js to turn it on.";
+    box.append(el("div",{class:"drop",style:"cursor:default"}, el("span",{class:"plus"},"+"), el("b",{},"Add a game"), el("span",{},why)));
+    return box;
+  }
+  const input=el("input",{type:"file",id:"gamefile",accept:".html,.htm,text/html","aria-label":"Choose an HTML game file",onchange:e=>pick(e.target.files[0])});
+  const drop=el("div",{class:"drop"}, el("span",{class:"plus"},"+"), el("b",{},pending?pending.name:"Add a game"),
+    el("span",{},pending?fmtSize(pending.size)+" · ready to add":"Drop a single .html game file here, or tap to choose one"), input);
+  ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(t=>drop.addEventListener(t,()=>drop.classList.remove("over")));
+  drop.addEventListener("drop",e=>{e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) pick(f);});
+  const meta=el("div",{class:"meta"});
+  if (pending){
+    meta.append(
+      el("label",{for:"gname"},"Name", el("input",{type:"text",id:"gname",maxlength:"60",value:pending.title})),
+      el("label",{for:"gdesc"},"One-line description", el("input",{type:"text",id:"gdesc",maxlength:"140",placeholder:"What kind of game is it?"})),
+      el("div",{class:"row"},
+        el("button",{class:"btn primary",type:"button",id:"addbtn",onclick:upload},"Add to arcade"),
+        el("button",{class:"btn small",type:"button",onclick:()=>{pending=null;setMsg("");render();}},"Cancel")));
+  }
+  meta.append(el("p",{class:"msg",id:"addmsg",role:"status"}));
+  box.append(drop, meta);
+  return box;
+}
+
+let lastMsg={text:"",kind:""};
+function setMsg(text,kind=""){ lastMsg={text,kind}; const m=$("#addmsg"); if(m){m.textContent=text;m.className="msg"+(kind?" "+kind:"");} }
+
+function render(){
+  const keepName=$("#gname")?.value, keepDesc=$("#gdesc")?.value;
+  grid.replaceChildren(...BUILTIN.map(card), ...added.map(card), addCard());
+  if (keepName!=null && $("#gname")) $("#gname").value=keepName;
+  if (keepDesc!=null && $("#gdesc")) $("#gdesc").value=keepDesc;
+  setMsg(lastMsg.text,lastMsg.kind);
+  const n=BUILTIN.length+added.length;
+  $("#count").textContent = n+" game"+(n===1?"":"s");
+}
+
+async function pick(file){
+  if (!file) return;
+  if (file.size > MAX_BYTES){ setMsg(`That file is ${fmtSize(file.size)}. Games can be up to 20 MB.`,"err"); return; }
+  const text=await file.text();
+  const head=text.slice(0,4000);
+  if (!/<!doctype html|<html[\s>]/i.test(head)){ setMsg("That file doesn't look like an HTML page. Pick a game saved as a single .html file.","err"); return; }
+  const t=(head.match(/<title[^>]*>([^<]*)<\/title>/i)||[])[1];
+  const title=(t||file.name.replace(/\.html?$/i,"")).trim().slice(0,60) || "New game";
+  pending={name:file.name,size:file.size,text,title};
+  lastMsg={text:"",kind:""};
+  render();
+  $("#gname")?.focus();
+}
+
+/* A game is stored as games/{id} (title, size, part count) plus games/{id}/parts/{n} holding the file text in pieces.
+   The main doc starts with complete:false and flips to true once every part is written, so half-uploaded games never show. */
+async function upload(){
+  if (!pending) return;
+  const title=($("#gname").value||"").trim() || pending.title;
+  const desc=($("#gdesc").value||"").trim();
+  const text=pending.text, chunks=Math.ceil(text.length/CHUNK);
+  $("#addbtn").disabled=true;
+  const ref=fs.collection("games").doc();
+  try{
+    await ref.set({title,desc,size:pending.size,chunks,owner:uid,complete:false,addedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    for (let i=0;i<chunks;i++){
+      setMsg(`Uploading… ${Math.round(i/chunks*100)}%`);
+      await ref.collection("parts").doc(String(i)).set({d:text.slice(i*CHUNK,(i+1)*CHUNK)});
+    }
+    await ref.update({complete:true});
+    textCache.set(ref.id,text);
+    pending=null; setMsg(title+" is in the arcade for everyone.","good"); render();
+  }catch(e){
+    console.error(e);
+    setMsg(e?.code==="resource-exhausted" ? "The arcade hit its free daily limit. Try again tomorrow." : "The upload didn't go through. Try again.","err");
+    if ($("#addbtn")) $("#addbtn").disabled=false;
+  }
+}
+
+async function removeGame(game){
+  confirmId=null;
+  try{
+    const ref=fs.collection("games").doc(game.id);
+    for (let i=0;i<game.chunks;i++) await ref.collection("parts").doc(String(i)).delete();
+    await ref.delete();
+  }catch(e){ console.error(e); setMsg("Couldn't remove "+game.title+". Try again.","err"); }
+  render();
+}
+
+async function gameText(game){
+  if (textCache.has(game.id)) return textCache.get(game.id);
+  const snap=await fs.collection("games").doc(game.id).collection("parts").get();
+  const parts=snap.docs.map(d=>[Number(d.id),d.data().d||""]).sort((a,b)=>a[0]-b[0]);
+  if (parts.length!==game.chunks) throw new Error("missing parts");
+  const t=parts.map(p=>p[1]).join(""); textCache.set(game.id,t); return t;
+}
+
+/* Open the tab inside the click so popup blockers allow it, then point it at the game once downloaded. */
+async function openAdded(game){
+  const w=window.open("","_blank");
+  if (w){ w.document.title=game.title; w.document.body.style.cssText="background:#13122a;color:#a9a5d6;font:16px system-ui;display:grid;place-items:center;height:100vh;margin:0"; w.document.body.textContent="Loading "+game.title+"…"; }
+  try{
+    const url=URL.createObjectURL(new Blob([await gameText(game)],{type:"text/html"}));
+    if (w) w.location.replace(url); else location.href=url;
+  }catch(e){
+    console.error(e);
+    if (w) w.document.body.textContent="This game couldn't be loaded. It may have been removed.";
+  }
+}
+
+render();
+try{ document.fonts.load("170px Bungee").then(render,()=>{}); }catch{}
+
+(async()=>{
+  const cfg=window.FIREBASE_CONFIG;
+  if (!window.firebase || !cfg || !cfg.apiKey){ store="off"; render(); return; }
+  try{
+    firebase.initializeApp(cfg);
+    fs=firebase.firestore();
+    const cred=await firebase.auth().signInAnonymously();
+    uid=cred.user.uid;
+    store="ready"; render();
+    fs.collection("games").where("complete","==",true).onSnapshot(snap=>{
+      added=snap.docs.map(s=>{ const v=s.data(); return {id:s.id,title:String(v.title||"Untitled game").slice(0,60),desc:String(v.desc||"").slice(0,140),size:Number(v.size)||0,chunks:Number(v.chunks)||0,owner:v.owner,addedAt:v.addedAt?.toMillis?.()||0}; })
+        .sort((a,b)=>a.addedAt-b.addedAt);
+      render();
+    },e=>{ console.error(e); });
+  }catch(e){ console.error(e); store="off"; render(); }
+})();
+</script>
+</body>
+</html>
