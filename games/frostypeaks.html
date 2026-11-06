@@ -61,9 +61,16 @@ input{font-family:inherit}
 #modebar button.on{background:linear-gradient(#ef3b4d,#c41d30);opacity:1}
 #modebar kbd{font:700 11px Fredoka,sans-serif;background:rgba(255,255,255,.18);border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 #minimap{position:absolute;right:14px;top:120px;width:180px;height:180px;border-radius:50%;box-shadow:0 0 0 3px #ffd27a,0 0 0 6px #b3202c,0 6px 24px rgba(0,0,0,.5);pointer-events:none}
+.bigpop{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%) scale(.6);text-align:center;pointer-events:none;animation:bpin .45s cubic-bezier(.2,1.6,.4,1) forwards;text-shadow:0 4px 18px rgba(0,0,0,.55)}
+.bigpop .bi{font-size:96px;line-height:1.1}.bigpop .bn{font-size:38px;font-weight:700}.bigpop .bs{font-size:18px;margin-top:4px}.bigpop.out{transition:opacity .6s;opacity:0}
+@keyframes bpin{to{transform:translate(-50%,-50%) scale(1)}}
+#splat{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.95) 0 12%,rgba(240,248,255,.7) 22%,rgba(255,255,255,0) 45%)}#splat.on{animation:splat 1.4s ease-out}
+@keyframes splat{0%{opacity:1}100%{opacity:0}}
+.odds{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.odds span{border:1px solid;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600}
+.petgrid .item.locked{opacity:.55}.petgrid .sw{font-size:34px}
 #musbtn{position:absolute;right:14px;bottom:96px;pointer-events:auto;cursor:pointer;font-size:13px}
 #gsbar{position:absolute;left:50%;top:48px;transform:translateX(-50%);width:min(320px,70vw);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 12px 14px;font-size:14px;font-weight:600;text-align:center;overflow:hidden}
-#gsbar b{color:#9fe0ff}#gsbar i{position:absolute;left:12px;bottom:5px;height:6px;max-width:calc(100% - 24px);border-radius:3px;background:linear-gradient(90deg,#9fe0ff,#fff)}
+#gsbar b{color:#9fe0ff}#gsbar .gsv{font-size:13px;font-weight:500;opacity:.95;margin-top:2px}#gsbar .gsv b{color:#ffd54d}#gsbar i{position:absolute;left:12px;bottom:5px;height:6px;max-width:calc(100% - 24px);border-radius:3px;background:linear-gradient(90deg,#9fe0ff,#fff)}
 #racebar{position:absolute;left:50%;top:48px;transform:translateX(-50%);font-size:18px;color:#7dff9a}
 .fwwrap{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
 #fwc{width:320px;height:320px;max-width:100%;border-radius:14px;border:2px solid var(--line);touch-action:none;cursor:crosshair;background:#0b1020}
@@ -170,6 +177,7 @@ input{font-family:inherit}
   <div id="hint" class="hidden"></div>
   <div id="racebar" class="pill hidden"></div>
   <div id="gsbar" class="hidden"></div>
+  <div id="splat"></div>
   <div id="modebar" class="hidden"><button data-m="walk"><kbd>1</kbd>🚶 Walk</button><button data-m="ski"><kbd>2</kbd>⛷️ Ski</button><button data-m="board"><kbd>3</kbd>🏂 Snowboard</button><button data-m="sleigh"><kbd>4</kbd>🛷 Sleigh</button></div>
   <canvas id="minimap" class="hidden" width="360" height="360"></canvas>
   <div id="speedo"><b id="spd">0</b> <span>km/h</span><div id="eqname"></div></div>
@@ -254,9 +262,21 @@ const ITEMS=[
  {id:'sleigh2',cat:'sleigh',name:'Golden Sleigh',price:150000,col:0xffc934,st:{spd:1.45,turn:1.4,pop:.5,spin:0},desc:'A solid-gold sleigh with lanterns, pulled by two reindeer. Faster than Rudolph alone.'},
  {id:'sleigh3',cat:'sleigh',name:'Northern Lights Sleigh',price:400000,col:0x7a5cff,st:{spd:1.6,turn:1.45,pop:.5,spin:0},desc:'A midnight sleigh glowing with aurora light, pulled by a team of four reindeer. The fastest ride on the mountain.'},
  {id:'pet0',cat:'pet',name:'No Pet',price:0,col:0x6b7c8f,desc:'Riding solo.'},
- {id:'pet1',cat:'pet',name:'Penguin',price:2000,col:0x1b1f27,desc:'Waddles after you and belly-slides down the hill.'},
- {id:'pet2',cat:'pet',name:'Mini Reindeer',price:3000,col:0x9a6a3e,desc:'A tiny reindeer with a glowing nose.'},
- {id:'pet3',cat:'pet',name:'Polar Bear Cub',price:4000,col:0xf4f1ea,desc:'Fluffy, loyal and very huggable.'},
+ {id:'pet1',cat:'pet',name:'Penguin',price:0,rar:0,col:0x1b1f27,desc:'Waddles after you and belly-slides down the hill.'},
+ {id:'pet4',cat:'pet',name:'Arctic Fox',price:0,rar:0,col:0xf2f4f8,desc:'A fluffy white fox with a bushy tail.'},
+ {id:'pet5',cat:'pet',name:'Snow Bunny',price:0,rar:0,col:0xfafafa,desc:'Hops after you on big floppy feet.'},
+ {id:'pet6',cat:'pet',name:'Husky Pup',price:0,rar:0,col:0x6f7a88,desc:'Blue-eyed, tail always wagging.'},
+ {id:'pet2',cat:'pet',name:'Mini Reindeer',price:0,rar:1,col:0x9a6a3e,desc:'A tiny reindeer with a glowing nose.'},
+ {id:'pet7',cat:'pet',name:'Snowy Owl',price:0,rar:1,col:0xf4f4ee,desc:'Flies along beside your head.'},
+ {id:'pet8',cat:'pet',name:'Gingerbread Buddy',price:0,rar:1,col:0xb8692e,desc:'Iced, buttoned and freshly baked.'},
+ {id:'pet9',cat:'pet',name:'Mini Snowman',price:0,rar:1,col:0xffffff,desc:'A little snowman in a top hat.'},
+ {id:'pet10',cat:'pet',name:'Red Panda',price:0,rar:1,col:0xc4521e,desc:'Stripy tail, cozy scarf.'},
+ {id:'pet3',cat:'pet',name:'Polar Bear Cub',price:0,rar:2,col:0xf4f1ea,desc:'Fluffy, loyal and very huggable.'},
+ {id:'pet11',cat:'pet',name:'Seal Pup',price:0,rar:2,col:0xe6e9ee,desc:'Wobbles across the snow with a Santa hat.'},
+ {id:'pet12',cat:'pet',name:'Stocking Kitten',price:0,rar:2,col:0xf0a050,desc:'An orange kitten riding in a Christmas stocking.'},
+ {id:'pet13',cat:'pet',name:'Golden Reindeer',price:0,rar:3,col:0xffc934,desc:'Solid gold antlers and a shimmering coat.'},
+ {id:'pet14',cat:'pet',name:'Frost Dragon',price:0,rar:3,col:0x8fd8ff,desc:'A tiny ice dragon that flaps along beside you.'},
+ {id:'pass1',cat:'pass',name:'Snow Launcher Pass',price:10000,col:0x7fd0ff,desc:'Lifetime pass for the Snow Launcher by the North Pole Express. Blast straight up the mountain.'},
 ];
 const ITEM=Object.fromEntries(ITEMS.map(i=>[i.id,i]));
 const FOOD=[
@@ -926,7 +946,7 @@ function setLook(A,look){
   else{for(const s of [-1,1]){const k=mesh(new THREE.BoxGeometry(.09,.03,1.7),em,s*.12,.03,.05,A.gear);k.castShadow=true;const tip=mesh(new THREE.BoxGeometry(.09,.03,.22),em,s*.12,.07,.97,A.gear);tip.rotation.x=-.45;mesh(new THREE.BoxGeometry(.11,.05,.28),blackM,s*.12,.07,0,A.gear)}}
   A.body.rotation.y=look.sport==='board'?-Math.PI/2:0;
   for(const a of A.arms)a.pole.visible=look.sport!=='board'}
-function setFood(A,id){if(A.food===id)return;A.food=id;A.held.clear();if(id&&FOODI[id])A.held.add(foodMesh(id))}
+function setFood(A,id){if(A.food===id)return;A.food=id;A.held.clear();if(id&&FOODI[id]){const f=foodMesh(id);f.scale.setScalar(2.3);f.position.set(0,-.05,.12);A.held.add(f)}}
 function setName(A,name,me,lvl){if(lvl)name='Lv '+lvl+' · '+name;if(A.tag){A.root.remove(A.tag);A.tag.material.map.dispose()}A.tag=textSprite(name,{bg:me?'rgba(31,157,85,.85)':'rgba(14,26,46,.75)'});A.tag.position.y=1.75;A.root.add(A.tag)}
 function wrapLines(g,text,maxW){const words=text.split(/\s+/);const lines=[];let cur='';for(const w0 of words){let w=w0;while(g.measureText(w).width>maxW){let k=w.length;while(k>1&&g.measureText(w.slice(0,k)).width>maxW)k--;if(cur){lines.push(cur);cur=''}lines.push(w.slice(0,k));w=w.slice(k)}
   const t=cur?cur+' '+w:w;if(g.measureText(t).width>maxW){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines.slice(0,5)}
@@ -989,7 +1009,8 @@ function emoteFx(A,id){const em=EMOTES[id];if(!em)return;A.emote={id,t:T};const 
 function tickFx(A,dt){if(A.emote&&T-A.emote.t>(A.emote.id===2?6:3))A.emote=null;if(!A.fx)return;for(let i=A.fx.length-1;i>=0;i--){const s=A.fx[i];s.userData.t+=dt;s.position.y=2.6+s.userData.t*.8;s.material.opacity=Math.max(0,1-s.userData.t/2);if(s.userData.t>2){A.root.remove(s);s.material.map.dispose();A.fx.splice(i,1)}}}
 
 /* ---------- pets ---------- */
-function petMesh(id){const g=new THREE.Group(),body=new THREE.Group();g.add(body);g.userData.body=body;
+function petMesh(id){if(id==='pet13'){const d=petMesh('pet2'),gm=M({color:0xffc934,metalness:.85,roughness:.25,emissive:0x3a2600}),dm=M({color:0xfff2b0,metalness:.9,roughness:.2});d.traverse(m=>{if(m.isMesh&&!m.material.isMeshBasicMaterial){const c=m.material.color.getHex();if(c===0x9a6a3e)m.material=gm;else if(c===0x5b3a1e)m.material=dm}});d.scale.setScalar(1.1);return d}
+  const g=new THREE.Group(),body=new THREE.Group();g.add(body);g.userData.body=body;
   const eye=(x,y,z)=>{mesh(new THREE.SphereGeometry(.035,8,6),blackM,x,y,z,body);mesh(new THREE.SphereGeometry(.012,6,4),new THREE.MeshBasicMaterial({color:0xffffff}),x+.01,y+.012,z+.03,body)};
   if(id==='pet1'){const bk=M({color:0x1b1f27,roughness:.6}),wh=M({color:0xffffff,roughness:.7}),or=M({color:0xff9a1a});
     const b=mesh(new THREE.SphereGeometry(.24,16,12),bk,0,.3,0,body);b.scale.set(1,1.25,.95);const bl=mesh(new THREE.SphereGeometry(.19,16,12),wh,0,.27,.07,body);bl.scale.set(1,1.2,.9);
@@ -1011,6 +1032,7 @@ function petMesh(id){const g=new THREE.Group(),body=new THREE.Group();g.add(body
     for(const s of [-1,1])mesh(new THREE.SphereGeometry(.05,8,6),wh,s*.11,.62,.22,body);
     for(const [x,z] of [[.13,.15],[-.13,.15],[.13,-.15],[-.13,-.15]])mesh(new THREE.SphereGeometry(.08,8,6),wh,x,.08,z,body);
     const sc=mesh(new THREE.TorusGeometry(.13,.03,6,14),M({color:0x1f9d55}),0,.38,.22,body);sc.rotation.x=Math.PI/2-.3}
+  else petMeshX(id,g,body,eye);
   g.traverse(m=>{if(m.isMesh)m.castShadow=true});return g}
 
 /* ---------- Rudolph's sleigh ---------- */
@@ -1071,6 +1093,53 @@ function firGeo(H,R0,seed,levelsPerM=2,perWhorl=11){const parts=[];let rs=seed;c
       const g=new THREE.ConeGeometry(Math.max(.18,len*.2),len,5,1);g.scale(.5,1,1);g.rotateZ(-Math.PI/2);g.translate(len/2,0,0);g.rotateZ(-droop);g.rotateY(-a);g.translate(0,y,0);
       const shade=[0x174d2e,0x1d5c36,0x14432a,0x22683e][(rnd()*4)|0];parts.push([g,shade,null])}}
   return mergeColored(parts)}
+
+// gacha pets
+function petMeshX(id,g,body,eye){const mm=(c,o={})=>M(Object.assign({color:c,roughness:.85},o)),S=(r,w=14,h=10)=>new THREE.SphereGeometry(r,w,h);
+  const legs=(m,xs,zs,h,r=.035)=>{for(const x of xs)for(const z of zs)mesh(new THREE.CylinderGeometry(r,r*.85,h,7),m,x,h/2,z,body)};
+  if(id==='pet4'){const w=mm(0xf6f8fc),dk=mm(0x2a2a30),gr=mm(0xd6dce6);
+    const b=mesh(capsule(.12,.26),w,0,.3,0,body);b.rotation.x=Math.PI/2;mesh(S(.12),w,0,.46,.22,body);const sn=mesh(new THREE.ConeGeometry(.06,.16,10),w,0,.44,.37,body);sn.rotation.x=Math.PI/2;mesh(S(.025,8,6),dk,0,.44,.45,body);
+    for(const s of [-1,1]){const e=mesh(new THREE.ConeGeometry(.05,.13,8),w,s*.07,.6,.2,body);e.rotation.z=-s*.25;mesh(new THREE.ConeGeometry(.03,.08,8),gr,s*.07,.59,.215,body).rotation.z=-s*.25}eye(-.05,.5,.31);eye(.05,.5,.31);
+    legs(w,[-.07,.07],[-.13,.13],.2);for(let i=0;i<4;i++){const t=mesh(S(.08-i*.008),i===3?gr:w,0,.36+i*.05,-.24-i*.09,body);t.scale.set(1,1,1.4)}}
+  else if(id==='pet5'){const w=mm(0xfcfcfc),pk=mm(0xffb6c8);
+    const b=mesh(S(.16),w,0,.2,0,body);b.scale.set(1,.95,1.15);mesh(S(.11),w,0,.38,.12,body);mesh(S(.02,8,6),pk,0,.37,.23,body);eye(-.045,.41,.2);eye(.045,.41,.2);
+    for(const s of [-1,1]){const e=mesh(capsule(.035,.18),w,s*.045,.58,.08,body);e.rotation.z=-s*.15;e.rotation.x=-.25;const i2=mesh(capsule(.018,.14),pk,s*.045,.58,.1,body);i2.rotation.z=-s*.15;i2.rotation.x=-.25;
+      const f=mesh(S(.05,8,6),w,s*.08,.03,.1,body);f.scale.set(.8,.5,1.6)}mesh(S(.05,8,6),w,0,.24,-.19,body)}
+  else if(id==='pet6'){const gy=mm(0x5f6b7a),w=mm(0xf2f2f2),bl=new THREE.MeshBasicMaterial({color:0x5ec8ff});
+    const b=mesh(capsule(.13,.24),gy,0,.32,0,body);b.rotation.x=Math.PI/2;const bl2=mesh(capsule(.1,.2),w,0,.28,.03,body);bl2.rotation.x=Math.PI/2;
+    mesh(S(.13),gy,0,.5,.2,body);const mk=mesh(S(.1),w,0,.47,.27,body);mk.scale.set(1,.8,.9);const sn=mesh(capsule(.045,.06),w,0,.45,.34,body);sn.rotation.x=Math.PI/2;mesh(S(.025,8,6),blackM,0,.46,.4,body);
+    for(const s of [-1,1]){mesh(new THREE.ConeGeometry(.05,.12,4),gy,s*.07,.65,.18,body).rotation.z=-s*.2;mesh(S(.025,8,6),bl,s*.05,.53,.3,body)}
+    legs(w,[-.07,.07],[-.12,.12],.2,.04);const t=mesh(new THREE.TorusGeometry(.08,.03,6,12,Math.PI*1.4),gy,0,.48,-.2,body);t.rotation.y=Math.PI/2}
+  else if(id==='pet7'){g.userData.fly=true;const w=mm(0xf6f6f0),sp=mm(0x3a3a3a),y=new THREE.MeshBasicMaterial({color:0xffd23a});
+    const b=mesh(S(.16),w,0,.2,0,body);b.scale.set(1,1.2,.95);const hd=mesh(S(.13),w,0,.42,.02,body);for(let i=0;i<14;i++){const a=i*2.4,h=.05+(i%5)*.06;mesh(S(.012,6,4),sp,Math.sin(a)*.15,h,Math.cos(a)*.13-.02,body)}
+    for(const s of [-1,1]){mesh(S(.04,10,8),y,s*.05,.44,.12,body);mesh(S(.02,8,6),blackM,s*.05,.44,.155,body);const wg=mesh(S(.1),w,s*.16,.22,-.02,body);wg.scale.set(.35,1.1,.8);wg.userData.wing=s}
+    const bk=mesh(new THREE.ConeGeometry(.02,.05,6),sp,0,.39,.15,body);bk.rotation.x=Math.PI/2+.4}
+  else if(id==='pet8'){const gb=mm(0xb8692e,{roughness:.7}),ic=mm(0xffffff,{roughness:.4}),gd=[0xd62839,0x1f9d55,0xffc934];
+    const T=new THREE.CylinderGeometry(.13,.13,.07,20);const hd=mesh(T,gb,0,.62,0,body);hd.rotation.x=Math.PI/2;
+    const tor=mesh(new THREE.BoxGeometry(.22,.26,.07),gb,0,.38,0,body);for(const s of [-1,1]){const a=mesh(capsule(.045,.12),gb,s*.15,.42,0,body);a.rotation.z=s*1.1;const l=mesh(capsule(.05,.14),gb,s*.06,.13,0,body);l.rotation.z=s*.15;
+      const cf=mesh(new THREE.TorusGeometry(.045,.008,4,12),ic,s*.21,.38,0,body);cf.rotation.y=Math.PI/2}
+    for(let i=0;i<3;i++)mesh(S(.025,8,6),mm(gd[i],{roughness:.3}),0,.46-i*.08,.04,body);eye(-.04,.65,.04);eye(.04,.65,.04);
+    const sm=mesh(new THREE.TorusGeometry(.05,.008,4,12,Math.PI),ic,0,.6,.04,body);sm.rotation.z=Math.PI;const ring=mesh(new THREE.TorusGeometry(.125,.008,4,24),ic,0,.62,.036,body)}
+  else if(id==='pet9'){const sm=buildSnowman(.2,7,'top',0xd62839);sm.traverse(m=>{if(m.isMesh)m.castShadow=false});body.add(sm)}
+  else if(id==='pet10'){const or=mm(0xc4521e),w=mm(0xfff6ea),dk=mm(0x3a1a10);
+    const b=mesh(capsule(.12,.22),or,0,.3,0,body);b.rotation.x=Math.PI/2;mesh(S(.13),or,0,.48,.2,body);for(const s of [-1,1]){mesh(S(.04,8,6),w,s*.06,.5,.31,body);mesh(new THREE.SphereGeometry(.05,8,6),w,s*.11,.6,.18,body);eye(s*.045,.5,.32)}
+    const mz=mesh(S(.05,8,6),w,0,.45,.31,body);mesh(S(.018,6,4),dk,0,.46,.355,body);legs(dk,[-.07,.07],[-.11,.11],.2,.04);
+    for(let i=0;i<5;i++){const t=mesh(S(.065-i*.004,10,8),i%2?dk:or,0,.32+i*.03,-.2-i*.07,body);t.scale.set(1,1,1.2)}
+    const sc=mesh(new THREE.TorusGeometry(.09,.025,6,14),mm(0x1f9d55),0,.4,.17,body);sc.rotation.x=Math.PI/2-.4}
+  else if(id==='pet11'){const w=mm(0xe8ebf0,{roughness:.5}),r=mm(0xd62839),ft=mm(0xffffff);
+    const b=mesh(S(.16),w,0,.16,0,body);b.scale.set(1,.85,1.6);mesh(S(.13),w,0,.3,.2,body);const sn=mesh(S(.06,10,8),w,0,.27,.31,body);sn.scale.set(1.2,.8,.8);mesh(S(.02,8,6),blackM,0,.28,.36,body);
+    for(const s of [-1,1]){mesh(S(.04,10,8),blackM,s*.06,.34,.3,body);const f=mesh(S(.07,8,6),w,s*.15,.06,.12,body);f.scale.set(1.2,.3,.6)}const tf=mesh(S(.07,8,6),w,0,.08,-.28,body);tf.scale.set(1.6,.3,.6);
+    const h=mesh(new THREE.ConeGeometry(.09,.18,12),r,0,.47,.17,body);h.rotation.x=-.4;mesh(new THREE.TorusGeometry(.085,.025,6,14),ft,0,.4,.19,body).rotation.x=Math.PI/2-.4;mesh(S(.03,8,6),ft,0,.53,.09,body)}
+  else if(id==='pet12'){const r=mm(0xc4182c),w=mm(0xffffff),o=mm(0xf0a050),gd=mm(0x1f9d55);
+    mesh(new THREE.CylinderGeometry(.13,.12,.32,16),r,0,.2,0,body);const ft=mesh(capsule(.11,.12),r,0,.08,.08,body);ft.rotation.x=Math.PI/2;mesh(new THREE.CylinderGeometry(.15,.15,.09,16),w,0,.38,0,body);
+    for(let i=0;i<3;i++)mesh(new THREE.BoxGeometry(.262,.03,.02),gd,0,.12+i*.08,.125,body);
+    mesh(S(.11),o,0,.5,.02,body);for(const s of [-1,1]){mesh(new THREE.ConeGeometry(.04,.09,4),o,s*.06,.62,.02,body);eye(s*.04,.52,.11);const p=mesh(S(.035,8,6),o,s*.09,.42,.1,body)}mesh(S(.015,6,4),mm(0xff8fa8),0,.49,.12,body)}
+  else if(id==='pet14'){g.userData.fly=true;const ic=mm(0x8fd8ff,{roughness:.3,metalness:.2,emissive:0x0a3050}),wh=mm(0xe8fbff,{roughness:.2}),cr=new THREE.MeshBasicMaterial({color:0x2ec8ff});
+    const b=mesh(capsule(.1,.2),ic,0,.2,0,body);b.rotation.x=Math.PI/2;const nk=mesh(new THREE.CylinderGeometry(.05,.07,.16,8),ic,0,.3,.15,body);nk.rotation.x=.6;mesh(S(.09),ic,0,.38,.22,body);
+    const sn=mesh(capsule(.05,.08),ic,0,.36,.31,body);sn.rotation.x=Math.PI/2;for(const s of [-1,1]){mesh(S(.022,8,6),cr,s*.05,.42,.28,body);const hn=mesh(new THREE.ConeGeometry(.02,.1,6),wh,s*.04,.47,.18,body);hn.rotation.x=-.6;
+      const wg=new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([V3(0,0,0),V3(s*.38,.12,-.05),V3(s*.3,-.02,-.2),V3(0,0,0),V3(s*.3,-.02,-.2),V3(0,0,-.16)]),M({color:0xbfeaff,side:THREE.DoubleSide,transparent:true,opacity:.85}));wg.geometry.computeVertexNormals();wg.position.set(s*.06,.26,.05);wg.userData.wing=s;body.add(wg)}
+    const t=mesh(new THREE.ConeGeometry(.06,.3,8),ic,0,.18,-.27,body);t.rotation.x=-Math.PI/2-.2;for(let i=0;i<4;i++)mesh(new THREE.ConeGeometry(.02,.06,5),wh,0,.31-i*.02,.1-i*.1,body)}
+}
 
 /* ================= Lodge interior (the lounge) ================= */
 const LW=16,LD=11,LCOL=[],SEATS=[];
@@ -1187,8 +1256,7 @@ const shopS=lodge,LX0=-40,SCOL=LCOL,DISPLAYS=[];let clerk;
  ITEMS.filter(i=>i.cat==='trail'&&i.price).forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.3,.36,.9,14),wood,0,.45,0,g);
    const x=-38+i*1.6;for(let k=0;k<26;k++){const t=k/26,a=t*Math.PI*5,c=it.pal[k%it.pal.length];mesh(new THREE.SphereGeometry(.045,6,5),new THREE.MeshBasicMaterial({color:c}),Math.cos(a)*(.28-t*.15),1.05+t*.75,Math.sin(a)*(.28-t*.15),g);if(k%5===0)addBulb(x+Math.cos(a)*(.28-t*.15),1.05+t*.75,4.6+Math.sin(a)*(.28-t*.15),c)}
    add(it.id,g,x,0,4.6,x,3.3,2.2);LCOL.push({x0:x-.4,x1:x+.4,z0:4.2,z1:5})});
- ITEMS.filter(i=>i.cat==='pet'&&i.price).forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.42,.45,.18,16),M({color:0xd62839,roughness:.9}),0,.09,0,g);mesh(new THREE.TorusGeometry(.44,.04,6,20),gold,0,.18,0,g).rotation.x=Math.PI/2;const p=petMesh(it.id);p.position.y=.18;p.rotation.y=-.3;g.add(p);
-   const x=-29.5+i*1.5;add(it.id,g,x,0,4.8,x,3.5,1.4);LCOL.push({x0:x-.45,x1:x+.45,z0:4.35,z1:5.25})});
+ {const sg=signPlane([['🐾 PETS',.5,'#ffd54d'],['Win them at the Pet Gacha',.3],['in the village · 5,000 pts a draw',.3]],2.6,1.4,{bg:'#3b0d12',border:'#ffd54d'});sg.position.set(-27,1.6,4.9);S.add(sg);mesh(new THREE.BoxGeometry(2.7,.1,.1),gold,-27,.85,4.92,S);LCOL.push({x0:-28.4,x1:-25.6,z0:4.6,z1:5.2})}
  // sleigh showroom: three sleighs on a velvet-roped stage
  {const cx=-20.4,cz=-6.6;mesh(new THREE.BoxGeometry(7.6,.3,7.4),M({color:0x7a1020,roughness:.8}),cx,.15,cz,S);for(const [w,d,x,z] of [[7.7,.08,cx,cz+3.7],[.08,7.5,cx-3.8,cz],[.08,7.5,cx+3.8,cz]])mesh(new THREE.BoxGeometry(w,.06,d),gold,x,.31,z,S);
   ['sleigh1','sleigh2','sleigh3'].forEach((id,k)=>{const sl=sleighMesh(id),x=cx-2.4+k*2.4;sl.scale.setScalar(.62);sl.rotation.y=Math.PI;add(id,sl,x,.3,cz+1.6,x,cz+4.6,2.3)});
@@ -1239,7 +1307,7 @@ const P={pos:V3(),vel:V3(),yaw:Math.PI,mode:'ride',loc:'mtn',air:null,grind:null
   combo:{n:0,last:0},seat:null,walkPhase:0,foodT:0,lastAlt:0,rHold:0,tuck:false,brake:false,spinVis:0};
 const SPAWN=V3(-30,0,1392);
 const VILLAGE_Z=ZB-42;
-function setOnFoot(on,sport){if(P.loc!=='mtn')return;
+function setOnFoot(on,sport){if(P.loc!=='mtn')return;if(P.lift&&P.lift.hold){P.lift=null;P.mode='ride'}
   if(on){if(P.pos.z<VILLAGE_Z+2){toast('Ride down to the village to take your gear off');return}if(P.mode!=='ride'&&P.mode!=='walk')return;P.mode='walk'}
   else{if(sport==='sleigh'){if(!['sleigh1','sleigh2','sleigh3'].some(i=>SAVE.owned.includes(i))){toast("🛷 Unlock a sleigh in Rudolph's Gear first (from 50,000 pts)");return}RIDE_SLEIGH=true}
     else{RIDE_SLEIGH=false;if(sport&&sport!==SAVE.sport){SAVE.sport=sport;save()}}if(P.mode==='walk')P.mode='ride'}
@@ -1269,7 +1337,8 @@ function scoreAir(a,q){
   const halves=Math.round(Math.abs(a.spin)/Math.PI);
   if(halves>0){const deg=halves*180;parts.push((a.sw?'Switch ':'')+(board?(a.spin>0?'Frontside ':'Backside '):'')+deg);pts+=50*halves*(1+.25*(halves-1))}
   for(const [code,t] of Object.entries(a.grabs))if(t>=.25){parts.push(GRABS[sport][code]);pts+=50+Math.min(2,t)*70}
-  if(a.t>1.3){if(pts>0)pts+=a.t*20;else{parts.push('Big Air');pts+=a.t*18}}
+  if(RIDE_SLEIGH){if(a.t>.5){parts.push('🛷 Sleigh Air');pts+=a.t*18*8}}
+  else if(a.t>1.3){if(pts>0)pts+=a.t*20;else{parts.push('Big Air');pts+=a.t*18}}
   if(!parts.length)return 0;
   let quality=1,tag='';if(q<.3){quality=1.25;tag='Perfect landing'}else if(q>.8){quality=.6;tag='Sketchy'}
   if(a.grab){quality*=.5;tag='Sketchy (still grabbing)'}
@@ -1370,13 +1439,24 @@ function boardLift(L){
   hint('Get ready… your chair is coming. Hold <span class="kbd">F</span> to ride faster.',4)}
 function stepLift(dt){
   const lf=P.lift,L=lf.L;
-  if(P.mode==='liftwait'){lf.wait-=dt;P.pos.copy(L.load);if(lf.wait<=0){lf.seat=pickSeat(L,0);if(lf.seat<0){lf.wait+=L.spacingR/L.speed;toast('That chair is full. Hop on the next one!');return}P.mode='lift';lf.s=0}return}
+  if(P.mode==='liftwait'){if(lf.hold){P.pos.copy(L.load);return}lf.wait-=dt;P.pos.copy(L.load);if(lf.wait<=0){if(!lf.fixed)lf.seat=pickSeat(L,0);if(lf.seat<0){lf.wait+=L.spacingR/L.speed;toast('That chair is full. Hop on the next one!');return}P.mode='lift';lf.s=0}return}
   const fast=held('KeyF');lf.s+=L.speed*dt*(fast?6:1);
   if(lf.s>=L.unload){P.mode='ride';P.lift=null;P.pos.set(L.top.x-4.5,0,L.top.z-4);P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.yaw=0;P.lastAlt=P.pos.y;camS.yaw=0;
     toast('Top of '+L.name+'! Ski down when you\'re ready.');return}
   L.at(lf.s,P.pos);P.pos.y-=CABLE_H;L.at(lf.s+1,_v);P.yaw=Math.atan2(_v.x-P.pos.x,_v.z-P.pos.z);
   if(!fast){const sp=seatPos(P.pos,P.yaw,lf.seat,_sv);for(const [id,o] of others)if(id<myId&&o.loc==='mtn'&&o.tgt&&o.tgt.anim===3&&Math.hypot(o.pos.x-sp.x,o.pos.z-sp.z)<.3&&Math.abs(o.pos.y-sp.y)<1){const k=pickSeat(L,lf.s,lf.seat);if(k>=0)lf.seat=k;break}}
   seatPos(P.pos,P.yaw,lf.seat,P.pos);P.vel.set(0,0,0);P.lastAlt=P.pos.y}
+// ride with friends: G at a lift waits on the loading spot until someone presses G/E to go; everyone waiting boards the same chair
+function liftHold(L){if(P.mode==='walk'||RIDE_SLEIGH)setOnFoot(false,SAVE.sport);if(P.mode!=='ride')return;
+  P.mode='liftwait';P.lift={L,hold:true,wait:1e9,s:0};P.vel.set(0,0,0);P.pos.copy(L.load);P.yaw=Math.PI;P.air=null;P.holdHint=0}
+function liftParty(){const idx=LIFTS.indexOf(P.lift.L),ids=[myId];for(const [id,o] of others)if(o.lh===idx&&o.loc==='mtn')ids.push(id);return ids.sort()}
+function liftGo(){const lf=P.lift;if(!lf||!lf.hold)return;const L=lf.L,sp=L.spacingR/L.speed,at=Math.ceil((netTime()+1.5)/sp)*sp,ids=liftParty();
+  world.send({k:'lg',L:LIFTS.indexOf(L),at,ids});liftApplyGo(at,ids)}
+function liftApplyGo(at,ids){const lf=P.lift;if(!lf||!lf.hold)return;if(!ids.includes(myId))ids=[...ids,myId];const L=lf.L,sp=L.spacingR/L.speed,rank=ids.indexOf(myId);
+  lf.hold=false;lf.fixed=true;lf.seat=rank%4;lf.wait=Math.max(.05,at+Math.floor(rank/4)*sp-netTime());
+  toast(ids.length>1?'🚡 Boarding together: '+ids.length+' riders. Get ready!':'🚡 Nobody joined, so you\'re riding solo. Get ready!')}
+function liftG(){if(P.loc!=='mtn')return false;if(P.lift&&P.lift.hold){liftGo();return true}if(P.lift)return false;
+  for(const L of LIFTS)if(Math.hypot(P.pos.x-L.load.x,P.pos.z-L.load.z)<7&&(P.mode==='walk'||P.mode==='ride')){liftHold(L);return true}return false}
 // quad chairs: four seats side by side, shared with whoever boards the same chair
 const SEAT_OFF=[-.29,.29,-.87,.87],_sv=V3(),_cc=V3(),_cn=V3();
 function seatPos(c,yaw,k,out){const o=SEAT_OFF[k]||0;return out.set(c.x+Math.cos(yaw)*o,c.y,c.z-Math.sin(yaw)*o)}
@@ -1409,6 +1489,7 @@ function standUp(){if(!P.seat)return;const s=P.seat;P.mode='walk';P.pos.set(s.x+
 function sitOn(s){P.mode='sit';P.seat=s;P.pos.set(s.x,s.y,s.z);P.yaw=s.yaw;P.vel.set(0,0,0)}
 function nearSeat(list){let best=null,bd=1.6;for(const s of list){const d=Math.hypot(P.pos.x-s.x,P.pos.z-s.z);if(d<bd){bd=d;best=s}}return best}
 function step(dt){
+  if(P.mode==='launch'){stepLaunch(dt);return}
   if(P.mode==='sit'){if(held('KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'))standUp();return}
   if(INDOOR()||P.mode==='walk'){stepWalk(dt);return}
   if(P.mode==='lift'||P.mode==='liftwait'){stepLift(dt);return}
@@ -1426,6 +1507,8 @@ function afterStep(dt){
 function shopAct(id){const it=ITEM[id];if(it.cat==='sleigh'&&SAVE.owned.includes(id)){equip(it);refreshShopLabels();toast('🛷 '+it.name+' selected. Go outside and press 4 to ride it!');return}if(SAVE.owned.includes(id)){if(SAVE.eq[it.cat]!==id){equip(it);sfx.blip(800);toast('Now wearing '+it.name)}}else if(!buyItem(id))toast('You need '+fmt(it.price-SAVE.points)+' more points for '+it.name);refreshShopLabels()}
 function nearestInteract(){
   if(P.mode==='sit')return{label:'Stand up',act:standUp};
+  if(P.lift&&P.lift.hold){const n=liftParty().length;return{label:`🚡 Waiting for friends (${n}/4 here) · press E or G to go`,act:liftGo}}
+  if(P.mode==='liftwait'||P.mode==='lift')return null;
   if(INDOOR()){const R=ROOMS[P.loc];
     if(Math.hypot(P.pos.x-R.door.x,P.pos.z-R.door.z)<2.4)return{label:'Head back to the slopes',act:exitRoom};
     if(P.loc==='lodge'){
@@ -1439,7 +1522,7 @@ function nearestInteract(){
     return null}
   if(P.mode!=='ride'&&P.mode!=='walk')return null;
   const sp=P.vel.length();
-  for(const L of LIFTS)if(Math.hypot(P.pos.x-L.load.x,P.pos.z-L.load.z)<7&&sp<9)return{label:'Ride the '+L.name+(P.mode==='walk'?' (puts your '+(SAVE.sport==='board'?'board':'skis')+' on)':''),act:()=>{if(P.mode==='walk'||RIDE_SLEIGH)setOnFoot(false,SAVE.sport);boardLift(L)}};
+  for(const L of LIFTS)if(Math.hypot(P.pos.x-L.load.x,P.pos.z-L.load.z)<7&&sp<9)return{label:'Ride the '+L.name+' · press G to wait for friends',act:()=>{if(P.mode==='walk'||RIDE_SLEIGH)setOnFoot(false,SAVE.sport);boardLift(L)}};
   if(Math.hypot(P.pos.x-LODGE.door.x,P.pos.z-LODGE.door.z)<4.5&&sp<8)return{label:"Go inside the Cocoa Lodge & Rudolph's Gear",act:()=>enterRoom('lodge')};
   if(sp<4){const s=nearSeat(MSEATS);if(s)return{label:'Sit by the fire',act:()=>sitOn(s)}}
   for(const f of EXTRA_INTERACT){const r=f(sp);if(r)return r}
@@ -1546,7 +1629,7 @@ function updateOthers(dt){for(const [id,o] of others){if(T-o.last>9){chatSys(o.n
   if(g.anim===1){o.fv=o.fv==null?g.flip:o.fv+wrapA(g.flip-o.fv)*(1-Math.exp(-18*dt));o.A.pivot.quaternion.setFromAxisAngle(g.fax==='z'?V3(0,0,1):V3(1,0,0),o.fv)}else if(g.anim===2){o.fv=0;o.A.pivot.rotation.set(T*7,0,T*3)}else if(Math.abs(o.fv=wrapA(o.fv||0)*Math.exp(-9*dt))>.004)o.A.pivot.quaternion.setFromAxisAngle(g.fax==='z'?V3(0,0,1):V3(1,0,0),o.fv);else o.A.pivot.quaternion.identity();
   pose(o.A,{anim:g.anim,crouch:g.crouch,grab:g.grab,edge:g.edge,time:T,phase:T*8,emote:o.A.emote,sl:o.sl});tickBubble(o.A,dt);tickFx(o.A,dt)}}
 let sendT=0;
-function animCode(){if(P.mode==='sit')return 5;if(P.skate&&P.mode==='walk'&&P.loc==='mtn')return P.vel.lengthSq()>.1?8:6;if(INDOOR()||P.mode==='walk')return P.jh>.05?10:P.vel.lengthSq()>.1?4:6;if(RIDE_SLEIGH&&(P.mode==='ride'||P.mode==='air'))return 9;return{ride:0,air:1,crash:2,lift:3,liftwait:0,grind:7}[P.mode]??0}
+function animCode(){if(P.mode==='sit')return 5;if(P.skate&&P.mode==='walk'&&P.loc==='mtn')return P.vel.lengthSq()>.1?8:6;if(INDOOR()||P.mode==='walk')return P.jh>.05?10:P.vel.lengthSq()>.1?4:6;if(RIDE_SLEIGH&&(P.mode==='ride'||P.mode==='air'))return 9;return{ride:0,air:1,crash:2,lift:3,liftwait:0,grind:7,launch:1}[P.mode]??0}
 function sendState(dt){sendT-=dt;if(sendT>0||!world.connected)return;sendT=INDOOR()&&P.vel.lengthSq()<.01?.25:.1;
   const r=v=>Math.round(v*100)/100;
   world.send({k:'s',n:SAVE.name,sp:SAVE.sport,e:curEquip().id,h:SAVE.eq.hat,j:SAVE.eq.jacket,o:SAVE.eq.gog,p:[r(P.pos.x),r(P.pos.y),r(P.pos.z)],v:[r(P.vel.x),r(P.vel.y),r(P.vel.z)],
@@ -1568,7 +1651,7 @@ $('chatlog').classList.add('fade');
 let hintT=0,toastT=0;
 function hint(html,sec=4){$('hint').innerHTML=html;$('hint').classList.remove('hidden');hintT=sec}
 function toast(t){$('toast').textContent=t;$('toast').style.opacity=1;toastT=3}
-const KEYS_HTML=()=>INDOOR()||P.mode==='walk'?`<b>${P.loc==='shop'?'Shop':P.loc==='lodge'?'Lodge':'Walking'}</b><br><span class="kbd">WASD</span> walk · <span class="kbd">Shift</span> jog<br><span class="kbd">Space</span> jump<br><span class="kbd">E</span> ${P.loc==='lodge'?'sit / order / shop / exit':'interact'}<br>${P.loc==='mtn'?'<span class="kbd">1</span>-<span class="kbd">4</span> walk · ski · board · sleigh<br>':''}<span class="kbd">Enter</span> chat · <span class="kbd">V</span> camera<br><span class="kbd">Tab</span> players · <span class="kbd">N</span> music<br><span class="kbd">Esc</span> menu`:
+const KEYS_HTML=()=>INDOOR()||P.mode==='walk'?`<b>${P.loc==='shop'?'Shop':P.loc==='lodge'?'Lodge':'Walking'}</b><br><span class="kbd">WASD</span> walk · <span class="kbd">Shift</span> jog<br><span class="kbd">Space</span> jump · <span class="kbd">Click</span>/<span class="kbd">Q</span> snowball<br><span class="kbd">E</span> ${P.loc==='lodge'?'sit / order / shop / exit':'interact'}<br>${P.loc==='mtn'?'<span class="kbd">1</span>-<span class="kbd">4</span> walk · ski · board · sleigh<br>':''}<span class="kbd">Enter</span> chat · <span class="kbd">V</span> camera<br><span class="kbd">Tab</span> players · <span class="kbd">N</span> music<br><span class="kbd">Esc</span> menu`:
  `<b>Riding</b><br><span class="kbd">W</span> tuck / push · <span class="kbd">S</span> brake<br><span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the 🔴 red-lipped snow bumps to fly<br><b>In the air</b><br><span class="kbd">A</span><span class="kbd">D</span> spin · <span class="kbd">W</span><span class="kbd">S</span> flip<br><span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span><span class="kbd">I</span> grabs<br><b>Other</b><br><span class="kbd">E</span> lifts, shop, lodge · <span class="kbd">F</span> fast lift<br><span class="kbd">V</span> 1st / 3rd person<br><span class="kbd">Enter</span> chat · <span class="kbd">1</span>-<span class="kbd">4</span> walk/ski/board/sleigh<br>hold <span class="kbd">R</span> back to base · <span class="kbd">N</span> music`;
 function locName(){if(INDOOR())return ROOMS[P.loc].name;if(P.mode==='sit')return'🔥 The Plaza · by the fire';if(P.lift)return'🚡 '+P.lift.L.name+(P.mode==='lift'?' · hold F to ride faster':'');
   const z=P.pos.z,x=P.pos.x,alt=Math.round(1650+P.pos.y);let n;
@@ -1601,15 +1684,15 @@ const hex=c=>'#'+c.toString(16).padStart(6,'0');
 function openPanel(kind){panelKind=kind;if(document.pointerLockElement){chatUnlock=true;document.exitPointerLock()}keys.clear();$('panel').classList.remove('hidden');renderPanel()}
 function closePanel(){panelKind=null;$('panel').classList.add('hidden');save();if(state==='menu')refreshMenu()}
 function renderPanel(){const c=$('panelcard');const pts=`<span class="pill" style="color:var(--gold)">${fmt(SAVE.points)} pts</span>`;
-  if(panelKind==='shop'){shopTab=shopTab||SAVE.sport;const cats=[['ski','⛷️ Skis'],['board','🏂 Snowboards'],['hat','🎅 Hats'],['jacket','🧥 Jackets'],['gog','🥽 Goggles'],['trail','✨ Trails'],['pet','🐾 Pets'],['sleigh','🛷 Sleigh']];
+  if(panelKind==='shop'){shopTab=shopTab||SAVE.sport;const cats=[['ski','⛷️ Skis'],['board','🏂 Snowboards'],['hat','🎅 Hats'],['jacket','🧥 Jackets'],['gog','🥽 Goggles'],['trail','✨ Trails'],['pet','🐾 Pets'],['sleigh','🛷 Sleigh'],['pass','🎟️ Pass']];
     c.innerHTML=`<div class="chead"><div><h2>Rudolph's Rentals</h2><div class="sub">Spend the points you earn from tricks, presents and runs on better gear.</div></div>${pts}</div>
      <div class="tabs">${cats.map(([k,l])=>`<button data-tab="${k}" class="${shopTab===k?'on':''}">${l}</button>`).join('')}</div>
-     <div class="grid">${ITEMS.filter(i=>i.cat===shopTab).map(i=>{const own=SAVE.owned.includes(i.id),eq=SAVE.eq[i.cat]===i.id;
+     ${shopTab==='pet'?'<div class="sub" style="margin:8px 0">🎁 Pets can\'t be bought here any more. Win them at the <b>Pet Gacha</b> machine in the village (5,000 pts a draw). Pets you own show up here to equip.</div>':''}<div class="grid">${ITEMS.filter(i=>i.cat===shopTab&&(i.cat!=='pet'||i.id==='pet0'||SAVE.owned.includes(i.id))).map(i=>{const own=SAVE.owned.includes(i.id),eq=SAVE.eq[i.cat]===i.id;
        const sw=i.cat==='ski'||i.cat==='board'?`background:linear-gradient(135deg,${hex(i.col)},${hex(i.col)}88)`:i.pat==='cane'?'background:repeating-linear-gradient(45deg,#fff 0 10px,#d62839 10px 20px)':i.pat&&i.pat.startsWith('sweater')?`background:${hex(i.col)}`:i.pal&&i.pal.length?`background:linear-gradient(90deg,${i.pal.map(hex).join(',')})`:`background:${hex(i.col)}`;
-       const ic={ski:'⛷️',board:'🏂',hat:{hat0:'⛑️',hat1:'🎅',hat2:'🧝',hat3:'🦌',hat4:'🎩',hat5:'👑',hat6:'✨'}[i.id],jacket:i.pat&&i.pat.startsWith('sweater')?'🎄':'🧥',gog:'🥽',trail:i.price?'✨':'🚫',pet:{pet0:'🚫',pet1:'🐧',pet2:'🦌',pet3:'🐻‍❄️'}[i.id]}[i.cat];
+       const ic={ski:'⛷️',board:'🏂',hat:{hat0:'⛑️',hat1:'🎅',hat2:'🧝',hat3:'🦌',hat4:'🎩',hat5:'👑',hat6:'✨'}[i.id],jacket:i.pat&&i.pat.startsWith('sweater')?'🎄':'🧥',gog:'🥽',trail:i.price?'✨':'🚫',pet:PET_ICON[i.id]||'🐾',sleigh:'🛷',pass:'🎟️'}[i.cat];
        return `<div class="item ${eq?'eq':''}"><div class="sw" style="${sw}">${ic}</div><h3>${esc(i.name)}</h3><p>${esc(i.desc)}</p>${i.st?statBars(i.st):''}
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="price">${i.price?fmt(i.price)+' pts':'Free'}</span>
-        ${eq?'<button class="btn small" disabled>Equipped</button>':own?`<button class="btn small green" data-eq="${i.id}">Equip</button>`:`<button class="btn small gold" data-buy="${i.id}" ${SAVE.points<i.price?'disabled':''}>Buy</button>`}</div></div>`}).join('')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="price">${i.cat==='pet'&&i.id!=='pet0'?RARITY[i.rar].name:i.price?fmt(i.price)+' pts':'Free'}</span>
+        ${own&&i.cat==='pass'?'<button class="btn small" disabled>Owned</button>':eq?'<button class="btn small" disabled>Equipped</button>':own?`<button class="btn small green" data-eq="${i.id}">Equip</button>`:`<button class="btn small gold" data-buy="${i.id}" ${SAVE.points<i.price?'disabled':''}>Buy</button>`}</div></div>`}).join('')}</div>
      <div class="foot"><span style="margin-right:auto;opacity:.7;font-size:14px">Riding: <b>${SAVE.sport==='board'?'Snowboard':'Skis'}</b>. Equipping skis or a board switches you to that sport.</span><button class="btn" data-close>Done</button></div>`}
   else if(panelKind==='cocoa'){c.innerHTML=`<div class="chead"><div><h2>☕ Cocoa Bar</h2><div class="sub">Treat yourself. Everything you eat or drink makes you Toasty, which boosts the points you earn from tricks for a while.</div></div>${pts}</div>
      <div class="grid" style="margin-top:12px">${FOOD.map(f=>`<div class="item"><div class="sw" style="background:#3b1d0e">${f.icon}</div><h3>${esc(f.name)}</h3><p>${esc(f.desc)}</p><div style="font-size:13px;color:#ffd9a8">Toasty ×${f.mult.toFixed(2)} for ${Math.round(f.dur/60*10)/10} min</div>
@@ -1635,21 +1718,23 @@ function renderPanel(){const c=$('panelcard');const pts=`<span class="pill" styl
      <div class="foot"><button class="btn" data-close>Done</button></div>`}
   else if(EXTRA_PANELS[panelKind])EXTRA_PANELS[panelKind](c)}
 const EXTRA_PANELS={};
+const PET_ICON={pet0:'🚫',pet1:'🐧',pet2:'🦌',pet3:'🐻‍❄️',pet4:'🦊',pet5:'🐰',pet6:'🐶',pet7:'🦉',pet8:'🍪',pet9:'⛄',pet10:'🐼',pet11:'🦭',pet12:'🧦',pet13:'✨🦌',pet14:'🐉'};
+const RARITY=[{name:'Common',col:'#cfd8e6',p:.5},{name:'Rare',col:'#5ec8ff',p:.32},{name:'Epic',col:'#c77dff',p:.14},{name:'Legendary',col:'#ffc934',p:.04}];
 $('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if('close' in d){closePanel();return}
   if(d.tab){shopTab=d.tab}
   if(d.buy)buyItem(d.buy);
   if(d.eq){const it=ITEM[d.eq];if(it&&SAVE.owned.includes(it.id))equip(it)}
   if(d.food){const f=FOODI[d.food];if(f&&SAVE.points>=f.price){SAVE.points-=f.price;const b=SAVE.buff,now=Date.now();const left=b&&b.until>now?b.until-now:0;
-    SAVE.buff={id:f.id,mult:Math.max(f.mult,b&&b.until>now?b.mult:1),until:now+Math.max(left,0)+f.dur*1000};setFood(me,f.id);P.foodT=45;sfx.coin();toast(f.icon+' Enjoy your '+f.name+'!');closePanel();return}}
+    SAVE.buff={id:f.id,mult:Math.max(f.mult,b&&b.until>now?b.mult:1),until:now+Math.max(left,0)+f.dur*1000};setFood(me,f.id);P.foodT=45;sfx.coin();toast(f.icon+' Enjoy your '+f.name+'!');closePanel();bigPop(f.icon,f.name);return}}
   if(d.q){SAVE.set.quality=d.q;applyQuality()}
   if(d.inv)SAVE.set.invert=d.inv==='1';
   if(d.cam){camS.mode=d.cam;SAVE.cam=d.cam}
   save();renderPanel()});
 $('panelcard').addEventListener('input',e=>{const k=e.target.dataset.set;if(!k)return;SAVE.set[k]=+e.target.value;if(k==='fov'){camera.fov=SAVE.set.fov;camera.updateProjectionMatrix()}e.target.nextElementSibling.textContent=k==='vol'||k==='mus'?Math.round(SAVE.set[k]*100):SAVE.set[k];save()});
 $('panel').addEventListener('click',e=>{if(e.target.id==='panel')closePanel()});
-function buyItem(id){const it=ITEM[id];if(!it||SAVE.owned.includes(id)||SAVE.points<it.price)return false;SAVE.points-=it.price;SAVE.owned.push(id);equip(it);sfx.coin();toast(it.cat==='sleigh'?'🛷 Unlocked the '+it.name+'! Go outside and press 4 to ride it.':'Bought '+it.name+'! You\'re wearing it now.');refreshShopLabels();return true}
-function equip(it){if(it.cat==='sleigh'){SAVE.eq.sleigh=it.id;save();return}SAVE.eq[it.cat]=it.id;if(it.cat==='ski'||it.cat==='board')SAVE.sport=it.cat;applyLook();save()}
+function buyItem(id){const it=ITEM[id];if(!it||SAVE.owned.includes(id)||SAVE.points<it.price)return false;SAVE.points-=it.price;SAVE.owned.push(id);equip(it);sfx.coin();toast(it.cat==='pass'?'🎟️ Snow Launcher Pass unlocked for life! Find the launcher by the North Pole Express.':it.cat==='sleigh'?'🛷 Unlocked the '+it.name+'! Go outside and press 4 to ride it.':'Bought '+it.name+'! You\'re wearing it now.');refreshShopLabels();return true}
+function equip(it){if(it.cat==='pass')return;if(it.cat==='sleigh'){SAVE.eq.sleigh=it.id;save();return}SAVE.eq[it.cat]=it.id;if(it.cat==='ski'||it.cat==='board')SAVE.sport=it.cat;applyLook();save()}
 function refreshTag(){const lv=levelOf(SAVE.earned);if(me.lv!==lv||me.nm!==SAVE.name){if(me.lv&&lv>me.lv&&state==='play'){toast('⭐ Level up! You\'re now level '+lv);sfx.chime(4)}me.lv=lv;me.nm=SAVE.name;setName(me,SAVE.name,true,lv)}}
 function applyLook(){setLook(me,{sport:SAVE.sport,eq:curEquip().id,hat:SAVE.eq.hat,jacket:SAVE.eq.jacket,gog:SAVE.eq.gog})}
 
@@ -1677,7 +1762,7 @@ function gsMerge(c,rows){c=num(c);if(c<GS.c||!Array.isArray(rows))return 0;let a
   for(const r of rows){if(!Array.isArray(r)||typeof r[0]!=='string'||r[0].length>24)continue;const a=clamp(num(r[1])|0,1,60),t=num(r[2]);if(GS.list.length>=120||GS.list.some(x=>x[0]===r[0]))continue;GS.list.push([r[0],a,t]);added+=a}
   if(added)try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}return added}
 const giant=new THREE.Group(),giantBalls=[0,1,2].map(i=>{const m=new THREE.Mesh(lumpyGeo(1,4,.07,21+i*3.1),snowRealM);m.castShadow=true;m.receiveShadow=true;m.visible=false;giant.add(m);return m}),giantDeco=new THREE.Group();
-giant.add(giantDeco);giant.position.set(GIANT.x,groundH(GIANT.x,GIANT.z),GIANT.z);giant.rotation.y=Math.PI;mtn.add(giant);
+giant.add(giantDeco);giant.position.set(GIANT.x,groundH(GIANT.x,GIANT.z),GIANT.z);giant.rotation.y=Math.atan2(-10-GIANT.x,1428-GIANT.z);mtn.add(giant);
 {const [bg,,bm]=GPARTS.L[3];const base=new THREE.Mesh(bg,snowRealM);base.applyMatrix4(bm);base.receiveShadow=true;giant.add(base);
  for(const [geo,c,m,mat] of GPARTS.L.slice(4)){const x=new THREE.Mesh(geo,mat||M({color:c,roughness:c===0x1a1a1c?.45:.7}));x.applyMatrix4(m);x.castShadow=true;giantDeco.add(x)}giantDeco.visible=false}
 const gsCv=document.createElement('canvas');gsCv.width=512;gsCv.height=110;const gsTex=new THREE.CanvasTexture(gsCv);gsTex.colorSpace=THREE.SRGBColorSpace;
@@ -1690,11 +1775,12 @@ function renderGiant(dt){const target=Math.min(1,gsTotal()/GS_GOAL);gsShown+=(ta
   st.forEach((s,i)=>{const b=giantBalls[i];b.visible=s>0;if(!s)return;const r=GSR[i]*(.3+.7*s);b.scale.setScalar(r);y=i?y+giantBalls[i-1].scale.x*.78+r*.8:r*.88;b.position.y=y;b.position.x=[0,.03,-.02][i]*3.6*s});
   giantDeco.visible=p>=.999;const key=Math.floor(p*100)+'|'+giantDeco.visible;if(key!==gsKey){gsKey=key;drawGsBar(p,giantDeco.visible)}
   const near=state==='play'&&P.loc==='mtn'&&(P.roll||Math.hypot(P.pos.x-YARD.x,P.pos.z-YARD.z)<40),bar=$('gsbar');bar.classList.toggle('hidden',!near);
-  if(near){const pc=Math.floor(target*100);bar.innerHTML=`☃ Giant Snowman <b>${pc}%</b><i style="width:${pc}%"></i>`}}
+  if(near){const pc=Math.floor(target*100),done=gsTotal()>=GS_GOAL;bar.innerHTML=`☃ Giant Snowman <b>${pc}%</b>`+(P.roll?(done?'<div class="gsv">Finished! No points until a new one starts</div>':`<div class="gsv">Your snowball: <b>+${fmt(ballPts(P.roll.r))} pts</b> · finish it for +1,500</div>`):(done?'<div class="gsv">Finished! A new one starts soon</div>':'<div class="gsv">Roll a snowball here: up to +720 pts each</div>'))+`<i style="width:${pc}%"></i>`}}
 let gsT=0;function updateGiant(dt){renderGiant(dt);gsT-=dt;if(gsT>0)return;gsT=3;const d=gsDoneAt();if(d&&Date.now()>d+GS_STAY){GS={c:d+GS_STAY,list:[]};try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}}}
+const ballPts=r=>Math.round(clamp(r*r*45,1,60)*12/10)*10;
 function depositBall(){const R=P.roll,a=clamp(Math.round(R.r*R.r*45),1,60),wasDone=gsTotal()>=GS_GOAL;const bp=myBall.position;trailEmit(bp.x,bp.y-R.r*.5,bp.z,[0xffffff,0xdff3ff,0x9fe0ff],60);dropRoll();
   if(wasDone){toast('The giant snowman is already finished! It melts soon and a new one starts.');return}
-  const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});const fin=gsTotal()>=GS_GOAL,pts=a*2+(fin?200:0);addPoints(pts);
+  const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});const fin=gsTotal()>=GS_GOAL,pts=ballPts(R.r)+(fin?1500:0);addPoints(pts);showTrick(fin?'☃ Giant Snowman finished!':'☃ Snow added to the giant!',pts);
   const pc=Math.min(100,Math.floor(gsTotal()/GS_GOAL*100));if(fin){toast('☃ You finished the giant snowman! +'+pts+' points');chatSys('☃ The giant snowman in the Snowman Yard is finished!')}else toast(`❄ +${a} snow added. The giant snowman is ${pc}% built. +${pts} points`)}
 // ---------- Jingle Race + leaderboard
 let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
@@ -1732,20 +1818,20 @@ function skateStep(dt,mx,mz){P.skate=true;const v=P.vel;v.y=0;const push=!!(mx||
   P.pos.y=groundH(P.pos.x,P.pos.z)+.07}
 // ---------- pets
 const PETS=new Map();
-function updatePet(key,id,pos,yaw,scene,speed,dt,onLift=false){let p=PETS.get(key);
+function updatePet(key,id,pos,yaw,scene,speed,dt,onLift=false,root=null,riding=false){let p=PETS.get(key);
   if(!id||!ITEM[id]||ITEM[id].cat!=='pet'||id==='pet0'||!scene){if(p){p.obj.parent&&p.obj.parent.remove(p.obj);PETS.delete(key)}return}
   if(!p||p.id!==id){if(p&&p.obj.parent)p.obj.parent.remove(p.obj);p={id,obj:petMesh(id),pos:pos.clone(),yaw,ph:Math.random()*6};PETS.set(key,p)}
-  if(onLift){if(p.obj.parent!==scene)scene.add(p.obj);p.pos.set(pos.x+Math.sin(yaw)*.42,0,pos.z+Math.cos(yaw)*.42);p.yaw=yaw;p.obj.position.set(p.pos.x,pos.y+.6,p.pos.z);p.obj.rotation.y=yaw;p.obj.scale.setScalar(.72);p.lift=1;
+  if(onLift&&root){if(p.obj.parent!==root)root.add(p.obj);p.obj.position.set(0,.58,.3);p.obj.rotation.set(0,0,0);p.obj.scale.setScalar(.62);p.lift=1;p.pos.set(pos.x,0,pos.z);
     const b=p.obj.userData.body;b.rotation.set(0,0,0);b.position.y=0;return}
-  if(p.lift){p.lift=0;p.obj.scale.setScalar(1)}
+  if(p.lift){p.lift=0;p.obj.scale.setScalar(1);scene.add(p.obj);p.pos.set(pos.x-Math.sin(yaw)*1.5,0,pos.z-Math.cos(yaw)*1.5)}
   const tx=pos.x-Math.sin(yaw)*1.5-Math.cos(yaw)*.9,tz=pos.z-Math.cos(yaw)*1.5+Math.sin(yaw)*.9;
   if(p.obj.parent!==scene){scene.add(p.obj);p.pos.set(tx,0,tz)}
   if(Math.hypot(tx-p.pos.x,tz-p.pos.z)>14)p.pos.set(tx,0,tz);
-  const ox=p.pos.x,oz=p.pos.z,k=1-Math.exp(-(speed>6?8:3.2)*dt);p.pos.x+=(tx-p.pos.x)*k;p.pos.z+=(tz-p.pos.z)*k;const mv=Math.hypot(p.pos.x-ox,p.pos.z-oz)/Math.max(dt,1e-3);
+  const ox=p.pos.x,oz=p.pos.z,k=1-Math.exp(-(riding?9:5.5)*dt);p.pos.x+=(tx-p.pos.x)*k;p.pos.z+=(tz-p.pos.z)*k;{const dx=p.pos.x-tx,dz=p.pos.z-tz,d=Math.hypot(dx,dz),mx=riding?4:1.6;if(d>mx){p.pos.x=tx+dx/d*mx;p.pos.z=tz+dz/d*mx}}const mv=Math.hypot(p.pos.x-ox,p.pos.z-oz)/Math.max(dt,1e-3);
   if(mv>.3)p.yaw=angLerp(p.yaw,Math.atan2(p.pos.x-ox,p.pos.z-oz),1-Math.exp(-8*dt));else p.yaw=angLerp(p.yaw,Math.atan2(pos.x-p.pos.x,pos.z-p.pos.z),1-Math.exp(-2*dt));
-  const out=scene===mtn,gy=out?groundH(p.pos.x,p.pos.z):0,slide=out&&speed>6;p.ph+=dt*(4+Math.min(mv,8)*2.2);
-  p.obj.position.set(p.pos.x,gy+(!slide&&mv>.3?Math.abs(Math.sin(p.ph))*.14:0),p.pos.z);p.obj.rotation.y=p.yaw;
-  const b=p.obj.userData.body;b.rotation.x=slide?(id==='pet1'?1.35:.15):0;b.position.y=slide&&id==='pet1'?.24:0;b.rotation.z=!slide&&mv>.3?Math.sin(p.ph*2)*.09:0}
+  const out=scene===mtn,gy=out?groundH(p.pos.x,p.pos.z):0,slide=out&&riding,fly=p.obj.userData.fly?1.1+Math.sin(p.ph*.5)*.15:0;p.ph+=dt*(4+Math.min(mv,8)*2.2);
+  p.obj.position.set(p.pos.x,gy+fly+(!fly&&!slide&&mv>.3?Math.abs(Math.sin(p.ph))*.14:0),p.pos.z);p.obj.rotation.y=p.yaw;
+  const b=p.obj.userData.body;b.rotation.x=slide?(id==='pet1'?1.35:.15):0;b.position.y=slide&&id==='pet1'?.24:0;b.rotation.z=!slide&&!fly&&mv>.3?Math.sin(p.ph*2)*.09:0;if(fly)for(const c of b.children)if(c.userData.wing)c.rotation.z=c.userData.wing*Math.sin(T*(p.id==='pet14'?9:12))*.5}
 // ---------- glowing trails
 const TR_N=2400,trPos=new Float32Array(TR_N*3),trCol=new Float32Array(TR_N*3),trBase=new Float32Array(TR_N*3),trVel=new Float32Array(TR_N*3),trLife=new Float32Array(TR_N);let trI=0;
 const trGeo=new THREE.BufferGeometry();trGeo.setAttribute('position',new THREE.BufferAttribute(trPos,3));trGeo.setAttribute('color',new THREE.BufferAttribute(trCol,3));
@@ -1802,7 +1888,7 @@ $('panelcard').addEventListener('click',e=>{if(panelKind!=='fwdraw')return;const
   if('fwlaunch' in d){if(!fwStrokes.length){$('fwmsg').textContent='Draw something first!';return}const wait=Math.ceil(10-(T-fwLast));if(wait>0){$('fwmsg').textContent=`The launcher is reloading… ${wait}s`;return}
     fwLast=T;const data=sampleFw();launchDrawn(data);world.send({k:'fd',d:data,n:SAVE.name});closePanel();toast('🚀 Launched! Look up the mountain: it bursts over the ski slopes.')}},true);
 // ---------- network hooks
-function netExtra(){const o={};if(RIDE_SLEIGH)o.sl=curSleigh();if(SAVE.eq.trail&&SAVE.eq.trail!=='trail0')o.tr=SAVE.eq.trail;if(SAVE.eq.pet&&SAVE.eq.pet!=='pet0')o.pt=SAVE.eq.pet;if(P.roll)o.rb=rnd2(P.roll.r);return o}
+function netExtra(){const o={};if(RIDE_SLEIGH)o.sl=curSleigh();if(P.lift&&P.lift.hold)o.lh=LIFTS.indexOf(P.lift.L);if(SAVE.eq.trail&&SAVE.eq.trail!=='trail0')o.tr=SAVE.eq.trail;if(SAVE.eq.pet&&SAVE.eq.pet!=='pet0')o.pt=SAVE.eq.pet;if(P.roll)o.rb=rnd2(P.roll.r);return o}
 const fdLastFrom=new Map();
 {const base=world.onmsg;world.onmsg=m=>{
   if(m.k==='gs'||m.k==='gss'){const before=gsTotal();gsMerge(m.c,m.r);if(m.k==='gs'&&before<GS_GOAL&&gsTotal()>=GS_GOAL)chatSys('☃ The giant snowman in the Snowman Yard is finished!');return}
@@ -1811,7 +1897,8 @@ const fdLastFrom=new Map();
   if(m.k==='fd'){if(!Array.isArray(m.d)||m.d.length>900||m.d.length%3)return;const last=fdLastFrom.get(m.i)||-99;if(T-last<6)return;fdLastFrom.set(m.i,T);
     const d=m.d.map((v,k)=>k%3===2?clamp(num(v)|0,0,FWC.length-1):clamp(num(v),-110,110));launchDrawn(d);chatSys(`🎆 ${cleanName(String(m.n||''))||'Someone'} launched a firework from the workshop`);return}
   base(m);
-  if(m.k==='s'){const o=others.get(m.i);if(o){o.sl=ITEM[m.sl]&&ITEM[m.sl].cat==='sleigh'?m.sl:null;o.tr=ITEM[m.tr]&&ITEM[m.tr].cat==='trail'?m.tr:null;o.pt=ITEM[m.pt]&&ITEM[m.pt].cat==='pet'?m.pt:null;o.rb=clamp(num(m.rb),0,1.2)}}}}
+  if(m.k==='lg'){if(P.lift&&P.lift.hold&&LIFTS.indexOf(P.lift.L)===num(m.L)&&Array.isArray(m.ids))liftApplyGo(num(m.at),m.ids.filter(x=>typeof x==='string').slice(0,16));return}
+  if(m.k==='s'){const o=others.get(m.i);if(o){o.lh=Number.isInteger(m.lh)?m.lh:-1;o.sl=ITEM[m.sl]&&ITEM[m.sl].cat==='sleigh'?m.sl:null;o.tr=ITEM[m.tr]&&ITEM[m.tr].cat==='trail'?m.tr:null;o.pt=ITEM[m.pt]&&ITEM[m.pt].cat==='pet'?m.pt:null;o.rb=clamp(num(m.rb),0,1.2)}}}}
 // ---------- circular village minimap
 const MM_SPOTS=[['🏠','Lodge & Gear',LODGE.x,LODGE.z-4],['⛸','Pond',POND.x,POND.z],['☃','Snowman Yard',GIANT.x,GIANT.z],['🎆','Workshop',WORKSHOP.x,WORKSHOP.z],['🏁','Race board',LBPOS.x,LBPOS.z],['🔥','Plaza',PLAZA.x,PLAZA.z],['🎄','Great Tree',XTREE.x,XTREE.z],...LIFTS.map(L=>['🚡',L.name,L.x+2.5,L.zb])];
 let mmT=0;const _mf=V3();
@@ -1831,12 +1918,12 @@ function drawMinimap(dt){const cv=$('minimap');const on=state==='play'&&P.loc===
   g.restore();g.save();g.translate(C,C);const a=Math.atan2(Math.sin(P.yaw)*rx+Math.cos(P.yaw)*rz,Math.sin(P.yaw)*fx+Math.cos(P.yaw)*fz);g.rotate(a);g.fillStyle='#d62839';g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(0,-13);g.lineTo(9,10);g.lineTo(0,5);g.lineTo(-9,10);g.closePath();g.stroke();g.fill();g.restore();
   g.font='700 16px Fredoka, sans-serif';g.fillStyle='#b3202c';g.fillText('VILLAGE',C,W-22)}
 // ---------- per-frame update
-function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updateGiant(dt);drawMinimap(dt);
+function updateExtras(dt){updateExtras2(dt);updateDrawn(dt);updateTrails(dt);updateGiant(dt);drawMinimap(dt);
   if(state!=='play'&&state!=='menu')return;
   updateRoll(dt);updateRace(dt);updateSync(dt);
-  if(state==='play'){const sp=Math.hypot(P.vel.x,P.vel.z);updatePet('me',SAVE.eq.pet,P.pos,P.yaw,me.root.parent,sp,dt,P.mode==='lift');
+  if(state==='play'){const sp=Math.hypot(P.vel.x,P.vel.z);updatePet('me',SAVE.eq.pet,P.pos,P.yaw,me.root.parent,sp,dt,P.mode==='lift',me.root,P.loc==='mtn'&&P.mode!=='walk');
     if(P.loc==='mtn'&&['ride','air','grind'].includes(P.mode))trailFor('me',SAVE.eq.trail,P.pos,P.vel.length(),dt)}
-  for(const [id,o] of others){const g=o.tgt;const sp=g?Math.hypot(g.v.x,g.v.z):0;updatePet(id,o.pt,o.pos,o.yaw,o.A.root.parent,sp,dt,!!(g&&g.anim===3));
+  for(const [id,o] of others){const g=o.tgt;const sp=g?Math.hypot(g.v.x,g.v.z):0;updatePet(id,o.pt,o.pos,o.yaw,o.A.root.parent,sp,dt,!!(g&&g.anim===3),o.A.root,!!(g&&[0,1,2,7,9].includes(g.anim)));
     if(g&&o.loc==='mtn'&&(g.anim===0||g.anim===1||g.anim===7)&&o.tr)trailFor(id,o.tr,o.pos,g.v.length(),dt);
     let b=OBALLS.get(id);if(o.rb>.1&&o.loc==='mtn'){if(!b){b=new THREE.Mesh(BALL_GEO,snowBallM);b.castShadow=true;mtn.add(b);OBALLS.set(id,b)}b.scale.setScalar(o.rb);ballAt(o.pos,o.yaw,o.rb,b.position);if(sp>.2)b.rotateOnWorldAxis(_ax.set(Math.cos(o.yaw),0,-Math.sin(o.yaw)),sp*dt/o.rb)}
     else if(b){mtn.remove(b);OBALLS.delete(id)}}
@@ -1850,6 +1937,174 @@ EXTRA_INTERACT.push(sp=>{if(P.mode!=='walk')return null;
   if(Math.hypot(P.pos.x-YARD.x,P.pos.z-YARD.z)<YARD.r)return{label:'Start rolling a snowball',act:startRoll};
   return null});
 window.__fx={giantBalls,giantDeco,GS:()=>GS,gsTotal,DROP,GIANT,RACE,LB:()=>LB,startRoll,updateRace,launchDrawn,sampleFw,PETS,onIce,POND,YARD,WORKSHOP,LBPOS,get race(){return race},get fwStrokes(){return fwStrokes},set fwStrokes(v){fwStrokes=v},updateExtras,nearestInteract,camera,equip,enterRoom};
+
+/* ================= Pet gacha, snowball fights, snow launcher, candy decor ================= */
+const GACHA={x:74,z:1398},LAUNCH={x:-124,z:1386},GACHA_COST=5000,DUPE_BACK=1000;
+ZONES.push({x:GACHA.x,z:GACHA.z,r:7},{x:LAUNCH.x,z:LAUNCH.z,r:9});
+function bigPop(icon,name,sub='',col='#ffd54d'){const d=document.createElement('div');d.className='bigpop';d.innerHTML=`<div class="bi">${icon}</div><div class="bn" style="color:${col}">${esc(name)}</div>${sub?`<div class="bs">${sub}</div>`:''}`;$('hud').appendChild(d);setTimeout(()=>d.classList.add('out'),2600);setTimeout(()=>d.remove(),3300)}
+
+// ---------- the capsule gacha machine
+const capTops=[];let gachaG,gachaCrank,gachaSpin=0,gachaAnim=null;
+{const gy=groundH(GACHA.x,GACHA.z),g=new THREE.Group();g.position.set(GACHA.x,gy,GACHA.z);g.rotation.y=-Math.PI/2;g.scale.setScalar(1.7);mtn.add(g);gachaG=g;
+ const red=M({color:0xd62839,roughness:.35,metalness:.2}),gold=M({color:0xffc934,metalness:.85,roughness:.25}),dark=M({color:0x1a0a0c,roughness:.6}),wh=M({color:0xffffff,roughness:.3});
+ mesh(new THREE.CylinderGeometry(1.25,1.4,.25,32),gold,0,.12,0,g);
+ const base=mesh(new THREE.CylinderGeometry(1.05,1.2,2,32),red,0,1.2,0,g);base.castShadow=true;
+ for(const y of [.32,2.15])mesh(new THREE.TorusGeometry(y<1?1.19:1.06,.06,8,40),gold,0,y,0,g).rotation.x=Math.PI/2;
+ mesh(new THREE.BoxGeometry(.9,.75,.3),dark,0,.75,1.02,g);mesh(new THREE.BoxGeometry(1,.08,.36),gold,0,1.15,1.04,g);const flap=mesh(new THREE.BoxGeometry(.8,.4,.04),M({color:0x9fd8ff,transparent:true,opacity:.35}),0,.85,1.18,g);
+ gachaCrank=new THREE.Group();gachaCrank.position.set(0,1.65,1.12);g.add(gachaCrank);mesh(new THREE.CylinderGeometry(.32,.32,.12,24),gold,0,0,0,gachaCrank).rotation.x=Math.PI/2;
+ const arm=mesh(new THREE.BoxGeometry(.75,.12,.1),gold,0,0,.08,gachaCrank);mesh(new THREE.SphereGeometry(.1,12,10),red,.37,0,.16,gachaCrank);
+ mesh(new THREE.BoxGeometry(.3,.08,.05),dark,-.55,1.65,1.05,g);
+ const lbl=signPlane([['🎁 PET GACHA',.5,'#ffd54d'],['5,000 pts',.34,'#fff']],1.4,.55,{bg:'#7a1020',border:'#ffd54d'});lbl.position.set(0,1.95,1.14);lbl.scale.setScalar(.9);g.add(lbl);
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(1.15,40,28),new THREE.MeshStandardMaterial({color:0xdff2ff,transparent:true,opacity:.22,roughness:.05,metalness:.3,depthWrite:false}));dome.position.y=3.25;g.add(dome);
+ mesh(new THREE.TorusGeometry(1.0,.08,8,40),gold,0,2.3,0,g).rotation.x=Math.PI/2;
+ const cap=mesh(new THREE.SphereGeometry(.45,24,12,0,Math.PI*2,0,Math.PI/2),gold,0,4.25,0,g);mesh(new THREE.OctahedronGeometry(.28),new THREE.MeshStandardMaterial({color:0xffe066,emissive:0xffcc00,emissiveIntensity:1.5}),0,4.95,0,g).scale.set(1,1.3,.4);
+ const cols=[0xff3b4d,0x2f7bff,0x1fd07a,0xffd54d,0xc77dff,0xff8a3d,0x5ec8ff,0xff6fb5];const topG=new THREE.SphereGeometry(.24,14,8,0,Math.PI*2,0,Math.PI/2),botG=new THREE.SphereGeometry(.24,14,8,0,Math.PI*2,Math.PI/2,Math.PI/2);
+ const N=46,ti=new THREE.InstancedMesh(topG,M({roughness:.25,metalness:.1}),N),bi=new THREE.InstancedMesh(botG,M({color:0xffffff,roughness:.25}),N);let k=0;
+ for(let L=0;L<4&&k<N;L++){const y=2.62+L*.4,R=Math.sqrt(Math.max(0,1.05*1.05-(y-3.25)**2))-.22;const n=Math.max(1,Math.floor(R*2*Math.PI/.48));
+   for(let i=0;i<n&&k<N;i++){const a=i/n*Math.PI*2+L,r=R*(.35+((i*7+L)%5)/7);const m=new THREE.Matrix4().compose(V3(Math.cos(a)*r,y,Math.sin(a)*r),new THREE.Quaternion().setFromEuler(new THREE.Euler(((i*3)%5)*.5,a,((i*7)%4)*.6)),V3(1,1,1));
+     ti.setMatrixAt(k,m);bi.setMatrixAt(k,m);ti.setColorAt(k,_c.set(cols[k%cols.length]));k++}}
+ ti.count=bi.count=k;g.add(ti,bi);
+ for(let i=0;i<36;i++){const a=i/36*Math.PI*2;const lp=V3(Math.cos(a)*1.24,.6,Math.sin(a)*1.24).applyAxisAngle(UP,-Math.PI/2).multiplyScalar(1.7);addBulb(GACHA.x+lp.x,gy+.6*1.7,GACHA.z+lp.z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5]);
+   const lt=V3(Math.cos(a)*1.0,0,Math.sin(a)*1.0).applyAxisAngle(UP,-Math.PI/2).multiplyScalar(1.7);addBulb(GACHA.x+lt.x,gy+2.3*1.7,GACHA.z+lt.z,[0xffd030,0xff3030,0x30ff60,0x30a0ff][i%4])}
+ addGlow(GACHA.x,gy+4.95*1.7,GACHA.z,0xffd040);addPool(GACHA.x,GACHA.z,9,0xff7ab0);addPool(GACHA.x-3,GACHA.z,5,0xffc070);
+ const pl=new THREE.PointLight(0xffc8e8,40,22,1.5);pl.position.set(GACHA.x-4,gy+5,GACHA.z);mtn.add(pl);
+ COLLIDERS.push({x0:GACHA.x-2.2,x1:GACHA.x+2.2,z0:GACHA.z-2.2,z1:GACHA.z+2.2});
+ glowTitle('🎁 PET GACHA','5,000 pts a draw · win a pet',GACHA.x+3.5,GACHA.z,{h:10.5,ry:-Math.PI/2,col:'#ff8fd0',w:10,posts:false});
+ for(const s of [-1,1]){const x=GACHA.x+3.5,z=GACHA.z+s*5.3,y=groundH(x,z);mesh(new THREE.CylinderGeometry(.16,.18,11,10),M({map:caneTex,roughness:.35}),x,y+5.5,z,mtn)}}
+const _gp=V3();
+function gachaRoll(){const r=Math.random();let acc=0,rar=0;for(let i=0;i<RARITY.length;i++){acc+=RARITY[i].p;if(r<acc){rar=i;break}rar=i}
+  const pool=ITEMS.filter(i=>i.cat==='pet'&&i.rar===rar);return pool[(Math.random()*pool.length)|0]}
+function gachaDraw(){if(gachaAnim)return;if(SAVE.points<GACHA_COST){toast('You need '+fmt(GACHA_COST-SAVE.points)+' more points for a draw');return}
+  SAVE.points-=GACHA_COST;const it=gachaRoll(),dupe=SAVE.owned.includes(it.id);if(dupe)SAVE.points+=DUPE_BACK;else{SAVE.owned.push(it.id);SAVE.eq.pet=it.id}save();closePanel();
+  // capsule pops out of the chute, spins, and opens to reveal the pet
+  const c=new THREE.Group(),col=[0xff3b4d,0x2f7bff,0xc77dff,0xffc934][it.rar];mesh(new THREE.SphereGeometry(.42,20,10,0,Math.PI*2,0,Math.PI/2),M({color:col,roughness:.2,metalness:.2}),0,0,0,c);
+  const bot=mesh(new THREE.SphereGeometry(.42,20,10,0,Math.PI*2,Math.PI/2,Math.PI/2),M({color:0xffffff,roughness:.2}),0,0,0,c);
+  gachaG.localToWorld(_gp.set(0,.8,1.3));c.position.copy(_gp);mtn.add(c);const pet=petMesh(it.id);pet.visible=false;pet.position.copy(_gp);mtn.add(pet);
+  gachaAnim={t:0,c,pet,it,dupe,top:c.children[0],bot,p0:_gp.clone()};gachaSpin=1.2}
+function updateGacha(dt){gachaSpin=Math.max(0,gachaSpin-dt);if(gachaCrank)gachaCrank.rotation.z-=gachaSpin*dt*6;
+  const A=gachaAnim;if(!A)return;A.t+=dt;const t=A.t,col=[0xffffff,0x5ec8ff,0xc77dff,0xffc934][A.it.rar];
+  if(t<1.2){A.c.position.set(A.p0.x-t*1.2,A.p0.y+Math.sin(Math.min(1,t/1.2)*Math.PI)*1.2+t*.6,A.p0.z);A.c.rotation.set(t*6,t*9,0);A.c.scale.setScalar(1+t*1.2)}
+  else if(t<1.9){const k=(t-1.2)/.7;A.c.rotation.set(0,t*14,0);A.c.scale.setScalar(2.44+Math.sin(k*40)*.08)}
+  else{if(!A.opened){A.opened=1;trailEmit(A.c.position.x,A.c.position.y,A.c.position.z,['#ffffff','#'+col.toString(16).padStart(6,'0'),'#ffd54d'],120);A.pet.visible=true;A.pet.position.copy(A.c.position);A.pet.position.y-=.4;A.pet.scale.setScalar(2.2);
+      const r=RARITY[A.it.rar];bigPop(PET_ICON[A.it.id]||'🐾',A.it.name,`<b style="color:${r.col}">${r.name}</b> · `+(A.dupe?`You already have it: +${fmt(DUPE_BACK)} pts back`:'New pet! It follows you now'),r.col);
+      if(A.it.rar>=2){world.send({k:'gx',n:SAVE.name,p:A.it.id});chatSys(`🎁 You won the ${r.name} ${A.it.name}!`)}refreshTagPet()}
+    const k=t-1.9;A.top.position.y=Math.min(1.2,k*3);A.top.rotation.x=-Math.min(1.4,k*4);A.bot.position.y=-Math.min(.6,k*2);A.pet.rotation.y+=dt*1.8;
+    if(k>.8){A.c.visible=false}if(t>5.2){mtn.remove(A.c);mtn.remove(A.pet);gachaAnim=null}}}
+function refreshTagPet(){}
+EXTRA_PANELS.gacha=c=>{const owned=ITEMS.filter(i=>i.cat==='pet'&&i.id!=='pet0'&&SAVE.owned.includes(i.id)),all=ITEMS.filter(i=>i.cat==='pet'&&i.id!=='pet0');
+  c.innerHTML=`<div class="chead"><div><h2>🎁 Pet Gacha</h2><div class="sub">Turn the crank for a capsule with a random pet inside. New pets follow you right away. If you already have it, you get ${fmt(DUPE_BACK)} points back.</div></div><span class="pill" style="color:var(--gold)">${fmt(SAVE.points)} pts</span></div>
+   <div class="odds">${RARITY.map(r=>`<span style="border-color:${r.col};color:${r.col}">${r.name} ${Math.round(r.p*100)}%</span>`).join('')}</div>
+   <div class="grid petgrid">${all.map(i=>{const own=SAVE.owned.includes(i.id),eq=SAVE.eq.pet===i.id,r=RARITY[i.rar];return `<div class="item ${eq?'eq':''} ${own?'':'locked'}"><div class="sw" style="background:radial-gradient(circle,${r.col}55,#14233f)">${own?PET_ICON[i.id]:'❔'}</div><h3>${own?esc(i.name):'???'}</h3><p style="color:${r.col}">${r.name}</p>${own?(eq?'<button class="btn small" data-peq="pet0">Put away</button>':`<button class="btn small green" data-peq="${i.id}">Walk with</button>`):''}</div>`}).join('')}</div>
+   <div class="foot"><span style="margin-right:auto;opacity:.75;font-size:14px">Collected ${owned.length} of ${all.length}</span><button class="btn" data-close>Close</button><button class="btn gold" data-gdraw ${SAVE.points<GACHA_COST?'disabled':''}>🎁 Draw · ${fmt(GACHA_COST)} pts</button></div>`};
+$('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.gdraw!==undefined){gachaDraw();return}
+  if(b.dataset.peq){SAVE.eq.pet=b.dataset.peq;save();renderPanel()}});
+
+// ---------- snowball fights
+const SBALLS=[],sbPool=[],SB_GEO=new THREE.SphereGeometry(.17,12,10);let sbCool=0;const sbHitT=new Map();
+function sbMesh(){const m=sbPool.pop()||new THREE.Mesh(SB_GEO,snowBallM);m.castShadow=true;mtn.add(m);return m}
+function canThrow(){return state==='play'&&!paused&&!panelKind&&P.loc==='mtn'&&P.mode==='walk'&&!P.roll&&P.pos.z>VILLAGE_Z-5&&!(document.activeElement&&document.activeElement.tagName==='INPUT')}
+const _sd=V3(),_sr=V3();
+function throwSnowball(){if(!canThrow()||sbCool>0)return;sbCool=.45;camera.getWorldDirection(_sd);_sr.set(-_sd.z,0,_sd.x).normalize();
+  const p=V3(P.pos.x,P.pos.y+1.45,P.pos.z).addScaledVector(_sr,.3).addScaledVector(_sd,.5),v=_sd.clone().multiplyScalar(27);v.y+=3.5;
+  if(camS.mode!=='first')P.yaw=Math.atan2(_sd.x,_sd.z);me.throwT=.35;spawnSnowball(p,v,myId);
+  world.send({k:'sb',p:[rnd2(p.x),rnd2(p.y),rnd2(p.z)],v:[rnd2(v.x),rnd2(v.y),rnd2(v.z)]})}
+function spawnSnowball(p,v,from){if(SBALLS.length>60){const o=SBALLS.shift();mtn.remove(o.m);sbPool.push(o.m)}const m=sbMesh();m.position.copy(p);SBALLS.push({m,v,from,t:0})}
+function sbPuff(x,y,z,n=22){trailEmit(x,y,z,['#ffffff','#eef6ff','#cfe6ff'],n)}
+function updateSnowballs(dt){sbCool=Math.max(0,sbCool-dt);if(me.throwT>0)me.throwT-=dt;
+  for(let i=SBALLS.length-1;i>=0;i--){const b=SBALLS[i],p=b.m.position;b.t+=dt;b.v.y-=12*dt;p.addScaledVector(b.v,dt);let hit=null,hitId=null;
+    const cand=[];if(b.from!==myId&&P.loc==='mtn')cand.push([myId,P.pos]);for(const [id,o] of others)if(id!==b.from&&o.loc==='mtn')cand.push([id,o.pos]);
+    for(const [id,q] of cand){if(p.y>q.y+.15&&p.y<q.y+1.9&&Math.hypot(p.x-q.x,p.z-q.z)<.55){hit=q;hitId=id;break}}
+    const gh=groundH(p.x,p.z);let done=b.t>4||p.y<gh;
+    if(!done)for(const c of COLLIDERS)if(p.x>c.x0&&p.x<c.x1&&p.z>c.z0&&p.z<c.z1&&p.y<gh+6){done=true;break}
+    if(hit||done){sbPuff(p.x,p.y,p.z,hit?34:16);mtn.remove(b.m);sbPool.push(b.m);SBALLS.splice(i,1);
+      if(hit&&b.from===myId&&hitId!==myId){const o=others.get(hitId),last=sbHitT.get(hitId)||-99;world.send({k:'sbh',t:hitId,n:SAVE.name});
+        if(T-last>3){sbHitT.set(hitId,T);addPoints(200);showTrick('❄ Direct hit on '+(o?o.name:'someone')+'!',200)}else toast('❄ Hit! (points every 3 seconds per player)')}}}}
+function gotHit(by){toast('❄ '+(by||'Someone')+' hit you with a snowball!');const d=$('splat');d.classList.remove('on');void d.offsetWidth;d.classList.add('on')}
+document.addEventListener('mousedown',e=>{if(e.button===0&&document.pointerLockElement)throwSnowball()});
+addEventListener('keydown',e=>{if(e.code==='KeyQ'&&!e.repeat)throwSnowball()});
+
+// ---------- snow launcher (lifetime pass)
+let launcherG;
+{const gy=groundH(LAUNCH.x,LAUNCH.z),g=new THREE.Group();g.position.set(LAUNCH.x,gy,LAUNCH.z);mtn.add(g);launcherG=g;
+ const steel=M({color:0x9aa3ad,metalness:.75,roughness:.3}),blue=M({color:0x2f7bff,roughness:.35,metalness:.2}),wh=M({color:0xf8fbff,roughness:.5});
+ mesh(new THREE.CylinderGeometry(3.2,3.4,.4,40),M({color:0x24324a,roughness:.6}),0,.2,0,g);const ring=mesh(new THREE.TorusGeometry(3.2,.1,8,48),M({color:0x7fd0ff,emissive:0x2a8ad0,emissiveIntensity:.8}),0,.42,0,g);ring.rotation.x=Math.PI/2;
+ const pad=mesh(new THREE.CircleGeometry(1.5,32),new THREE.MeshBasicMaterial({color:0x9fe0ff,transparent:true,opacity:.6}),0,.43,1.2,g);pad.rotation.x=-Math.PI/2;
+ const bar=new THREE.Group();bar.position.set(0,1.2,-.4);bar.rotation.x=-.75;g.add(bar);
+ mesh(new THREE.CylinderGeometry(1.0,1.25,5.2,32,1,true),M({map:caneTex,roughness:.35,side:THREE.DoubleSide}),0,2.2,0,bar).castShadow=true;
+ mesh(new THREE.TorusGeometry(1.0,.14,10,32),steel,0,4.8,0,bar).rotation.x=Math.PI/2;mesh(new THREE.TorusGeometry(1.22,.12,10,32),steel,0,-.3,0,bar).rotation.x=Math.PI/2;
+ mesh(new THREE.CircleGeometry(.95,24),new THREE.MeshBasicMaterial({color:0xdff6ff}),0,4.75,0,bar).rotation.x=-Math.PI/2;
+ for(const s of [-1,1]){mesh(new THREE.BoxGeometry(.4,2.2,1.6),blue,s*1.5,1.1,-.4,g);mesh(new THREE.CylinderGeometry(.5,.5,.3,20),steel,s*1.35,1.6,-.4,g).rotation.z=Math.PI/2}
+ const sn=twoSided([['❄ SNOW LAUNCHER',.5,'#9fe0ff'],['Blasts you to the top of the North Pole Express',.27],['Lifetime pass: 10,000 pts · press E',.3,'#ffd54d']],5,1.6,{bg:'#122a4a',border:'#9fe0ff'});sn.position.set(4.6,2.6,1.5);sn.rotation.y=-.5;g.add(sn);
+ for(const s of [-1,1])mesh(new THREE.CylinderGeometry(.08,.08,2.6),M({color:0x4a2a12}),4.6+s*2.2*Math.cos(.5),1.3,1.5+s*2.2*Math.sin(.5),g);
+ for(let i=0;i<40;i++){const a=i/40*Math.PI*2;addBulb(LAUNCH.x+Math.cos(a)*3.35,gy+.5,LAUNCH.z+Math.sin(a)*3.35,i%2?0x9fe0ff:0xffffff)}addPool(LAUNCH.x,LAUNCH.z,8,0x6fc8ff);addGlow(LAUNCH.x,gy+5,LAUNCH.z-3,0x9fe0ff);
+ COLLIDERS.push({x0:LAUNCH.x-2.1,x1:LAUNCH.x+2.1,z0:LAUNCH.z-3.4,z1:LAUNCH.z+.2});
+ glowTitle('❄ SNOW LAUNCHER','Lifetime pass · 10,000 pts',LAUNCH.x,LAUNCH.z+6.5,{h:8,col:'#9fe0ff',w:10})}
+const LAUNCH_SPOT=V3(LAUNCH.x,0,LAUNCH.z+1.4);
+function startLaunch(){if(!SAVE.owned.includes('pass1')){if(SAVE.points>=10000)buyItem('pass1');else toast('🎟️ The Snow Launcher pass costs 10,000 pts. You need '+fmt(10000-SAVE.points)+' more.');return}
+  if(P.mode==='walk'||RIDE_SLEIGH)setOnFoot(false,SAVE.sport);if(P.mode!=='ride')return;const L=LIFTS[0];
+  const a=V3(LAUNCH.x,groundH(LAUNCH.x,LAUNCH.z)+4.6,LAUNCH.z-2.6),bx=L.top.x-4.5,bz=L.top.z-4,b=V3(bx,groundH(bx,bz),bz);
+  P.mode='launch';P.launch={t:0,D:6.5,a,b,H:230};P.air=null;P.yaw=Math.PI;camS.yaw=Math.PI;sbPuff(a.x,a.y,a.z,80);hint('❄ WHOOOSH!',2)}
+function stepLaunch(dt){const Lc=P.launch;Lc.t+=dt;const u=Math.min(1,Lc.t/Lc.D),e=u<.5?2*u*u:1-2*(1-u)*(1-u),x=Lc.a.x+(Lc.b.x-Lc.a.x)*e,z=Lc.a.z+(Lc.b.z-Lc.a.z)*e,y=Lc.a.y+(Lc.b.y-Lc.a.y)*u+Lc.H*4*u*(1-u);
+  P.vel.set((x-P.pos.x)/dt,(y-P.pos.y)/dt,(z-P.pos.z)/dt);P.pos.set(x,y,z);P.lastAlt=P.pos.y;
+  if(u>=1){P.launch=null;P.mode='ride';P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.visYaw=wrapA((P.visYaw||0)+Math.PI);P.yaw=0;camS.yaw=0;P.lastAlt=P.pos.y;sfx.land(.8);toast('❄ Top of the North Pole Express! Ride down when you\'re ready.')}}
+
+// ---------- realistic candy decor in the empty village spots
+{const DE=[];const avoid=[[LODGE.x,LODGE.z,26],[PLAZA.x,PLAZA.z,14],[XTREE.x,XTREE.z,18],[POND.x,POND.z,POND.r+6],[YARD.x,YARD.z,YARD.r+2],[WORKSHOP.x,WORKSHOP.z,10],[LBPOS.x,LBPOS.z,8],[GACHA.x,GACHA.z,9],[LAUNCH.x,LAUNCH.z,10],[-30,1372,10],[-20,1400,5]];
+ const ok=(x,z,r)=>{if(Math.abs(x)>238||z<1352||z>1494)return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;for(const L of LIFTS)if(Math.abs(x-L.x-2.5)<9+r&&z>L.zb-60&&z<L.zb+14)return false;
+   if(COLLIDERS.some(c=>x>c.x0-r-1&&x<c.x1+r+1&&z>c.z0-r-1&&z<c.z1+r+1))return false;if(Math.abs(x-mainX(1340))<16&&z<1372)return false;for(const d of DE)if(Math.hypot(d.x-x,d.z-z)<d.r+r+2)return false;return true};
+ let rs=77;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
+ const put=(kind,r,n)=>{let k=0;for(let i=0;i<900&&k<n;i++){const x=-236+rnd()*472,z=1354+rnd()*140;if(ok(x,z,r)){DE.push({kind,x,z,r,ry:Math.atan2(-x,1420-z)+(rnd()-.5)*.6});k++}}};
+ put('ginger',4.2,7);put('nut',1,8);put('cane',1.2,12);put('lolly',1,10);put('mint',1,12);
+ // gingerbread texture + materials
+ const gTex=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#a5582a';g.fillRect(0,0,W,H);for(let i=0;i<2200;i++){const a=Math.random();g.fillStyle=a<.5?'rgba(80,35,10,.25)':'rgba(220,150,90,.22)';g.fillRect(Math.random()*W,Math.random()*H,1+Math.random()*2,1+Math.random()*2)}},[2,2]);
+ const ginM=M({map:gTex,roughness:.85}),icM=M({color:0xfdfbf6,roughness:.35}),winM=new THREE.MeshStandardMaterial({color:0xffd27a,emissive:0xffa040,emissiveIntensity:1.1});
+ const mintTex=canvasTex(128,128,(g,W,H)=>{g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#d6202f';for(let i=0;i<8;i++){g.beginPath();g.moveTo(W/2,H/2);g.arc(W/2,H/2,W/2,i/8*Math.PI*2,(i+.5)/8*Math.PI*2);g.fill()}});
+ const swirl=canvasTex(128,128,(g,W,H)=>{const c=['#ff3b6b','#ffffff','#3bc8ff','#ffd54d'];for(let r=64;r>0;r-=2){for(let a=0;a<64;a++){g.fillStyle=c[(Math.floor(a/8)+Math.floor(r/6))%4];g.beginPath();g.moveTo(64,64);g.arc(64,64,r,a/64*Math.PI*2+r*.09,(a+1)/64*Math.PI*2+r*.09);g.fill()}}});
+ const gum=[0xd62839,0x1f9d55,0xffc934,0xc77dff,0xff8a3d,0x2f7bff];
+ for(const d of DE){const gy=groundH(d.x,d.z),g=new THREE.Group();g.position.set(d.x,gy,d.z);g.rotation.y=d.ry;mtn.add(g);
+  if(d.kind==='ginger'){const W=3.4,D=2.8,Hh=2.2;const w=mesh(new THREE.BoxGeometry(W,Hh,D),ginM,0,Hh/2,0,g);w.castShadow=true;
+    for(const s of [-1,1]){const rf=mesh(new THREE.BoxGeometry(W+.5,.14,D*.72),ginM,0,Hh+.72,s*D*.32,g);rf.rotation.x=s*.72;rf.castShadow=true;const fr=mesh(new THREE.BoxGeometry(W+.56,.08,D*.72),icM,0,Hh+.8,s*D*.33,g);fr.rotation.x=s*.72;
+      for(let i=0;i<11;i++){const x=-W/2-.2+i*(W+.4)/10;const ic=mesh(new THREE.ConeGeometry(.06,.16+((i*7)%3)*.08,6),icM,x,Hh+.3-.06,s*(D/2+.32),g);ic.rotation.x=Math.PI}}
+    for(const s of [-1,1]){const tri=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-D/2,0),new THREE.Vector2(D/2,0),new THREE.Vector2(0,1.05)])),ginM);tri.position.set(s*W/2*1.001,Hh,0);tri.rotation.y=s*Math.PI/2;g.add(tri)}
+    for(let i=0;i<8;i++)mesh(new THREE.SphereGeometry(.13,10,8,0,Math.PI*2,0,Math.PI/2),M({color:gum[i%6],roughness:.25}),-W/2+.25+i*(W-.5)/7,Hh+1.13,0,g);
+    mesh(new THREE.BoxGeometry(.8,1.3,.06),M({color:0x6b2d16}),0,.65,D/2+.02,g);for(const s of [-1,1]){const cp=mesh(new THREE.CylinderGeometry(.07,.07,1.5,10),M({map:caneTex,roughness:.3}),s*.5,.75,D/2+.08,g)}
+    for(const s of [-1,1]){mesh(new THREE.PlaneGeometry(.6,.6),winM,s*1.05,1.25,D/2+.02,g);for(const [dx,dy,sx,sy] of [[0,.33,.72,.07],[0,-.33,.72,.07],[.33,0,.07,.72],[-.33,0,.07,.72],[0,0,.04,.6]])mesh(new THREE.BoxGeometry(sx,sy,.05),icM,s*1.05+dx,1.25+dy,D/2+.04,g)}
+    for(const [x,y] of [[-1.2,.35],[1.2,.35],[0,1.85]]){const m=mesh(new THREE.CylinderGeometry(.18,.18,.05,20),M({map:mintTex,roughness:.25}),x,y,D/2+.04,g);m.rotation.x=Math.PI/2}
+    for(let i=0;i<14;i++){mesh(new THREE.SphereGeometry(.05,6,5),icM,-W/2+i*W/13,.04,D/2+.03,g);mesh(new THREE.SphereGeometry(.05,6,5),icM,-W/2+i*W/13,Hh,D/2+.03,g)}
+    mesh(new THREE.BoxGeometry(.45,.9,.45),ginM,W/2-.7,Hh+1,-.4,g);mesh(new THREE.BoxGeometry(.52,.12,.52),icM,W/2-.7,Hh+1.48,-.4,g);
+    addGlow(d.x,gy+1.25,d.z,0xffb050);addPool(d.x,d.z,6,0xffa050);COLLIDERS.push({x0:d.x-2.1,x1:d.x+2.1,z0:d.z-2.1,z1:d.z+2.1})}
+  else if(d.kind==='nut'){const red=M({color:0xc4182c,roughness:.4}),blk=M({color:0x111216,roughness:.35}),gold=M({color:0xffc934,metalness:.85,roughness:.25}),skin=M({color:0xf1c9a5,roughness:.6}),wh=M({color:0xf8f6f0,roughness:.5});
+    mesh(new THREE.CylinderGeometry(.42,.48,.18,20),M({color:0x1f5a32}),0,.09,0,g);for(const s of [-1,1]){mesh(new THREE.CylinderGeometry(.11,.12,.55,12),blk,s*.14,.45,0,g);mesh(new THREE.CylinderGeometry(.11,.11,.4,12),wh,s*.14,.92,0,g)}
+    mesh(new THREE.CylinderGeometry(.27,.25,.7,16),red,0,1.42,0,g);mesh(new THREE.CylinderGeometry(.28,.28,.08,16),blk,0,1.1,0,g);mesh(new THREE.TorusGeometry(.28,.025,6,20),gold,0,1.1,0,g).rotation.x=Math.PI/2;
+    for(let i=0;i<4;i++)mesh(new THREE.SphereGeometry(.03,8,6),gold,0,1.25+i*.13,.26,g);for(const s of [-1,1]){mesh(new THREE.SphereGeometry(.09,10,8),gold,s*.32,1.74,0,g);const a=mesh(new THREE.CylinderGeometry(.07,.07,.6,10),red,s*.34,1.42,.05,g);a.rotation.x=-.2;mesh(new THREE.SphereGeometry(.07,8,6),wh,s*.35,1.12,.12,g)}
+    mesh(new THREE.CylinderGeometry(.2,.2,.32,16),skin,0,1.94,0,g);mesh(new THREE.BoxGeometry(.3,.12,.12),wh,0,1.83,.12,g);mesh(new THREE.SphereGeometry(.03,6,4),blk,-.06,1.99,.19,g);mesh(new THREE.SphereGeometry(.03,6,4),blk,.06,1.99,.19,g);
+    mesh(new THREE.BoxGeometry(.18,.025,.03),blk,0,1.89,.2,g);mesh(new THREE.CylinderGeometry(.22,.21,.5,16),blk,0,2.35,0,g);mesh(new THREE.CylinderGeometry(.225,.225,.06,16),gold,0,2.13,0,g);mesh(new THREE.SphereGeometry(.07,8,6),gold,0,2.45,.2,g);
+    const pl=mesh(new THREE.ConeGeometry(.07,.25,8),M({color:0xffffff}),0,2.68,0,g);g.scale.setScalar(1.35);g.traverse(m=>{if(m.isMesh)m.castShadow=true});COLLIDERS.push({x0:d.x-.6,x1:d.x+.6,z0:d.z-.6,z1:d.z+.6})}
+  else if(d.kind==='cane'){const c=new THREE.CatmullRomCurve3([V3(0,0,0),V3(0,2.4,0),V3(0,3.1,0),V3(.32,3.55,0),V3(.72,3.48,0),V3(.88,3.05,0)]);const tex=caneTex.clone();tex.repeat.set(1,10);tex.needsUpdate=true;
+    const cm=mesh(new THREE.TubeGeometry(c,48,.15,14,false),new THREE.MeshPhysicalMaterial({map:tex,roughness:.15,clearcoat:1,clearcoatRoughness:.08}),0,0,0,g);cm.castShadow=true;
+    const bw=M({color:0x1f9d55,roughness:.6});for(const s of [-1,1]){const l=mesh(new THREE.SphereGeometry(.2,10,8),bw,s*.2,2.6,.12,g);l.scale.set(1.3,.8,.4)}mesh(new THREE.SphereGeometry(.09,8,6),bw,0,2.6,.16,g);
+    COLLIDERS.push({x0:d.x-.4,x1:d.x+.4,z0:d.z-.4,z1:d.z+.4})}
+  else if(d.kind==='lolly'){mesh(new THREE.CylinderGeometry(.05,.05,2.3,8),M({color:0xffffff,roughness:.3}),0,1.15,0,g);
+    const disc=mesh(new THREE.CylinderGeometry(.62,.62,.16,40),new THREE.MeshPhysicalMaterial({map:swirl,roughness:.15,clearcoat:1}),0,2.85,0,g);disc.rotation.x=Math.PI/2;disc.castShadow=true;
+    const wrap=mesh(new THREE.SphereGeometry(.75,24,16),new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.14,roughness:.05}),0,2.85,0,g);wrap.scale.set(1,1,.3);mesh(new THREE.TorusGeometry(.07,.03,6,12),M({color:0xd62839}),0,2.2,0,g).rotation.x=Math.PI/2;
+    COLLIDERS.push({x0:d.x-.3,x1:d.x+.3,z0:d.z-.3,z1:d.z+.3})}
+  else if(d.kind==='mint'){const m=mesh(new THREE.CylinderGeometry(.55,.55,.3,32),new THREE.MeshPhysicalMaterial({map:mintTex,roughness:.15,clearcoat:1}),0,.55,0,g);m.rotation.x=Math.PI/2;m.rotation.z=(d.ry*3)%1-.5;m.castShadow=true;
+    const wr=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.35,roughness:.1});for(const s of [-1,1]){const t=mesh(new THREE.ConeGeometry(.28,.45,10),wr,s*.72,.55,0,g);t.rotation.z=s*Math.PI/2}}}
+window.__de=DE.map(d=>[d.kind,Math.round(d.x),Math.round(d.z)]);}
+buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
+
+// ---------- hooks
+EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn')return null;
+  if((P.mode==='walk'||P.mode==='ride')&&Math.hypot(P.pos.x-(GACHA.x-4),P.pos.z-GACHA.z)<3.6)return{label:'🎁 Pet Gacha · draw a pet for 5,000 pts',act:()=>openPanel('gacha')};
+  if((P.mode==='walk'||P.mode==='ride')&&Math.hypot(P.pos.x-LAUNCH_SPOT.x,P.pos.z-LAUNCH_SPOT.z)<4)return SAVE.owned.includes('pass1')?{label:'❄ Launch to the top of the mountain!',act:startLaunch}:{label:'❄ Buy the Snow Launcher pass · 10,000 pts (lifetime)',act:startLaunch};
+  return null});
+{const base=world.onmsg;world.onmsg=m=>{
+  if(m.k==='sb'){const o=others.get(m.i);if(!o||!Array.isArray(m.p)||!Array.isArray(m.v))return;const p=V3(num(m.p[0]),num(m.p[1]),num(m.p[2])),v=V3(clamp(num(m.v[0]),-40,40),clamp(num(m.v[1]),-40,40),clamp(num(m.v[2]),-40,40));if(p.distanceTo(o.pos)<6)spawnSnowball(p,v,m.i);return}
+  if(m.k==='sbh'){if(m.t===myId){const o=others.get(m.i);gotHit(o?o.name:cleanName(String(m.n||'')))}return}
+  if(m.k==='gx'){const it=ITEM[m.p];if(it&&it.cat==='pet'&&it.rar>=2)chatSys(`🎁 ${cleanName(String(m.n||''))||'Someone'} won the ${RARITY[it.rar].name} ${it.name} at the Pet Gacha!`);return}
+  base(m)}}
+function updateExtras2(dt){updateGacha(dt);updateSnowballs(dt);if(P.mode==='launch'&&state==='play'&&Math.random()<.9)trailEmit(P.pos.x,P.pos.y,P.pos.z,['#ffffff','#dff3ff','#9fe0ff'],4)}
+Object.assign(window.__fx,{GACHA,LAUNCH,gachaDraw,gachaRoll,throwSnowball,startLaunch,SBALLS,spawnSnowball,updateSnowballs,V3,sbHitT,myId,petMesh,mtn,groundH});
 
 /* ================= Camera ================= */
 let curCrouch=0;
@@ -1907,10 +2162,11 @@ addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
   if(e.repeat)return;
   keys.add(e.code);
-  if(e.code==='KeyE'&&curInteract){curInteract.act();sfx.blip(700)}
+  if(e.code==='KeyE'&&P.lift&&P.lift.hold)liftGo();
+  else if(e.code==='KeyE'&&curInteract){curInteract.act();sfx.blip(700)}
   else if(e.code==='KeyV'){camS.mode=camS.mode==='first'?'third':'first';SAVE.cam=camS.mode;camS.lookYaw=camS.lookPitch=0;save();toast(camS.mode==='first'?'1st person view':'3rd person view')}
   else if(e.code==='Space'&&!e.repeat)doJump();
-  else if(e.code==='KeyG'&&P.loc==='mtn')setOnFoot(P.mode!=='walk');
+  else if(e.code==='KeyG'&&P.loc==='mtn'){if(!liftG())setOnFoot(P.mode!=='walk')}
   else if(/^(Digit|Numpad)[1-4]$/.test(e.code)&&P.loc==='mtn'){const n=+e.code.slice(-1);if(n===1)setOnFoot(true);else setOnFoot(false,['ski','board','sleigh'][n-2])}
   else if(e.code==='KeyN')music.toggle();
   else if(e.code==='KeyH')$('keys').classList.toggle('hidden');
