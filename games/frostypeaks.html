@@ -59,6 +59,8 @@ input{font-family:inherit}
 #modebar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px}
 #modebar button{background:none;border:0;color:#fff;font:inherit;font-size:15px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;opacity:.75}
 #modebar button.on{background:linear-gradient(#ef3b4d,#c41d30);opacity:1}
+#modebar kbd{font:700 11px Fredoka,sans-serif;background:rgba(255,255,255,.18);border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+#minimap{position:absolute;right:14px;top:120px;width:180px;height:180px;border-radius:50%;box-shadow:0 0 0 3px #ffd27a,0 0 0 6px #b3202c,0 6px 24px rgba(0,0,0,.5);pointer-events:none}
 #musbtn{position:absolute;right:14px;bottom:96px;pointer-events:auto;cursor:pointer;font-size:13px}
 #gsbar{position:absolute;left:50%;top:48px;transform:translateX(-50%);width:min(320px,70vw);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 12px 14px;font-size:14px;font-weight:600;text-align:center;overflow:hidden}
 #gsbar b{color:#9fe0ff}#gsbar i{position:absolute;left:12px;bottom:5px;height:6px;max-width:calc(100% - 24px);border-radius:3px;background:linear-gradient(90deg,#9fe0ff,#fff)}
@@ -168,7 +170,8 @@ input{font-family:inherit}
   <div id="hint" class="hidden"></div>
   <div id="racebar" class="pill hidden"></div>
   <div id="gsbar" class="hidden"></div>
-  <div id="modebar" class="hidden"><button data-m="walk">🚶 Walk</button><button data-m="ski">⛷️ Ski</button><button data-m="board">🏂 Snowboard</button></div>
+  <div id="modebar" class="hidden"><button data-m="walk"><kbd>1</kbd>🚶 Walk</button><button data-m="ski"><kbd>2</kbd>⛷️ Ski</button><button data-m="board"><kbd>3</kbd>🏂 Snowboard</button><button data-m="sleigh"><kbd>4</kbd>🛷 Sleigh</button></div>
+  <canvas id="minimap" class="hidden" width="360" height="360"></canvas>
   <div id="speedo"><b id="spd">0</b> <span>km/h</span><div id="eqname"></div></div>
   <div id="keys" class="hidden"></div>
   <div id="chatlog"></div>
@@ -247,6 +250,9 @@ const ITEMS=[
  {id:'trail2',cat:'trail',name:'Aurora Glow',price:2500,col:0x3dff8a,pal:[0x3dff8a,0x7a5cff,0x3dd6ff],desc:'Leave the northern lights in your wake.'},
  {id:'trail3',cat:'trail',name:'Rainbow Lights',price:4000,col:0xffa53b,pal:[0xff3b3b,0xffa53b,0xffee3b,0x3bff6b,0x3bb4ff,0xb03bff],desc:'Every color of the Christmas lights.'},
  {id:'trail4',cat:'trail',name:'Golden Stardust',price:6000,col:0xffd54d,pal:[0xffd54d,0xffb020,0xfff2b0],desc:'Glittering gold. Very fancy.'},
+ {id:'sleigh1',cat:'sleigh',name:"Rudolph's Sleigh",price:50000,col:0xd62839,st:{spd:1.3,turn:1.35,pop:.5,spin:0},desc:'Rudolph pulls you anywhere, in the village and down the slopes. Press 4 to ride.'},
+ {id:'sleigh2',cat:'sleigh',name:'Golden Sleigh',price:150000,col:0xffc934,st:{spd:1.45,turn:1.4,pop:.5,spin:0},desc:'A solid-gold sleigh with lanterns, pulled by two reindeer. Faster than Rudolph alone.'},
+ {id:'sleigh3',cat:'sleigh',name:'Northern Lights Sleigh',price:400000,col:0x7a5cff,st:{spd:1.6,turn:1.45,pop:.5,spin:0},desc:'A midnight sleigh glowing with aurora light, pulled by a team of four reindeer. The fastest ride on the mountain.'},
  {id:'pet0',cat:'pet',name:'No Pet',price:0,col:0x6b7c8f,desc:'Riding solo.'},
  {id:'pet1',cat:'pet',name:'Penguin',price:2000,col:0x1b1f27,desc:'Waddles after you and belly-slides down the hill.'},
  {id:'pet2',cat:'pet',name:'Mini Reindeer',price:3000,col:0x9a6a3e,desc:'A tiny reindeer with a glowing nose.'},
@@ -273,7 +279,9 @@ for(const k in SAVE.eq)if(!ITEM[SAVE.eq[k]])SAVE.eq[k]=DEF_SAVE.eq[k];
 let saveT=0;const save=()=>{try{localStorage.setItem('frostypeaks_save',JSON.stringify(SAVE))}catch{}};
 const cleanName=n=>String(n||'').replace(/[^\w \-.!?']/g,'').replace(/\s+/g,' ').trim().slice(0,16);
 const myId=Math.random().toString(36).slice(2,10);
-const curEquip=()=>ITEM[SAVE.sport==='board'?SAVE.eq.board:SAVE.eq.ski];
+let RIDE_SLEIGH=false;
+const curSleigh=()=>ITEM[SAVE.eq.sleigh]&&SAVE.owned.includes(SAVE.eq.sleigh)?SAVE.eq.sleigh:['sleigh3','sleigh2','sleigh1'].find(i=>SAVE.owned.includes(i))||'sleigh1';
+const curEquip=()=>RIDE_SLEIGH?ITEM[curSleigh()]:ITEM[SAVE.sport==='board'?SAVE.eq.board:SAVE.eq.ski];
 
 /* ================= Networking: shared world over public MQTT brokers (no host) ================= */
 const LOCAL=/local/.test(location.hash);
@@ -352,11 +360,11 @@ function groomMask(x,z){
   g=Math.max(g,smooth(ZB-140,ZB-40,z),1-smooth(ZT+30,ZT+70,z));
   return g}
 function baseH(x,z){
-  let h=prof(z);const ax=Math.abs(x);const vill=smooth(ZB-60,ZB,z);
-  h+=ax*ax*.00025*(1-.9*vill);
-  if(ax>238){const w=ax-238;h+=w*w*.04+w*(.25+.2*Math.sin(z*.013+x*.002))+6*Math.sin(z*.021+ax*.01)*Math.min(1,w/40)}
-  if(z<-70)h+=(-70-z)*(-70-z)*.05;
-  if(z>1490)h+=(z-1490)*(z-1490)*.06;
+  let h=prof(z);const ax=Math.abs(x);const vill=smooth(ZB-60,ZB,z);const ac=Math.min(ax,250);
+  h+=ac*ac*.00025*(1-.9*vill);
+  // open country beyond the resort: rolling forested hills instead of walls
+  const out=Math.max(ax-238,0)+Math.max(z-1490,0)+Math.max(-70-z,0)*1.4;
+  if(out>0){h+=out*.03*(ax>250?1:.5)*(1-vill*.3)+16*(1-Math.exp(-out/35))+70*(1-Math.exp(-out/260))+(10*Math.sin(x*.009+z*.004)*Math.cos(z*.007-x*.003)+5*Math.sin(x*.023+z*.019))*smooth(0,80,out)+(ax>250?(ax-250)*(ac*.0005*(1-.9*vill)):0)}
   const pm=pipeMask(z),pd=Math.abs(x-PIPE.x);
   let bumps=1.7*Math.sin(x*.045+z*.021)*Math.cos(z*.033-x*.012)+.75*Math.sin(x*.13+1)*Math.sin(z*.11)+.4*Math.sin(x*.31+z*.07);
   bumps*=(1-.78*groomMask(x,z))*smooth(ZT+10,ZT+70,z)*(1-smooth(ZB-90,ZB-20,z))*(1-pm*(1-smooth(16,26,pd)));
@@ -447,6 +455,9 @@ Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:
 /* glowing lights: additive sprites (bulbs) and light pools on the snow */
 const glowTex=canvasTex(64,64,(g)=>{const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.25,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)});
 const poolTex=canvasTex(128,128,(g)=>{const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,255,255,.9)');gr.addColorStop(.5,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)});
+const snowSoftTex=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#f6faff';g.fillRect(0,0,W,H);for(let i=0;i<1600;i++){const a=Math.random();g.fillStyle=a<.5?'rgba(200,215,240,.22)':'rgba(255,255,255,.6)';g.beginPath();g.arc(Math.random()*W,Math.random()*H,.6+Math.random()*2.2,0,7);g.fill()}},[2,2]);
+const snowRealM=new THREE.MeshStandardMaterial({map:snowSoftTex,color:0xffffff,roughness:.82,metalness:0,emissive:0x101a2c,emissiveIntensity:.35});
+const knitTex=(a,b)=>canvasTex(64,64,(g,W,H)=>{for(let i=0;i<8;i++){g.fillStyle=i%2?a:b;g.fillRect(0,i*8,W,8)}g.fillStyle='rgba(0,0,0,.15)';for(let x=0;x<W;x+=4)for(let y=0;y<H;y+=4)g.fillRect(x,y,1,1)},[1,4]);
 const GLOW_S=[],GLOW_L=[],POOLS=[];
 const addBulb=(x,y,z,col)=>GLOW_S.push(x,y,z,col);
 const addGlow=(x,y,z,col)=>GLOW_L.push(x,y,z,col);
@@ -464,14 +475,14 @@ function applyQuality(){const q=SAVE.set.quality;renderer.shadowMap.enabled=q!==
 
 /* ---------- terrain mesh ---------- */
 let terrainMesh;
-{const xs=[];for(let x=-XW;x<=XW+.01;){xs.push(x);const nearPipe=Math.abs(x-PIPE.x)<18;x+=nearPipe?.6:(Math.abs(x)<240?3:6)}
- const zs=[];for(let z=Z0;z<=Z1+.01;z+=2.5)zs.push(z);
+{const FAR=1500,xs=[];for(let x=-FAR;x<=FAR+.01;){xs.push(x);const ax=Math.abs(x),nearPipe=Math.abs(x-PIPE.x)<18;x+=nearPipe?.6:ax<240?3:ax<330?6:ax<600?16:40}
+ const zs=[];for(let z=Z0-1100;z<Z0;z+=z<Z0-400?40:16)zs.push(z);for(let z=Z0;z<=Z1+.01;z+=2.5)zs.push(z);for(let z=Z1+16;z<=Z1+1300;z+=z<Z1+300?16:40)zs.push(z);
  const nx=xs.length,nz=zs.length,pos=new Float32Array(nx*nz*3),col=new Float32Array(nx*nz*3);
  const cSnow=new THREE.Color(0xf6f9ff),cOff=new THREE.Color(0xdfe7f4),cRock=new THREE.Color(0x8a8f99),cPipe=new THREE.Color(0xd8ebff),tmp=new THREE.Color();
  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const x=xs[i],z=zs[j],y=baseH(x,z),k=(j*nx+i)*3;pos[k]=x;pos[k+1]=y;pos[k+2]=z;
    const n=normalAt(x,z);const gm=groomMask(x,z);tmp.copy(cOff).lerp(cSnow,gm);
    if(pipeMask(z)>.5&&Math.abs(x-PIPE.x)<PIPE.flat+PIPE.R+.5)tmp.lerp(cPipe,.6);
-   const rock=smooth(.6,.38,n.y)*smooth(235,260,Math.abs(x));tmp.lerp(cRock,rock*(.55+.45*Math.sin(x*.023+z*.031)*Math.sin(z*.011+1)));
+   const rock=smooth(.55,.32,n.y)*.6;tmp.lerp(cRock,rock*(.55+.45*Math.sin(x*.023+z*.031)*Math.sin(z*.011+1)));
    const nz2=1;col[k]=tmp.r*nz2;col[k+1]=tmp.g*nz2;col[k+2]=tmp.b*nz2}
  const idx=[];for(let j=0;j<nz-1;j++)for(let i=0;i<nx-1;i++){const a=j*nx+i,b=a+1,c=a+nx,d=c+1;idx.push(a,c,b,b,c,d)}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
@@ -504,6 +515,10 @@ for(const t of TREES){const k=Math.floor(t.x/TCELL)+','+Math.floor(t.z/TCELL);if
 {const im=new THREE.InstancedMesh(treeGeo,M({vertexColors:true,roughness:.9}),TREES.length);const m4=new THREE.Matrix4();
  TREES.forEach((t,i)=>{im.setMatrixAt(i,mtx(t.x,t.y-.2,t.z,srand()*6,t.s*(1.2+((i*7)%5)*.12)))});im.castShadow=true;im.receiveShadow=true;mtn.add(im)}
 function treeNear(x,z,r){const cx=Math.floor(x/TCELL),cz=Math.floor(z/TCELL);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const a=TGRID.get((cx+i)+','+(cz+j));if(!a)continue;for(const t of a){const d=Math.hypot(t.x-x,t.z-z);if(d<r*t.s+.1)return t}}return null}
+// open country: forests on the rolling hills beyond the rope line (scenery only)
+{const list=[];const r=()=>srand();for(let i=0;i<9000;i++){const x=(r()*2-1)*1450,z=Z0-1000+r()*(Z1-Z0+2200);const ax=Math.abs(x);
+   if(ax<262&&z>-85&&z<1510)continue;const dens=.55+.35*Math.sin(x*.004+z*.003)*Math.cos(z*.005-x*.002);if(r()>dens)continue;list.push([x,z,.9+r()*1.1])}
+ const im=new THREE.InstancedMesh(treeGeo,M({vertexColors:true,roughness:.9}),list.length);list.forEach(([x,z,s],i)=>im.setMatrixAt(i,mtx(x,baseH(x,z)-.3,z,r()*6,s*1.5)));im.castShadow=false;mtn.add(im)}
 
 /* ---------- park: kickers, rails, halfpipe deck flags ---------- */
 {const snowM=M({color:0xf8fbff,roughness:.75}),lipM=M({color:0x2f7bff,roughness:.6}),bumpLipM=new THREE.MeshStandardMaterial({color:0xff3344,emissive:0xff2030,emissiveIntensity:.6});
@@ -574,7 +589,7 @@ for(const D of LIFTDEF){
     for(let i=0;i<14;i++){const b=mesh(lg,new THREE.MeshBasicMaterial({color:cols[i%4]}),-5+i*10/13,6.1,dir-4.55,st);addBulb(cx-5+i*10/13,gy+6.1,zz+dir-4.55,cols[i%4])}addPool(cx,zz,12,0xffb060);addGlow(cx,gy+6,zz,0xffc890)}
   // chairs (instanced)
   const nC=Math.floor(L.len/L.spacing);L.n=nC;L.spacingR=L.len/nC;
-  const parts=[[new THREE.BoxGeometry(.08,2.6,.08),steelM,mtx(0,-1.3,-.1)],[new THREE.BoxGeometry(1.9,.09,.55),seatM,mtx(0,-2.6,.05)],[new THREE.BoxGeometry(1.9,.62,.07),seatM,mtx(0,-2.28,-.24)],[new THREE.BoxGeometry(2.1,.06,.06),steelM,mtx(0,-2.1,.45)],[new THREE.BoxGeometry(.06,.5,.06),steelM,mtx(-1,-2.35,.45)]];
+  const parts=[[new THREE.BoxGeometry(.08,2.6,.08),steelM,mtx(0,-1.3,-.1)],[new THREE.BoxGeometry(2.45,.09,.55),seatM,mtx(0,-2.6,.05)],[new THREE.BoxGeometry(2.45,.62,.07),seatM,mtx(0,-2.28,-.24)],[new THREE.BoxGeometry(2.6,.06,.06),steelM,mtx(0,-2.1,.45)],[new THREE.BoxGeometry(.06,.5,.06),steelM,mtx(-1.28,-2.35,.45)],[new THREE.BoxGeometry(.06,.5,.06),steelM,mtx(1.28,-2.35,.45)]];
   L.inst=parts.map(([g,m,mm])=>{g.applyMatrix4(mm);const im=new THREE.InstancedMesh(g,m,nC);im.castShadow=true;im.frustumCulled=false;mtn.add(im);return im});
   LIFTS.push(L)}
 const _p=V3(),_q=V3(),_m4=new THREE.Matrix4(),_qt=new THREE.Quaternion();
@@ -584,7 +599,7 @@ const netTime=()=>Date.now()/1000%100000;
 
 /* ---------- base village ---------- */
 const COLLIDERS=[]; // axis-aligned boxes on the mountain {x0,x1,z0,z1}
-const LODGE={x:-20,z:1446,w:30,d:18},SHOP={x:-170,z:1430,w:16,d:12},XTREE={x:105,z:1420};
+const LODGE={x:-22,z:1448,w:40,d:20},SHOP=null,XTREE={x:105,z:1420};
 const logTex=canvasTex(128,128,(g,W,H)=>{for(let i=0;i<8;i++){const y=i*16;const gr=g.createLinearGradient(0,y,0,y+16);gr.addColorStop(0,'#8a5530');gr.addColorStop(.5,'#a8693c');gr.addColorStop(1,'#5e3518');g.fillStyle=gr;g.fillRect(0,y,W,16)}},[3,1]);
 function building(B,label,col){
   const gy=groundH(B.x,B.z),grp=new THREE.Group();grp.position.set(B.x,gy,B.z);mtn.add(grp);
@@ -606,18 +621,21 @@ function building(B,label,col){
   COLLIDERS.push({x0:B.x-B.w/2-.6,x1:B.x+B.w/2+.6,z0:B.z-B.d/2-.6,z1:B.z+B.d/2+.6});
   const lamp=new THREE.PointLight(0xffb066,25,16,1.6);lamp.position.set(0,3.5,-B.d/2-2.5);grp.add(lamp);
   return grp}
-building(LODGE,'COCOA LODGE',0x7a1f1f);
-building(SHOP,"RUDOLPH'S RENTALS",0x1f5a32);
+building(LODGE,"COCOA LODGE & RUDOLPH'S GEAR",0x7a1f1f);
+// grand candy-cane entrance
+{const gy=groundH(LODGE.x,LODGE.z),fz=LODGE.z-LODGE.d/2;for(const sx of [-1,1]){const p=mesh(new THREE.CylinderGeometry(.32,.32,6.6,14),M({map:caneTex,roughness:.4}),LODGE.x+sx*2.6,gy+3.3,fz-2.2,mtn);p.castShadow=true;
+  const w=mesh(new THREE.TorusGeometry(.8,.24,8,22),M({color:0x1d5a32}),LODGE.x+sx*2.6,gy+6.7,fz-2.2,mtn);mesh(new THREE.SphereGeometry(.22,8,6),M({color:0xd62839}),LODGE.x+sx*2.6,gy+6.1,fz-2.45,mtn)}
+ const arch=mesh(new THREE.TorusGeometry(2.6,.18,8,30,Math.PI),M({color:0x1d5a32}),LODGE.x,gy+6.6,fz-2.2,mtn);
+ for(let i=0;i<=14;i++){const a=i/14*Math.PI;addBulb(LODGE.x+Math.cos(a)*2.6,gy+6.6+Math.sin(a)*2.6,fz-2.4,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
+ for(const sx of [-1,1])for(let k=0;k<3;k++){const b=mesh(new THREE.BoxGeometry(.7-k*.15,.6-k*.12,.7-k*.15),M({color:[0xd62839,0x1f9d55,0xffc934][k]}),LODGE.x+sx*(4+k*.8),gy+.3,fz-1.4-k*.3,mtn);b.rotation.y=k}}
 LODGE.door=V3(LODGE.x,groundH(LODGE.x,LODGE.z-LODGE.d/2-2),LODGE.z-LODGE.d/2-2);
-SHOP.door=V3(SHOP.x,groundH(SHOP.x,SHOP.z-SHOP.d/2-2),SHOP.z-SHOP.d/2-2);
-// ski racks by shop
-{const gy=groundH(SHOP.x,SHOP.z);for(let i=0;i<6;i++){const sx=SHOP.x+5+i*.45;mesh(new THREE.BoxGeometry(.1,1.8,.04),M({color:[0xe2283a,0x2fb4ff,0x22c77a,0xffc934,0x8b5cf6,0xff9f1c][i]}),sx,gy+.9,SHOP.z-SHOP.d/2-1.4).rotation.z=.15}
- mesh(new THREE.BoxGeometry(3.4,.12,.12),woodM,SHOP.x+6.1,gy+1.5,SHOP.z-SHOP.d/2-1.3)}
 // giant Christmas tree
 const XLIGHTS=[];
 {const gy=groundH(XTREE.x,XTREE.z),g=new THREE.Group(),XS=2.1;g.position.set(XTREE.x,gy,XTREE.z);g.scale.setScalar(XS);mtn.add(g);
  mesh(new THREE.CylinderGeometry(.7,.9,3,10),M({color:0x5a3a22}),0,1.5,0,g);
- const gm=M({color:0x1b5e35,roughness:.9});[[7,6,4.5],[5.6,5.5,8.5],[4.2,5,12],[2.8,4.5,15.3],[1.6,3.6,18]].forEach(([r,h,y])=>{const c=mesh(new THREE.ConeGeometry(r,h,14),gm,0,y,0,g);c.castShadow=true});
+ {const f=new THREE.Mesh(firGeo(19.4,7.6,7,2.4,13),M({vertexColors:true,roughness:.92}));f.castShadow=true;f.position.y=.6;g.add(f);
+  const sn=[];let rs=11;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};for(let i=0;i<90;i++){const t=rnd()*.9,y=2.4+t*16.6,R=(1-t)*7+.4,a=rnd()*6.28;const gq=new THREE.SphereGeometry(.32+rnd()*.25,7,4);gq.scale(1.5,.3,.9);sn.push([gq,0xf2f7ff,mtx(Math.cos(a)*R*.82,y-R*.25,Math.sin(a)*R*.82,-a)])}
+  const sm=new THREE.Mesh(mergeColored(sn),M({vertexColors:true,roughness:.8,emissive:0x0c1424}));g.add(sm)}
  const star=mesh(new THREE.OctahedronGeometry(1.1,0),new THREE.MeshStandardMaterial({color:0xffe066,emissive:0xffcc00,emissiveIntensity:2}),0,20.6,0,g);star.scale.set(1,1.3,.4);g.userData.star=star;
  const cols=[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0,0xffffff];const n=260;const im=new THREE.InstancedMesh(new THREE.SphereGeometry(.2,8,6),new THREE.MeshBasicMaterial(),n);
  for(let i=0;i<n;i++){const t=i/n,y=2.5+t*16.5,r=(1-t)*6.6+.7,a=t*Math.PI*2*9;im.setMatrixAt(i,mtx(Math.cos(a)*r,y,Math.sin(a)*r));im.setColorAt(i,_c.set(cols[i%6]));addBulb(XTREE.x+Math.cos(a)*r*XS,gy+y*XS,XTREE.z+Math.sin(a)*r*XS,cols[i%6])}g.add(im);XLIGHTS.push(im);addGlow(XTREE.x,gy+20.6*XS,XTREE.z,0xffd040);addGlow(XTREE.x,gy+20.6*XS,XTREE.z,0xffb020);addPool(XTREE.x,XTREE.z,30,0xff9a50);
@@ -626,12 +644,8 @@ const XLIGHTS=[];
  const gc=[0xd62839,0x1f9d55,0x2f7bff,0xffc934,0xa46bff];for(let i=0;i<12;i++){const a=i/12*Math.PI*2+.2,r=4.5+srand()*2,s=.6+srand()*.8;const b=mesh(new THREE.BoxGeometry(s,s*.8,s),M({color:gc[i%5]}),Math.cos(a)*r,s*.4,Math.sin(a)*r,g);b.rotation.y=srand()*3;b.castShadow=true;mesh(new THREE.BoxGeometry(s*1.02,s*.82,s*.18),M({color:0xffffff}),0,0,0,b)}
  COLLIDERS.push({x0:XTREE.x-13,x1:XTREE.x+13,z0:XTREE.z-13,z1:XTREE.z+13})}
 // snowmen & lamp posts
-const SNOWMEN=[[-190,1450],[-60,1400],[-150,1395],[70,1450]];
-for(const [x,z] of SNOWMEN){const g=new THREE.Group();g.position.set(x,groundH(x,z),z);g.rotation.y=Math.PI+srand()-.5;mtn.add(g);const sm=M({color:0xffffff,roughness:.7});
-  mesh(new THREE.SphereGeometry(.9,16,12),sm,0,.8,0,g).castShadow=true;mesh(new THREE.SphereGeometry(.65,16,12),sm,0,2,0,g).castShadow=true;mesh(new THREE.SphereGeometry(.45,16,12),sm,0,2.9,0,g).castShadow=true;
-  const n=mesh(new THREE.ConeGeometry(.08,.5,8),M({color:0xff7a1a}),0,2.9,.6,g);n.rotation.x=Math.PI/2;for(const s of [-.15,.15])mesh(new THREE.SphereGeometry(.06,6,4),M({color:0x111111}),s,3.05,.4,g);
-  mesh(new THREE.CylinderGeometry(.35,.35,.5,12),M({color:0x111111}),0,3.45,0,g);mesh(new THREE.CylinderGeometry(.55,.55,.05,16),M({color:0x111111}),0,3.2,0,g);
-  const sc=mesh(new THREE.TorusGeometry(.42,.1,6,16),M({color:0xd62839}),0,2.45,0,g);sc.rotation.x=Math.PI/2;COLLIDERS.push({x0:x-1,x1:x+1,z0:z-1,z1:z+1})}
+const SNOWMEN=[[-190,1450],[-120,1452],[-150,1395],[88,1420]];
+SNOWMEN.forEach(([x,z],k)=>{const g=buildSnowman(.95,k*5+2,k%2?'beanie':'top',[0xd62839,0x1f9d55,0x2f7bff,0xffc934][k]);g.position.set(x,groundH(x,z),z);g.rotation.y=Math.PI+srand()-.5;mtn.add(g);COLLIDERS.push({x0:x-1.2,x1:x+1.2,z0:z-1.2,z1:z+1.2})});
 for(const [x,z] of [[-60,1380],[0,1380],[60,1380],[-130,1385],[-210,1400],[40,1420],[-90,1440],[160,1400]]){const gy=groundH(x,z);mesh(new THREE.CylinderGeometry(.09,.12,4.2,8),M({color:0x1e2530,metalness:.5}),x,gy+2.1,z,mtn);
   mesh(new THREE.SphereGeometry(.32,10,8),new THREE.MeshStandardMaterial({color:0xfff2d0,emissive:0xffcf80,emissiveIntensity:1.6}),x,gy+4.3,z,mtn);
   const w=mesh(new THREE.TorusGeometry(.35,.1,6,14),M({color:0x1d5a32}),x,gy+3.6,z,mtn);addGlow(x,gy+4.3,z,0xffc070);addPool(x,z,9,0xffa040)}
@@ -710,11 +724,30 @@ function updateFireworks(dt){fwNext-=dt;if(fwNext<=0){fwNext=.7+Math.random()*1.
 
 /* ================= New village spots: pond, snowman yard, firework workshop, race + leaderboard ================= */
 const ZONES=[];
-const POND={x:52,z:1472,r:13},YARD={x:-100,z:1474,r:22},WORKSHOP={x:14,z:1414},LBPOS={x:-47,z:1374};
-const GIANT={x:-100,z:1490},DROP={x:-100,z:1477,r:2.6};
+const POND={x:52,z:1474,r:22},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
+const GIANT={x:-70,z:1400},DROP={x:-59,z:1385,r:3.2};
 const RACE={startZ:1000,finZ:1300,gates:[]};
 for(let i=0;i<8;i++){const z=1032+i*33;RACE.gates.push({z,x:mainX(z)+(i%2?7:-7)})}
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
+// neon "Christmas light" title sign: glowing letters + a marquee of bulbs
+const neonTex=(txt,sub,col)=>canvasTex(1024,320,(g,W,H)=>{g.clearRect(0,0,W,H);g.textAlign='center';g.textBaseline='middle';
+  g.font='700 132px Fredoka, sans-serif';let w=g.measureText(txt).width;if(w>W-60){g.font=`700 ${Math.floor(132*(W-60)/w)}px Fredoka, sans-serif`}
+  for(const [b,a] of [[46,1],[22,1],[8,1]]){g.shadowColor=col;g.shadowBlur=b;g.fillStyle=col;g.globalAlpha=a;g.fillText(txt,W/2,sub?120:160)}
+  g.shadowBlur=0;g.fillStyle='#fffdf2';g.globalAlpha=.85;g.fillText(txt,W/2,sub?120:160);g.globalAlpha=1;
+  if(sub){g.font='600 52px Fredoka, sans-serif';g.shadowColor='#ffffff';g.shadowBlur=14;g.fillStyle='#fff6dc';g.fillText(sub,W/2,250)}});
+const NEON=[];
+function glowTitle(txt,sub,x,z,{h=7,ry=0,col='#ffd54d',w=9,posts=true,y=null}={}){const gy=y??groundH(x,z),g=new THREE.Group();g.position.set(x,gy+h,z);g.rotation.y=ry;mtn.add(g);
+  const tex=neonTex(txt,sub,col),hh=w*320/1024;
+  const backM=M({color:0x2a0c10,roughness:.6});mesh(new THREE.BoxGeometry(w+.5,hh+.4,.18),backM,0,0,0,g);
+  for(const r of [0,Math.PI]){const p=new THREE.Mesh(new THREE.PlaneGeometry(w,hh),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,toneMapped:false}));p.position.z=r?-.1:.1;p.rotation.y=r;g.add(p);NEON.push(p)}
+  const frM=M({map:caneTex,roughness:.4});for(const yy of [-1,1])mesh(new THREE.BoxGeometry(w+.7,.16,.26),frM,0,yy*(hh/2+.22),0,g);for(const xx of [-1,1])mesh(new THREE.BoxGeometry(.16,hh+.6,.26),frM,xx*(w/2+.3),0,0,g);
+  const cols=[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0],c=Math.cos(ry),sn=Math.sin(ry),wp=(lx,ly,lz)=>[x+lx*c+lz*sn,gy+h+ly,z-lx*sn+lz*c];
+  let k=0;const per=Math.round((w+hh)*2/.55);for(let i=0;i<per;i++){const t=i/per*(2*(w+hh)),W2=w/2+.32,H2=hh/2+.25;let lx,ly;
+    if(t<w){lx=-W2+t/w*2*W2;ly=H2}else if(t<w+hh){lx=W2;ly=H2-(t-w)/hh*2*H2}else if(t<2*w+hh){lx=W2-(t-w-hh)/w*2*W2;ly=-H2}else{lx=-W2;ly=-H2+(t-2*w-hh)/hh*2*H2}
+    for(const zz of [.2,-.2]){const p=wp(lx,ly,zz);addBulb(p[0],p[1],p[2],cols[k++%5])}}
+  addGlow(x,gy+h,z,_c.set(col).getHex());
+  if(posts)for(const s of [-1,1]){const p=wp(s*(w/2+.3),0,0);const pp=mesh(new THREE.CylinderGeometry(.14,.16,h,10),frM,p[0],gy+h/2-hh/2,p[2],mtn);pp.castShadow=true}
+  return g}
 function onIce(x,z,pad=0){return Math.hypot(x-POND.x,z-POND.z)<POND.r-pad}
 const vpostM=M({color:0x4a2a12,roughness:.85});
 // ----- Snowflake Pond (ice skating)
@@ -722,29 +755,29 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
  const iceTex=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#bfe3f7';g.fillRect(0,0,W,H);g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;for(let i=0;i<70;i++){g.beginPath();const x=Math.random()*W,y=Math.random()*H,a=Math.random()*6.3,l=20+Math.random()*60;g.moveTo(x,y);g.quadraticCurveTo(x+Math.cos(a+.6)*l*.5,y+Math.sin(a+.6)*l*.5,x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}},[3,3]);
  const geo=new THREE.CircleGeometry(POND.r,56,0);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++){const x=pa.getX(i)+POND.x,z=pa.getZ(i)+POND.z;pa.setY(i,groundH(x,z)+.07)}geo.computeVertexNormals();
  const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x16304a,emissiveIntensity:.35}));ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
- const rimM=M({color:0xf8fbff,roughness:.8});for(let i=0;i<40;i++){const a=i/40*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+.4),z=POND.z+Math.sin(a)*(POND.r+.4);const s=mesh(new THREE.SphereGeometry(.7+((i*7)%3)*.15,10,8),rimM,x,groundH(x,z)-.2,z,mtn);s.scale.set(1.3,.45,1.3)}
- for(let i=0;i<8;i++){const a=i/8*Math.PI*2+.2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.07,.09,3,8),vpostM,x,y+1.5,z,mtn);addGlow(x,y+3.1,z,0xffd08a);addPool(x,z,5,0xffb060)}
- for(let i=0;i<64;i++){const a=i/64*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2);addBulb(x,groundH(x,z)+2.75-Math.abs(Math.sin(a*4))*.4,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
- addPool(POND.x,POND.z,POND.r*1.1,0x88c8ff);
- const s=twoSided([['⛸ SNOWFLAKE POND',.5,'#bfe3ff'],['Walk onto the ice to skate',.32]],4.6,1.5,{bg:'#123a5c',border:'#bfe3ff'});const sx=POND.x-POND.r-3,sz=POND.z-6,sy=groundH(sx,sz);s.position.set(sx,sy+2.6,sz);s.rotation.y=Math.PI/2;mtn.add(s);mesh(new THREE.CylinderGeometry(.08,.08,2.6),vpostM,sx,sy+1.3,sz,mtn)}
+ const rimM=M({color:0xf8fbff,roughness:.8});for(let i=0;i<70;i++){const a=i/70*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+.4),z=POND.z+Math.sin(a)*(POND.r+.4);const s=mesh(new THREE.SphereGeometry(.7+((i*7)%3)*.15,10,8),rimM,x,groundH(x,z)-.2,z,mtn);s.scale.set(1.3,.45,1.3)}
+ for(let i=0;i<12;i++){const a=i/12*Math.PI*2+.2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.07,.09,3,8),vpostM,x,y+1.5,z,mtn);addGlow(x,y+3.1,z,0xffd08a);addPool(x,z,5,0xffb060)}
+ for(let i=0;i<110;i++){const a=i/110*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2);addBulb(x,groundH(x,z)+2.75-Math.abs(Math.sin(a*4))*.4,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
+ addPool(POND.x,POND.z,POND.r*1.1,0x88c8ff);glowTitle('⛸ SNOWFLAKE POND','Ice skating',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
+ const s=twoSided([['⛸ SNOWFLAKE POND',.5,'#bfe3ff'],['Walk onto the ice to skate',.32]],4.6,1.5,{bg:'#123a5c',border:'#bfe3ff'});const sx=POND.x-POND.r-3.5,sz=POND.z-8,sy=groundH(sx,sz);s.position.set(sx,sy+2.6,sz);s.rotation.y=Math.PI/2;mtn.add(s);mesh(new THREE.CylinderGeometry(.08,.08,2.6),vpostM,sx,sy+1.3,sz,mtn)}
 // ----- Snowman Yard
 {ZONES.push({x:YARD.x,z:YARD.z,r:YARD.r-4});
  const s=twoSided([['☃ SNOWMAN YARD',.5,'#ffffff'],['Press E to roll a snowball · walk to grow it',.27],['Roll it into the glowing circle to build the giant snowman',.27]],5.4,2,{bg:'#1f5a32',border:'#ffffff'});
- const sx=YARD.x-9,sz=YARD.z-6,sy=groundH(sx,sz);s.position.set(sx,sy+2.9,sz);s.rotation.y=.5;mtn.add(s);for(const d of [-2.4,2.4])mesh(new THREE.CylinderGeometry(.09,.09,3.9),vpostM,sx+d*Math.cos(.5),sy+1.95,sz-d*Math.sin(.5),mtn);addGlow(sx,sy+4.2,sz,0xffe0a0);addPool(sx,sz+2,6,0xffc080);
+ const sx=YARD.x-13,sz=YARD.z-4,sy=groundH(sx,sz);s.position.set(sx,sy+2.9,sz);s.rotation.y=.5;mtn.add(s);for(const d of [-2.4,2.4])mesh(new THREE.CylinderGeometry(.09,.09,3.9),vpostM,sx+d*Math.cos(.5),sy+1.95,sz-d*Math.sin(.5),mtn);addGlow(sx,sy+4.2,sz,0xffe0a0);addPool(sx,sz+2,6,0xffc080);
  {const y=groundH(DROP.x,DROP.z);for(const [a,b,o] of [[DROP.r-.35,DROP.r,.8],[DROP.r*.35,DROP.r*.5,.5]]){const ring=mesh(new THREE.RingGeometry(a,b,48),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:o}),DROP.x,y+.07,DROP.z,mtn);ring.rotation.x=-Math.PI/2}
   addPool(DROP.x,DROP.z,DROP.r*1.6,0x6fc8ff);for(let i=0;i<16;i++){const a=i/16*Math.PI*2;addBulb(DROP.x+Math.cos(a)*(DROP.r+.3),y+.25,DROP.z+Math.sin(a)*(DROP.r+.3),i%2?0x9fe0ff:0xffffff)}}
- addPool(GIANT.x,GIANT.z,9,0xffc890);COLLIDERS.push({x0:GIANT.x-4,x1:GIANT.x+4,z0:GIANT.z-4,z1:GIANT.z+4});
- for(let i=0;i<10;i++){const a=i/10*Math.PI*2,x=YARD.x+Math.cos(a)*14,z=YARD.z+Math.sin(a)*14,y=groundH(x,z);const m=mesh(new THREE.SphereGeometry(.9,10,8),M({color:0xf8fbff}),x,y-.25,z,mtn);m.scale.set(1.4,.5,1.1)}}
+ addPool(GIANT.x,GIANT.z,9,0xffc890);glowTitle('☃ SNOWMAN YARD','Roll snowballs · build the giant',YARD.x-6,YARD.z-17,{h:7.5,ry:0,col:'#ffffff',w:11});COLLIDERS.push({x0:GIANT.x-4,x1:GIANT.x+4,z0:GIANT.z-4,z1:GIANT.z+4});
+ for(let i=0;i<10;i++){const a=i/10*Math.PI*2+.3,x=YARD.x+Math.cos(a)*17,z=YARD.z+Math.sin(a)*17,y=groundH(x,z);const m=mesh(new THREE.SphereGeometry(.9,10,8),M({color:0xf8fbff}),x,y-.25,z,mtn);m.scale.set(1.4,.5,1.1)}}
 // ----- Firework Workshop
-{const W=WORKSHOP,gy=groundH(W.x,W.z),g=new THREE.Group();g.position.set(W.x,gy,W.z);g.rotation.y=Math.PI;mtn.add(g);ZONES.push({x:W.x,z:W.z,r:6});
+{const W=WORKSHOP,gy=groundH(W.x,W.z),g=new THREE.Group(),S=1.6;g.position.set(W.x,gy,W.z);g.rotation.y=Math.PI;g.scale.setScalar(S);mtn.add(g);ZONES.push({x:W.x,z:W.z,r:9});
  const wood=M({color:0x7a4a2a,roughness:.85});mesh(new THREE.BoxGeometry(3.2,1.1,1.4),wood,0,.55,0,g);mesh(new THREE.BoxGeometry(3.4,.1,1.6),M({color:0xe8dccb}),0,1.12,0,g);
  for(const x of [-1.5,1.5])mesh(new THREE.CylinderGeometry(.07,.07,2.8),wood,x,1.4,-.6,g);const roof=mesh(new THREE.BoxGeometry(3.8,.15,2),M({map:caneTex}),0,2.85,-.2,g);roof.rotation.x=-.15;
  const pad=mesh(new THREE.PlaneGeometry(.9,.6),new THREE.MeshBasicMaterial({color:0x0b1020}),0,1.2,.1,g);pad.rotation.x=-Math.PI/2+.35;
  for(let i=0;i<5;i++)mesh(new THREE.CylinderGeometry(.03,.03,.25,6),new THREE.MeshBasicMaterial({color:[0xff3b4d,0xffd54d,0x4dff88,0x4dc3ff,0xc77dff][i]}),-1.1+i*.12,1.28,.3,g);
  const tube=mesh(new THREE.CylinderGeometry(.35,.42,1.4,14),M({color:0x2a2a35,metalness:.5,roughness:.4}),2.6,.7,.4,g);mesh(new THREE.TorusGeometry(.36,.06,6,16),M({color:0xd62839}),2.6,1.4,.4,g).rotation.x=Math.PI/2;
  const sg=twoSided([['🎆 FIREWORK WORKSHOP',.5,'#ffd54d'],['Draw your own firework · press E',.32]],3.8,1.1,{bg:'#3b1d0e'});sg.position.set(0,3.6,-.2);g.add(sg);
- W.mortar=V3(W.x-2.6,gy+1.5,W.z-.4);COLLIDERS.push({x0:W.x-1.8,x1:W.x+1.8,z0:W.z-.9,z1:W.z+.9},{x0:W.x-3.1,x1:W.x-2.1,z0:W.z-.9,z1:W.z+.1});
- for(let i=0;i<14;i++){const t=i/13;addBulb(W.x-1.9+t*3.8,gy+2.75+Math.sin(t*Math.PI)*.15,W.z+1.05,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}addPool(W.x,W.z+1.5,6,0xffc070)}
+ W.mortar=V3(W.x-2.6*S,gy+1.5*S,W.z-.4*S);COLLIDERS.push({x0:W.x-1.8*S,x1:W.x+1.8*S,z0:W.z-.9*S,z1:W.z+.9*S},{x0:W.x-3.1*S,x1:W.x-2.1*S,z0:W.z-.9*S,z1:W.z+.1*S});
+ for(let i=0;i<18;i++){const t=i/17;addBulb(W.x+(-1.9+t*3.8)*S,gy+(2.75+Math.sin(t*Math.PI)*.15)*S,W.z+1.05*S,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}addPool(W.x,W.z+2,8,0xffc070);glowTitle('🎆 FIREWORK WORKSHOP','Draw your own firework',W.x,W.z+4,{h:7.5,col:'#ffb84d',w:11})}
 // ----- Leaderboard next to the entrance sign
 const LB_CV=document.createElement('canvas');LB_CV.width=512;LB_CV.height=640;const LB_TEX=new THREE.CanvasTexture(LB_CV);LB_TEX.colorSpace=THREE.SRGBColorSpace;LB_TEX.anisotropy=4;
 function drawLeaderboard(rows){const g=LB_CV.getContext('2d'),W=512,H=640;g.fillStyle='#14233f';g.fillRect(0,0,W,H);g.strokeStyle='#ffd27a';g.lineWidth=10;g.strokeRect(8,8,W-16,H-16);
@@ -752,12 +785,12 @@ function drawLeaderboard(rows){const g=LB_CV.getContext('2d'),W=512,H=640;g.fill
   g.textAlign='left';g.font='600 28px Fredoka, sans-serif';if(!rows.length){g.fillStyle='#fff';g.textAlign='center';g.fillText('No times yet. Be the first!',W/2,330)}
   rows.slice(0,10).forEach((r,i)=>{const y=180+i*44;g.fillStyle=i%2?'rgba(255,255,255,.05)':'rgba(255,255,255,.1)';g.fillRect(28,y-30,W-56,40);g.fillStyle=['#ffd54d','#dfe6ee','#e3a36b'][i]||'#fff';g.fillText((i+1)+'.',40,y);
     g.fillStyle='#fff';g.fillText(String(r[0]).slice(0,14),90,y);g.textAlign='right';g.fillStyle='#7dff9a';g.fillText(r[1].toFixed(2)+'s',W-40,y);g.textAlign='left'});LB_TEX.needsUpdate=true}
-{const P0=LBPOS,gy=groundH(P0.x,P0.z),g=new THREE.Group();g.position.set(P0.x,gy,P0.z);mtn.add(g);
+{const P0=LBPOS,gy=groundH(P0.x,P0.z),g=new THREE.Group(),S=1.45;g.position.set(P0.x,gy,P0.z);g.scale.setScalar(S);mtn.add(g);
  const mat=new THREE.MeshStandardMaterial({map:LB_TEX,roughness:.7,emissive:0xffffff,emissiveMap:LB_TEX,emissiveIntensity:.35});
  for(const r of [0,Math.PI]){const b=new THREE.Mesh(new THREE.PlaneGeometry(4.4,5.5),mat);b.position.set(0,4.1,r?-.06:.06);b.rotation.y=r;g.add(b)}
  mesh(new THREE.BoxGeometry(4.7,5.8,.1),M({color:0x5a3018}),0,4.1,0,g);for(const x of [-2.2,2.2])mesh(new THREE.CylinderGeometry(.12,.12,7),M({map:caneTex}),x,3.5,0,g);
- COLLIDERS.push({x0:P0.x-2.5,x1:P0.x+2.5,z0:P0.z-.5,z1:P0.z+.5});addGlow(P0.x,gy+7.2,P0.z,0xffd060);addPool(P0.x,P0.z+3,6,0xffb050);addPool(P0.x,P0.z-3,6,0xffb050);
- for(let i=0;i<16;i++){const t=i/15;addBulb(P0.x-2.3+t*4.6,gy+7,P0.z+.1,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}}
+ COLLIDERS.push({x0:P0.x-2.5*S,x1:P0.x+2.5*S,z0:P0.z-.6,z1:P0.z+.6});addPool(P0.x,P0.z+4,8,0xffb050);addPool(P0.x,P0.z-4,8,0xffb050);
+ glowTitle('🏁 JINGLE RACE','Leaderboard',P0.x,P0.z,{h:7.4*S+1.2,col:'#7dff9a',w:8,posts:false})}
 // ----- Race course: start/finish arches and gates on Candy Cane Lane
 {const arch=(z,txt,col)=>{const cx=mainX(z);for(const d of [-15,15]){const x=cx+d,y=groundH(x,z);mesh(new THREE.CylinderGeometry(.25,.3,8.5,10),M({map:caneTex}),x,y+4.2,z,mtn);addGlow(x,y+8.6,z,col)}
    const y=Math.max(groundH(cx-15,z),groundH(cx+15,z));const s=twoSided([[txt,.62,'#fff']],30,2.6,{bg:col===0x7dff9a?'#14532d':'#7a1520',border:'#ffd27a'});s.position.set(cx,y+7.2,z);mtn.add(s);
@@ -766,8 +799,21 @@ function drawLeaderboard(rows){const g=LB_CV.getContext('2d'),W=512,H=640;g.fill
  RACE.gates.forEach((G,i)=>{const col=i%2?0x2f7bff:0xe2283a;for(const d of [-3.5,3.5]){const x=G.x+d,y=groundH(x,G.z);mesh(new THREE.CylinderGeometry(.08,.08,2.6,8),M({color:col}),x,y+1.3,G.z,mtn);
      const f=mesh(new THREE.PlaneGeometry(1,.7),new THREE.MeshStandardMaterial({color:col,side:THREE.DoubleSide,emissive:col,emissiveIntensity:.4}),x+(d<0?-.5:.5),y+2.2,G.z,mtn);addBulb(x,y+2.7,G.z,col)}addPool(G.x,G.z,4.5,col)})}
 // ----- village signpost
-{const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎆 Firework Workshop → plaza',.3],['⛸ Skating pond → behind the plaza',.3],['☃ Snowman Yard → far left',.3],['🏁 Race leaderboard → by the gate',.3]],4.2,3,{bg:'#3b1d0e'});
+{const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎆 Firework Workshop → plaza',.3],['⛸ Skating pond → behind the plaza',.3],['☃ Snowman Yard → by the leaderboard',.3],['🛍 Lodge & Gear Shop → straight ahead',.3]],4.2,3,{bg:'#3b1d0e'});
  s.position.set(x,y+2.7,z);s.rotation.y=Math.PI;mtn.add(s);mesh(new THREE.CylinderGeometry(.09,.09,2.6),vpostM,x,y+1.3,z,mtn);COLLIDERS.push({x0:x-.3,x1:x+.3,z0:z-.3,z1:z+.3})}
+
+// ----- glowing titles over the main places
+glowTitle("🏠 COCOA LODGE & RUDOLPH'S GEAR",'Hot cocoa · gear · the 50,000 pt sleigh',LODGE.x,LODGE.z-LODGE.d/2-.4,{h:15.2,col:'#ffd54d',w:16,posts:false,y:groundH(LODGE.x,LODGE.z)});
+glowTitle('🔥 THE PLAZA','Fire pit · hang out',PLAZA.x,PLAZA.z-9,{h:6.5,col:'#ff9a4d',w:8});
+glowTitle('🎄 THE GREAT TREE',null,XTREE.x,XTREE.z-15,{h:7,col:'#7dff9a',w:9});
+for(const L of LIFTS){const x=L.x+2.5,z=L.zb+9;glowTitle('🚡 '+L.name.toUpperCase(),'Quad chair · up to 4 riders',x,z,{h:8.5,col:L.col===0xd62839?'#ff6b7a':'#7dff9a',w:11})}
+// ----- rope boundary: candy-cane poles with flags, so the open country reads as scenery
+{const pts=[];const add=(x,z)=>pts.push([x,z]);for(let z=-55;z<=1500;z+=14){add(-246,z);add(246,z)}for(let x=-232;x<246;x+=14){add(x,-55);add(x,1500)}
+ const pole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.07,.09,1.6,6),M({map:caneTex,roughness:.5}),pts.length),flag=new THREE.InstancedMesh(new THREE.PlaneGeometry(.5,.32),new THREE.MeshStandardMaterial({color:0xffffff,side:THREE.DoubleSide,emissive:0x331111}),pts.length);
+ pts.forEach(([x,z],i)=>{const y=groundH(x,z);pole.setMatrixAt(i,mtx(x,y+.8,z));flag.setMatrixAt(i,mtx(x+.25,y+1.42,z,i%2?0:Math.PI/2));flag.setColorAt(i,_c.set(i%2?0xd62839:0x1f9d55))});mtn.add(pole,flag);
+ const segs=[];const line=(a,b)=>{const ya=groundH(a[0],a[1])+1.25,yb=groundH(b[0],b[1])+1.25;for(let k=0;k<4;k++){const t0=k/4,t1=(k+1)/4,sag=t=>Math.sin(t*Math.PI)*.35;segs.push(a[0]+(b[0]-a[0])*t0,ya+(yb-ya)*t0-sag(t0),a[1]+(b[1]-a[1])*t0,a[0]+(b[0]-a[0])*t1,ya+(yb-ya)*t1-sag(t1),a[1]+(b[1]-a[1])*t1)}};
+ for(const sx of [-246,246])for(let z=-55;z+14<=1500;z+=14)line([sx,z],[sx,z+14]);for(const sz of [-55,1500])for(let x=-246;x+14<=246;x+=14)line([x,sz],[x+14,sz]);
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(segs,3));mtn.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xff4a5a})))}
 
 /* ---------- random Christmas decorations in the empty spaces ---------- */
 {const DECO=[];
@@ -895,8 +941,8 @@ function tickBubble(A,dt){if(A.bubble){A.bubbleT-=dt;A.bubble.material.opacity=c
 // anim codes: 0 ride, 1 air, 2 crash, 3 lift, 4 walk, 5 sit, 6 idle(stand in lodge), 7 grind
 const GRABS={ski:{KeyJ:'Safety Grab',KeyK:'Mute Grab',KeyL:'Japan Grab',KeyI:'Tail Grab'},board:{KeyJ:'Indy',KeyK:'Melon',KeyL:'Method',KeyI:'Nose Grab'}};
 function pose(A,o){
-  const board=A.look&&A.look.sport==='board';const an=o.anim;
-  const showGear=an!==4&&an!==5&&an!==6&&an!==8;A.gear.visible=showGear;A.chair.visible=an===3;
+  const board=A.look&&A.look.sport==='board';const jump=o.anim===10,an=jump?4:o.anim;
+  const showGear=an!==4&&an!==5&&an!==6&&an!==8&&an!==9;if(an===9&&(!A.sleigh||A.sleighId!==(o.sl||'sleigh1'))){if(A.sleigh)A.root.remove(A.sleigh);A.sleighId=o.sl||'sleigh1';A.sleigh=sleighMesh(A.sleighId);A.root.add(A.sleigh)}if(A.sleigh){A.sleigh.visible=an===9;if(an===9){const d=A.sleigh.userData.deer,t=o.time||0;d.position.y=Math.abs(Math.sin(t*7))*.18;d.rotation.x=Math.sin(t*7)*.06}}A.gear.visible=showGear;A.chair.visible=an===3;
   for(const a of A.arms)a.pole.visible=!board&&showGear&&!o.grab;
   let crouch=o.crouch||0,lean=.1,legSpread=board?.26:.14;
   if(an===1)crouch=Math.max(crouch,o.grab?.95:.35);
@@ -904,7 +950,7 @@ function pose(A,o){
   if(an===4||an===5||an===6||an===8){legSpread=.12}
   let hipY=.68-crouch*.22;
   const [L,R]=A.legs;
-  if(an===5||an===3){hipY=.55;for(const l of A.legs){l.hp.rotation.set(-Math.PI/2+.1,0,0);l.kn.rotation.set(Math.PI/2-.1,0,0);l.ft.rotation.set(0,0,0)}A.chest.rotation.set(-.1,0,0)}
+  if(an===5||an===3||an===9){hipY=an===9?.98:.55;for(const l of A.legs){l.hp.rotation.set(-Math.PI/2+.1,0,0);l.kn.rotation.set(Math.PI/2-.1,0,0);l.ft.rotation.set(0,0,0)}A.chest.rotation.set(-.1,0,0)}
   else if(an===8){const ph=o.phase||0;hipY=.62;for(let i=0;i<2;i++){const s=Math.sin(ph+(i?Math.PI:0)),l=A.legs[i];l.hp.rotation.set(-.35-Math.max(0,-s)*.25,0,(i?1:-1)*(.08+Math.max(0,s)*.38));l.kn.rotation.set(.55,0,0);l.ft.rotation.set(-.2,0,0)}A.chest.rotation.set(.38,0,0)}
   else if(an===4){const ph=o.phase||0;hipY=.68+Math.abs(Math.sin(ph))*.035;for(let i=0;i<2;i++){const s=Math.sin(ph+(i?Math.PI:0));const l=A.legs[i];l.hp.rotation.set(-s*.5,0,0);l.kn.rotation.set(Math.max(0,-Math.cos(ph+(i?Math.PI:0)))*.8+.05,0,0);l.ft.rotation.set(0,0,0)}A.chest.rotation.set(.05,0,0)}
   else{const d=clamp(hipY-.12,.25,.555);const sp=Math.atan2(legSpread-.12,d);const lean2=Math.min(1,d/(.88));const a=Math.acos(clamp(d/Math.cos(sp)/.56,0,1));
@@ -914,7 +960,8 @@ function pose(A,o){
   A.body.rotation.y=board&&showGear?-Math.PI/2:0;
   // arms
   const [la,ra]=A.arms;const t=o.time||0;
-  if(an===5||an===3){la.sh.rotation.set(-.6,0,.15);la.el.rotation.set(-.9,0,0);ra.sh.rotation.set(-.6,0,-.15);ra.el.rotation.set(-.9,0,0)}
+  if(an===9){la.sh.rotation.set(-1.0,0,.1);la.el.rotation.set(-.5,0,0);ra.sh.rotation.set(-1.0,0,-.1);ra.el.rotation.set(-.5,0,0)}
+  else if(an===5||an===3){la.sh.rotation.set(-.6,0,.15);la.el.rotation.set(-.9,0,0);ra.sh.rotation.set(-.6,0,-.15);ra.el.rotation.set(-.9,0,0)}
   else if(an===4){const s=Math.sin(o.phase||0);la.sh.rotation.set(s*.5,0,.12);la.el.rotation.set(-.3,0,0);ra.sh.rotation.set(-s*.5,0,-.12);ra.el.rotation.set(-.3,0,0)}
   else if(an===6){la.sh.rotation.set(.05,0,.12);la.el.rotation.set(-.15,0,0);ra.sh.rotation.set(.05,0,-.12);ra.el.rotation.set(-.15,0,0)}
   else if(an===8){const s=Math.sin(o.phase||0)*.25;la.sh.rotation.set(.15,0,1.0+s);la.el.rotation.set(-.2,0,0);ra.sh.rotation.set(.15,0,-1.0+s);ra.el.rotation.set(-.2,0,0)}
@@ -923,6 +970,7 @@ function pose(A,o){
     else if(g==='KeyL'){ra.sh.rotation.set(.6,0,-.2);ra.el.rotation.set(-.7,0,0)}else{ra.sh.rotation.set(-1.1,0,-.1);ra.el.rotation.set(-.2,0,0)}}
   else if(board){la.sh.rotation.set(-.15,0,1.0+Math.sin(t*1.3)*.05);la.el.rotation.set(-.3,0,0);ra.sh.rotation.set(-.15,0,-1.0-Math.sin(t*1.1)*.05);ra.el.rotation.set(-.3,0,0)}
   else{const pl=o.plant||0;la.sh.rotation.set(-.35-pl*.3*(o.side<0),0,.18);la.el.rotation.set(-.7,0,0);ra.sh.rotation.set(-.35-pl*.3*(o.side>0),0,-.18);ra.el.rotation.set(-.7,0,0)}
+  if(jump){la.sh.rotation.set(-.4,0,2.3);ra.sh.rotation.set(-.4,0,-2.3);la.el.rotation.set(0,0,0);ra.el.rotation.set(0,0,0);for(let i=0;i<2;i++){const l=A.legs[i];l.hp.rotation.set(-.55,0,(i?1:-1)*.12);l.kn.rotation.set(.9,0,0)}}
   if(A.food&&an!==1&&an!==2&&an!==7){const sip=(Math.sin(t*.7)>.85);ra.sh.rotation.set(sip?-1.5:-.55,0,-.15);ra.el.rotation.set(sip?-1.6:-1.2,0,0)}
   const em=o.emote;if(em){const k=o.time-em.t;
     if(em.id===1){ra.sh.rotation.set(0,0,-2.7);ra.el.rotation.set(0,0,-.5+Math.sin(k*10)*.5)}
@@ -965,6 +1013,65 @@ function petMesh(id){const g=new THREE.Group(),body=new THREE.Group();g.add(body
     const sc=mesh(new THREE.TorusGeometry(.13,.03,6,14),M({color:0x1f9d55}),0,.38,.22,body);sc.rotation.x=Math.PI/2-.3}
   g.traverse(m=>{if(m.isMesh)m.castShadow=true});return g}
 
+/* ---------- Rudolph's sleigh ---------- */
+function sleighMesh(id='sleigh1'){const g=new THREE.Group(),v=id==='sleigh3'?3:id==='sleigh2'?2:1;
+  const red=v===2?M({color:0xffc934,metalness:.9,roughness:.2}):v===3?M({color:0x161a4a,roughness:.3,metalness:.4,emissive:0x2a1a6a,emissiveIntensity:.5}):M({color:0xc4182c,roughness:.35,metalness:.15}),
+    gold=v===2?M({color:0xffffff,metalness:.6,roughness:.2}):v===3?new THREE.MeshBasicMaterial({color:0x7dffd8}):M({color:0xffc934,metalness:.85,roughness:.25}),dark=M({color:v===2?0x7a1020:v===3?0x2a1a5a:0x5a0d16,roughness:.8});
+  const s=new THREE.Group();s.position.z=-.15;g.add(s);
+  mesh(new THREE.BoxGeometry(1.35,.42,2.1),red,0,.48,0,s);mesh(new THREE.BoxGeometry(1.2,.12,1.9),dark,0,.7,0,s);
+  const back=mesh(new THREE.BoxGeometry(1.35,1.05,.16),red,0,1.05,-.98,s);back.rotation.x=-.18;mesh(new THREE.BoxGeometry(1.42,.08,.2),gold,0,1.58,-1.07,s);
+  for(const x of [-.7,.7]){mesh(new THREE.BoxGeometry(.08,.62,2.05),red,x,.82,-.02,s);mesh(new THREE.BoxGeometry(.1,.07,2.1),gold,x,1.14,-.02,s)}
+  const fr=mesh(new THREE.TorusGeometry(.38,.08,8,18,Math.PI),red,0,.66,1.05,s);fr.rotation.y=Math.PI/2;
+  for(const x of [-.55,.55]){mesh(new THREE.BoxGeometry(.07,.05,2.6),gold,x,.06,.05,s);const c=mesh(new THREE.TorusGeometry(.32,.035,6,14,Math.PI*1.1),gold,x,.38,1.33,s);c.rotation.y=Math.PI/2;c.rotation.z=-.3;
+    for(const z of [-.7,.6])mesh(new THREE.BoxGeometry(.05,.42,.05),gold,x,.24,z,s)}
+  const sack=mesh(new THREE.SphereGeometry(.42,14,10),M({color:0x7a4a2a,roughness:.95}),.3,1.02,-.62,s);sack.scale.set(1,1.1,.8);
+  for(let i=0;i<3;i++)mesh(new THREE.BoxGeometry(.28,.28,.28),M({color:[0x2f7bff,0x1f9d55,0xffc934][i]}),-.35+i*.18,.88+i*.1,-.55,s).rotation.y=i;
+  const team=new THREE.Group();g.add(team);g.userData.deer=team;
+  const spots=v===1?[[0,2.6]]:v===2?[[-.55,2.6],[.55,2.6]]:[[-.55,2.6],[.55,2.6],[-.55,4.5],[.55,4.5]];
+  spots.forEach(([x,z],k)=>{const deer=petMesh('pet2');deer.scale.setScalar(v===1?2.6:2.3);deer.position.set(x,0,z);team.add(deer);
+    if(v===1||(v===3&&k>1)){const glow=mesh(new THREE.SphereGeometry(.06,8,6),new THREE.MeshBasicMaterial({color:0xff2020}),0,.7*2.6,.43*2.6,deer.userData.body);glow.scale.setScalar(1/2.6*1.6)}});
+  if(v===2)for(const x of [-.78,.78]){mesh(new THREE.CylinderGeometry(.03,.03,.5,6),gold,x,1.4,.9,g);const l=mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshBasicMaterial({color:0xffe9a0}),x,1.72,.9,g)}
+  if(v===3){for(const x of [-.55,.55]){const r=mesh(new THREE.BoxGeometry(.09,.06,2.7),new THREE.MeshBasicMaterial({color:0x7dffd8}),x,.06,-.1,g)}for(const x of [-.72,.72])mesh(new THREE.BoxGeometry(.05,.05,2.1),new THREE.MeshBasicMaterial({color:0xc77dff}),x,1.2,-.02,g)}
+  const lineM=M({color:0x3b2416});for(const x of [-.3,.3]){const l=mesh(new THREE.CylinderGeometry(.02,.02,1.7,5),lineM,x*.8,.95,1.65,g);l.rotation.x=Math.PI/2-.12}
+  for(let i=0;i<5;i++)mesh(new THREE.SphereGeometry(.05,8,6),gold,-.25+i*.125,1.55,2.5,g);
+  g.traverse(m=>{if(m.isMesh)m.castShadow=true});return g}
+
+/* ---------- realistic snowmen and fir trees ---------- */
+function lumpyGeo(r,detail,amp,seed){const g=new THREE.IcosahedronGeometry(r,detail),p=g.attributes.position,v=new THREE.Vector3();
+  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).normalize();let d=1+amp*(Math.sin(v.x*6.1+seed)*Math.sin(v.y*5.3+seed*1.7)*Math.sin(v.z*6.7+seed*2.3)+.45*Math.sin(v.x*15+v.z*12+seed)*Math.sin(v.y*13-seed)+.2*Math.sin(v.x*31+v.y*27+v.z*29));
+    let y=v.y;if(y<-.55)y=-.55-(-.55-y)*.35;p.setXYZ(i,v.x*r*d,y*r*d,v.z*r*d)}g.computeVertexNormals();return g}
+// parts: [geometry, color, matrix, material?]
+function snowmanParts(s,seed=1,hat='top',scarf=0xd62839){const L=[],coal=0x1a1a1c,R=[1,.74,.52].map(r=>r*s);let y=0;const ys=[],xo=[0,.03*s,-.02*s];
+  R.forEach((r,i)=>{y=i?y+R[i-1]*.78+r*.8:r*.88;ys.push(y);L.push([lumpyGeo(r,4,.07,seed+i*3.1),0xffffff,mtx(xo[i],y,0,seed+i),snowRealM])});
+  const base=lumpyGeo(R[0]*1.25,3,.12,seed+9);base.scale(1,.28,1);L.push([base,0xffffff,mtx(0,.05*s,0),snowRealM]);
+  const [r0,r1,r2]=R,hy=ys[2],my=ys[1],hx=xo[2];
+  for(const sx of [-1,1])L.push([new THREE.DodecahedronGeometry(r2*.085,0),coal,mtx(hx+sx*r2*.34,hy+r2*.24,r2*.87,sx)]);
+  const car=new THREE.ConeGeometry(r2*.13,r2*.85,10,4);{const p=car.attributes.position;for(let i=0;i<p.count;i++){const yy=p.getY(i);p.setX(i,p.getX(i)*(1+.08*Math.sin(yy*60)));p.setZ(i,p.getZ(i)*(1+.08*Math.sin(yy*60)))}car.computeVertexNormals()}
+  L.push([car,0xf06a12,mtx(hx,hy+r2*.02,r2*1.25,0,1,Math.PI/2+.12)]);
+  for(let i=0;i<6;i++){const a=(i-2.5)*.26;L.push([new THREE.DodecahedronGeometry(r2*.052,0),coal,mtx(hx+Math.sin(a)*r2*.5,hy-r2*.36+Math.abs(i-2.5)*r2*.05,Math.cos(a)*r2*.87,i)])}
+  for(let i=0;i<3;i++)L.push([new THREE.DodecahedronGeometry(r1*.085,0),coal,mtx(xo[1],my+r1*(.42-i*.38),r1*.95-Math.abs(i-1)*r1*.05,i)]);
+  const tw=0x4a2e18;for(const sx of [-1,1]){const ax=xo[1]+sx*r1*.85,ay=my+r1*.25,len=r1*1.9,ang=sx*-1.05;
+    L.push([new THREE.CylinderGeometry(.018*s,.04*s,len,6),tw,mtx(ax+sx*Math.sin(-ang)*len*.0+sx*len*.43,ay+len*.25,0,0,1,0,ang)]);
+    const tipX=ax+sx*len*.86,tipY=ay+len*.5;for(const [da,l] of [[.6,.32],[-.5,.26],[.15,.22]])L.push([new THREE.CylinderGeometry(.008*s,.016*s,l*r1,5),tw,mtx(tipX-sx*len*.12+sx*Math.sin(-ang-da)*.0,tipY-len*.08+l*r1*.3,0,0,1,0,ang+da*sx)])}
+  const sc=new THREE.TorusGeometry(r2*.86,r2*.17,10,28);L.push([sc,0xffffff,mtx(hx,hy-r2*.82,0,0,1,Math.PI/2),M({map:knitTex('#'+scarf.toString(16).padStart(6,'0'),'#f4f0e6'),roughness:.95})]);
+  const tail=new THREE.BoxGeometry(r2*.32,r2*1.1,r2*.08);L.push([tail,0xffffff,mtx(hx+r2*.35,hy-r2*1.35,r2*.82,0,1,.15,.15),M({map:knitTex('#'+scarf.toString(16).padStart(6,'0'),'#f4f0e6'),roughness:.95})]);
+  if(hat==='top'){L.push([new THREE.CylinderGeometry(r2*.55,r2*.58,r2*.9,20),0x161618,mtx(hx,hy+r2*1.22,0,0,1,-.08)]);L.push([new THREE.CylinderGeometry(r2*.92,r2*.92,r2*.07,24),0x161618,mtx(hx,hy+r2*.8,0,0,1,-.08)]);
+    L.push([new THREE.CylinderGeometry(r2*.565,r2*.59,r2*.16,20),0xb3202c,mtx(hx,hy+r2*.92,0,0,1,-.08)]);
+    for(const a of [-.4,.4])L.push([new THREE.SphereGeometry(r2*.12,8,6),0x1f7a3a,mtx(hx+Math.sin(a)*r2*.6,hy+r2*1.0,Math.cos(a)*r2*.6-r2*.02,a,1).multiply(new THREE.Matrix4().makeScale(1.6,.5,.8))]);
+    for(let i=0;i<3;i++)L.push([new THREE.SphereGeometry(r2*.06,8,6),0xe01c2c,mtx(hx+(i-1)*r2*.08,hy+r2*1.05,r2*.6)])}
+  else{L.push([new THREE.ConeGeometry(r2*.62,r2*1.4,16),0xc4182c,mtx(hx,hy+r2*1.3,-r2*.12,0,1,-.35)]);L.push([new THREE.TorusGeometry(r2*.6,r2*.15,8,20),0xffffff,mtx(hx,hy+r2*.8,0,0,1,Math.PI/2)]);L.push([new THREE.SphereGeometry(r2*.17,10,8),0xffffff,mtx(hx,hy+r2*1.85,-r2*.55)])}
+  return {L,ys,R}}
+function buildSnowman(s,seed,hat,scarf){const g=new THREE.Group(),{L}=snowmanParts(s,seed,hat,scarf);for(const [geo,c,m,mat] of L){const x=new THREE.Mesh(geo,mat||M({color:c,roughness:c===0x1a1a1c?.45:.7}));x.applyMatrix4(m);x.castShadow=true;g.add(x)}return g}
+// fir tree built from drooping branch fans
+function firGeo(H,R0,seed,levelsPerM=2,perWhorl=11){const parts=[];let rs=seed;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
+  parts.push([new THREE.CylinderGeometry(.18*R0/6,.32*R0/6,H*.25,8),0x4a2e18,mtx(0,H*.12,0)]);
+  parts.push([new THREE.ConeGeometry(R0*.55,H*.92,10),0x0d3320,mtx(0,H*.5,0)]);
+  const lv=Math.round(H*levelsPerM);for(let l=0;l<lv;l++){const t=l/lv,y=H*.1+t*H*.86,R=(1-t)*R0*.97+.25,n=Math.max(5,Math.round(perWhorl*(1-t*.5)));
+    for(let k=0;k<n;k++){const a=k/n*Math.PI*2+l*.9+rnd()*.4,len=R*(.85+rnd()*.25),droop=.32+t*.1+rnd()*.15;
+      const g=new THREE.ConeGeometry(Math.max(.18,len*.2),len,5,1);g.scale(.5,1,1);g.rotateZ(-Math.PI/2);g.translate(len/2,0,0);g.rotateZ(-droop);g.rotateY(-a);g.translate(0,y,0);
+      const shade=[0x174d2e,0x1d5c36,0x14432a,0x22683e][(rnd()*4)|0];parts.push([g,shade,null])}}
+  return mergeColored(parts)}
+
 /* ================= Lodge interior (the lounge) ================= */
 const LW=16,LD=11,LCOL=[],SEATS=[];
 const fireLight=new THREE.PointLight(0xff8a3a,60,26,1.4);
@@ -975,7 +1082,7 @@ let barista;
  const plank=canvasTex(256,256,(g,W,H)=>{for(let i=0;i<8;i++){g.fillStyle=['#8a5a33','#7d4f2b','#956238','#835530'][i%4];g.fillRect(0,i*32,W,32);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,i*32,W,2);g.fillRect((i*97)%W,i*32,2,32)}},[6,5]);
  const floor=mesh(new THREE.PlaneGeometry(LW*2,LD*2),M({map:plank,roughness:.7}),0,0,0,S);floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;
  const wallT=logTex.clone();wallT.repeat.set(6,3);wallT.needsUpdate=true;const wallM=M({map:wallT,side:THREE.DoubleSide});
- for(const [w,x,z,ry] of [[LW*2,0,-LD,0],[LW*2,0,LD,Math.PI],[LD*2,-LW,0,Math.PI/2],[LD*2,LW,0,-Math.PI/2]]){const m=mesh(new THREE.PlaneGeometry(w,8),wallM,x,4,z,S);m.rotation.y=ry}
+ for(const [w,x,z,ry] of [[LW*2,0,-LD,0],[LW*2,0,LD,Math.PI],[LD*2,LW,0,-Math.PI/2]]){const m=mesh(new THREE.PlaneGeometry(w,8),wallM,x,4,z,S);m.rotation.y=ry}
  const ceil=mesh(new THREE.PlaneGeometry(LW*2,LD*2),M({color:0x5e3518,side:THREE.DoubleSide}),0,8,0,S);ceil.rotation.x=Math.PI/2;
  for(let x=-12;x<=12;x+=6)mesh(new THREE.BoxGeometry(.5,.5,LD*2),M({color:0x4a2a12}),x,7.7,0,S);
  // rug
@@ -1018,7 +1125,7 @@ let barista;
    LCOL.push({x0:x-1,x1:x+1,z0:z-1,z1:z+1})}
  // windows
  const winM=new THREE.MeshStandardMaterial({map:canvasTex(256,256,(g,W,H)=>{const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#1d3d74');gr.addColorStop(1,'#a9c4ea');g.fillStyle=gr;g.fillRect(0,0,W,H);g.fillStyle='#fff';for(let i=0;i<60;i++){g.globalAlpha=.4+Math.random()*.6;g.beginPath();g.arc(Math.random()*W,Math.random()*H,1+Math.random()*2.5,0,7);g.fill()}g.globalAlpha=1;g.fillStyle='#f4f8ff';g.beginPath();g.moveTo(0,H);g.lineTo(W*.3,H*.55);g.lineTo(W*.55,H*.8);g.lineTo(W*.8,H*.5);g.lineTo(W,H*.75);g.lineTo(W,H);g.fill()}),emissive:0x8aa6d6,emissiveIntensity:.35});
- for(const z of [-5,1,7]){const w=mesh(new THREE.PlaneGeometry(3,2.6),winM,-LW+.02,3.6,z,S);w.rotation.y=Math.PI/2;for(const [dx,dy,sx,sy] of [[0,1.35,3.3,.2],[0,-1.35,3.3,.2],[1.6,0,.2,2.9],[-1.6,0,.2,2.9],[0,0,.1,2.6]])mesh(new THREE.BoxGeometry(.15,sy,sx),M({color:0xf0e6d8}),-LW+.1,3.6+dy,z+dx,S)}
+ for(const x of [-9,9]){const w=mesh(new THREE.PlaneGeometry(3,2.6),winM,x,3.6,LD-.02,S);w.rotation.y=Math.PI;for(const [dx,dy,sx,sy] of [[0,1.35,3.3,.2],[0,-1.35,3.3,.2],[1.6,0,.2,2.9],[-1.6,0,.2,2.9],[0,0,.1,2.6]])mesh(new THREE.BoxGeometry(sx,sy,.15),M({color:0xf0e6d8}),x+dx,3.6+dy,LD-.1,S)}
  // door + exit sign
  mesh(new THREE.PlaneGeometry(2.8,4),M({color:0x6b2d16}),0,2,LD-.02,S).rotation.y=Math.PI;
  const ex=signPlane([['EXIT ⇢ SLOPES',.55,'#7dff9a']],3,.7,{bg:'#0b2a14',border:'#7dff9a'});ex.position.set(0,4.6,LD-.05);ex.rotation.y=Math.PI;S.add(ex);
@@ -1032,62 +1139,97 @@ let barista;
 const LODGE_DOOR=V3(0,0,LD-1.6),BAR_SPOT=V3(11.6,0,-1);
 buildGlows(lodge,.45,2.5);GLOW_S.length=0;GLOW_L.length=0;
 
-/* ================= Rudolph's Rentals: walk-in store ================= */
-const shopS=new THREE.Scene(),SW=12,SD=9,SCOL=[],DISPLAYS=[];let clerk;
-{const S=shopS;S.background=new THREE.Color(0x140c06);
- S.add(new THREE.HemisphereLight(0xffe6c8,0x3a2414,1.2));S.add(new THREE.AmbientLight(0xffd8b0,.3));
- const plank=canvasTex(256,256,(g,W,H)=>{for(let i=0;i<8;i++){g.fillStyle=['#b07a4a','#a06d40','#bb8452','#a87444'][i%4];g.fillRect(0,i*32,W,32);g.fillStyle='rgba(0,0,0,.2)';g.fillRect(0,i*32,W,2);g.fillRect((i*71)%W,i*32,2,32)}},[5,4]);
- const floor=mesh(new THREE.PlaneGeometry(SW*2,SD*2),M({map:plank,roughness:.5}),0,0,0,S);floor.rotation.x=-Math.PI/2;
+/* ================= Rudolph's Gear: the store wing of the Cocoa Lodge (x -40..-16) ================= */
+const shopS=lodge,LX0=-40,SCOL=LCOL,DISPLAYS=[];let clerk;
+{const S=lodge,CX=-28,HW=12;
+ const plank=canvasTex(256,256,(g,W,H)=>{for(let i=0;i<8;i++){g.fillStyle=['#b07a4a','#a06d40','#bb8452','#a87444'][i%4];g.fillRect(0,i*32,W,32);g.fillStyle='rgba(0,0,0,.2)';g.fillRect(0,i*32,W,2);g.fillRect((i*71)%W,i*32,2,32)}},[5,5]);
+ const floor=mesh(new THREE.PlaneGeometry(HW*2,LD*2),M({map:plank,roughness:.45}),CX,0,0,S);floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;
  const wt=logTex.clone();wt.repeat.set(5,3);wt.needsUpdate=true;const wallM=M({map:wt,side:THREE.DoubleSide});
- for(const [w,x,z,ry] of [[SW*2,0,-SD,0],[SW*2,0,SD,Math.PI],[SD*2,-SW,0,Math.PI/2],[SD*2,SW,0,-Math.PI/2]]){const m=mesh(new THREE.PlaneGeometry(w,7),wallM,x,3.5,z,S);m.rotation.y=ry}
- const ceil=mesh(new THREE.PlaneGeometry(SW*2,SD*2),M({color:0x4a2a12,side:THREE.DoubleSide}),0,7,0,S);ceil.rotation.x=Math.PI/2;
- const rug=mesh(new THREE.PlaneGeometry(7,4),M({map:stripeTex('#1f5a32','#174a28',3)}),0,.01,1,S);rug.rotation.x=-Math.PI/2;
- const sign=signPlane([["RUDOLPH'S RENTALS",.5,'#ffd27a'],['Walk up to anything and press E',.3]],7,1.6,{bg:'#3b1d0e'});sign.position.set(0,5.2,-SD+.05);S.add(sign);
- const ex=signPlane([['EXIT ⇢ SLOPES',.55,'#7dff9a']],3,.7,{bg:'#0b2a14',border:'#7dff9a'});ex.position.set(0,4.6,SD-.05);ex.rotation.y=Math.PI;S.add(ex);
- mesh(new THREE.PlaneGeometry(2.8,4),M({color:0x6b2d16}),0,2,SD-.02,S).rotation.y=Math.PI;
- const wood=M({color:0x5e3518}),white=M({color:0xf2efe9,roughness:.6}),glass=new THREE.MeshStandardMaterial({color:0xcfe8ff,transparent:true,opacity:.25,roughness:.1,metalness:.2});
+ for(const [w,x,z,ry] of [[HW*2,CX,-LD,0],[HW*2,CX,LD,Math.PI],[LD*2,LX0,0,Math.PI/2]]){const m=mesh(new THREE.PlaneGeometry(w,8),wallM,x,4,z,S);m.rotation.y=ry}
+ // partition between lounge and store, with a wide candy-cane archway
+ const OPEN=3.4;for(const s of [-1,1]){const len=LD-OPEN,zc=s*(OPEN+len/2);mesh(new THREE.BoxGeometry(.3,8,len),wallM,-LW,4,zc,S);LCOL.push({x0:-LW-.2,x1:-LW+.2,z0:zc-len/2,z1:zc+len/2})}
+ mesh(new THREE.BoxGeometry(.3,2.4,OPEN*2),wallM,-LW,6.8,0,S);
+ for(const s of [-1,1])mesh(new THREE.CylinderGeometry(.28,.28,5.6,14),M({map:caneTex,roughness:.35}),-LW,2.8,s*OPEN,S);
+ mesh(new THREE.BoxGeometry(.5,.35,OPEN*2+.6),M({color:0xffc934,metalness:.85,roughness:.25}),-LW,5.65,0,S);
+ for(const fx of [-1,1]){const sg=signPlane([["🦌 RUDOLPH'S GEAR",.62,'#ffd54d']],5.6,1,{bg:'#7a1020',border:'#ffd54d'});sg.position.set(-LW+fx*.18,6.6,0);sg.rotation.y=fx>0?Math.PI/2:-Math.PI/2;S.add(sg)}
+ for(let i=0;i<=20;i++){const z=-OPEN+i/20*OPEN*2;for(const fx of [-.2,.2])addBulb(-LW+fx,5.95,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
+ const ceil=mesh(new THREE.PlaneGeometry(HW*2,LD*2),M({color:0x5a1018,side:THREE.DoubleSide,roughness:.9}),CX,8,0,S);ceil.rotation.x=Math.PI/2;
+ for(let x=-38;x<=-18;x+=5)mesh(new THREE.BoxGeometry(.4,.4,LD*2),M({color:0xffc934,metalness:.8,roughness:.3}),x,7.8,0,S);
+ // windows on the outer wall
+ const winM=new THREE.MeshStandardMaterial({map:canvasTex(256,256,(g,W,H)=>{const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#2a2364');gr.addColorStop(1,'#c9a6e6');g.fillStyle=gr;g.fillRect(0,0,W,H);g.fillStyle='#fff';for(let i=0;i<60;i++){g.globalAlpha=.4+Math.random()*.6;g.beginPath();g.arc(Math.random()*W,Math.random()*H,1+Math.random()*2.5,0,7);g.fill()}g.globalAlpha=1;g.fillStyle='#f4f8ff';g.beginPath();g.moveTo(0,H);g.lineTo(W*.3,H*.55);g.lineTo(W*.55,H*.8);g.lineTo(W*.8,H*.5);g.lineTo(W,H*.75);g.lineTo(W,H);g.fill()}),emissive:0x8a86d6,emissiveIntensity:.35});
+ for(const z of [-7.5,7.5]){const w=mesh(new THREE.PlaneGeometry(3,2.6),winM,LX0+.02,5.6,z,S);w.rotation.y=Math.PI/2;for(const [dx,dy,sx,sy] of [[0,1.35,3.3,.2],[0,-1.35,3.3,.2],[1.6,0,.2,2.9],[-1.6,0,.2,2.9],[0,0,.1,2.6]])mesh(new THREE.BoxGeometry(.15,sy,sx),M({color:0xffc934,metalness:.7,roughness:.3}),LX0+.1,5.6+dy,z+dx,S)}
+ // rich red carpet runner with gold edges
+ const rugT=canvasTex(128,256,(g,W,H)=>{g.fillStyle='#8f1222';g.fillRect(0,0,W,H);g.fillStyle='#e8b33a';g.fillRect(0,0,8,H);g.fillRect(W-8,0,8,H);g.fillStyle='rgba(255,215,120,.25)';for(let y=12;y<H;y+=32){g.beginPath();g.moveTo(W/2,y);g.lineTo(W/2+14,y+14);g.lineTo(W/2,y+28);g.lineTo(W/2-14,y+14);g.fill()}});
+ rugT.center.set(.5,.5);rugT.rotation=Math.PI/2;const rug=mesh(new THREE.PlaneGeometry(22,3.2),M({map:rugT,roughness:.95}),CX+1,.012,-2,S);rug.rotation.x=-Math.PI/2;
+ const wood=M({color:0x5e3518}),white=M({color:0xf2efe9,roughness:.6}),gold=M({color:0xffc934,metalness:.85,roughness:.25}),glass=new THREE.MeshStandardMaterial({color:0xcfe8ff,transparent:true,opacity:.25,roughness:.1,metalness:.2});
  const add=(id,obj,x,y,z,ix,iz,ly)=>{obj.position.set(x,y,z);S.add(obj);DISPLAYS.push({id,obj,x,z,ix,iz,ly,label:null})};
- // skis on the left wall, boards on the right wall
- mesh(new THREE.BoxGeometry(.3,4,13),wood,-SW+.15,2.2,0,S);mesh(new THREE.BoxGeometry(.3,4,13),wood,SW-.15,2.2,0,S);
+ // skis on the outer wall
+ mesh(new THREE.BoxGeometry(.3,4,13),wood,LX0+.15,2.2,0,S);mesh(new THREE.BoxGeometry(.32,.12,13.2),gold,LX0+.2,4.25,0,S);
  ITEMS.filter(i=>i.cat==='ski').forEach((it,i)=>{const g=new THREE.Group(),m=M({color:it.col,roughness:.35,metalness:it.id.endsWith('5')?.8:.1});for(const s of [-.09,.09]){mesh(new THREE.BoxGeometry(.09,1.75,.03),m,s,0,0,g);const tip=mesh(new THREE.BoxGeometry(.09,.22,.03),m,s,.95,.05,g);tip.rotation.x=.45;mesh(new THREE.BoxGeometry(.11,.28,.06),blackM,s,-.1,.03,g)}
-   g.rotation.y=Math.PI/2;add(it.id,g,-SW+.45,1.25,-5+i*2,-9.6,-5+i*2,2.6)});
+   g.rotation.y=Math.PI/2;add(it.id,g,LX0+.45,1.25,-5+i*2,LX0+2.4,-5+i*2,2.6)});
+ // boards on the back wall
+ mesh(new THREE.BoxGeometry(14,4,.3),wood,-31.5,2.2,-LD+.15,S);mesh(new THREE.BoxGeometry(14.2,.12,.32),gold,-31.5,4.25,-LD+.2,S);
  ITEMS.filter(i=>i.cat==='board').forEach((it,i)=>{const g=new THREE.Group(),b=mesh(BOARD_GEO,M({color:it.col,roughness:.35,metalness:it.id.endsWith('5')?.8:.1}),0,0,0,g);b.rotation.x=Math.PI/2;b.rotation.z=Math.PI/2;
-   g.rotation.y=0;add(it.id,g,SW-.45,1.15,-5+i*2,9.6,-5+i*2,2.5)});
- // jackets on mannequins along the back wall
- ITEMS.filter(i=>i.cat==='jacket').forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.04,.04,1.1),M({color:0x888888,metalness:.7}),0,.55,0,g);mesh(new THREE.CylinderGeometry(.25,.25,.05,16),wood,0,.02,0,g);
+   g.rotation.y=-Math.PI/2;const x=-37+i*2.2;add(it.id,g,x,1.15,-LD+.45,x,-LD+2.2,2.5)});
+ // jackets on mannequins along the front wall
+ ITEMS.filter(i=>i.cat==='jacket').forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.04,.04,1.1),M({color:0x888888,metalness:.7}),0,.55,0,g);mesh(new THREE.CylinderGeometry(.25,.25,.05,16),gold,0,.02,0,g);
    const jm=M({color:it.pat?0xffffff:it.col,map:it.pat==='cane'?caneTex:SWEATER[it.pat]||null,metalness:it.metal?.8:0,roughness:it.metal?.3:.85});const t=mesh(capsule(.2,.34),jm,0,1.35,0,g);t.scale.set(1.12,1,.8);
-   for(const s of [-1,1]){const a=mesh(capsule(.065,.4),jm,s*.27,1.3,0,g);a.rotation.z=s*.15}mesh(new THREE.SphereGeometry(.12,12,10),white,0,1.85,0,g);
-   add(it.id,g,-6+i*2,0,-SD+1,-6+i*2,-SD+2.6,2.3)});
+   for(const s of [-1,1]){const a=mesh(capsule(.065,.4),jm,s*.27,1.3,0,g);a.rotation.z=s*.15}mesh(new THREE.SphereGeometry(.12,12,10),white,0,1.85,0,g);g.rotation.y=Math.PI;
+   const x=-35.5+i*1.9;add(it.id,g,x,0,LD-1,x,LD-2.6,2.3)});
  // hats on pedestals
- ITEMS.filter(i=>i.cat==='hat').forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.35,.4,1.1,16),wood,0,.55,0,g);mesh(new THREE.SphereGeometry(.15,14,10),white,0,1.25,0,g);const h=hatMesh(it.id);h.position.y=1.32;g.add(h);
-   const x=-5+i*2;add(it.id,g,x,0,-2.2,x,-.9,2.2);SCOL.push({x0:x-.45,x1:x+.45,z0:-2.65,z1:-1.75})});
+ ITEMS.filter(i=>i.cat==='hat').forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.35,.4,1.1,16),wood,0,.55,0,g);mesh(new THREE.CylinderGeometry(.42,.42,.06,16),gold,0,1.1,0,g);mesh(new THREE.SphereGeometry(.15,14,10),white,0,1.25,0,g);const h=hatMesh(it.id);h.position.y=1.32;g.add(h);
+   const x=-37+i*1.9;add(it.id,g,x,0,-5.2,x,-3.9,2.2);LCOL.push({x0:x-.45,x1:x+.45,z0:-5.65,z1:-4.75})});
  // goggles in a glass case
- mesh(new THREE.BoxGeometry(8.4,.9,1.2),wood,0,.45,2.6,S);mesh(new THREE.BoxGeometry(8.4,.6,1.2),glass,0,1.2,2.6,S);SCOL.push({x0:-4.3,x1:4.3,z0:2,z1:3.2});
+ mesh(new THREE.BoxGeometry(8.4,.9,1.2),wood,-31,.45,.4,S);mesh(new THREE.BoxGeometry(8.4,.6,1.2),glass,-31,1.2,.4,S);mesh(new THREE.BoxGeometry(8.5,.06,1.3),gold,-31,1.52,.4,S);LCOL.push({x0:-35.3,x1:-26.7,z0:-.2,z1:1});
  ITEMS.filter(i=>i.cat==='gog').forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.SphereGeometry(.13,12,10),white,0,0,0,g);mesh(new THREE.BoxGeometry(.22,.075,.05),M({color:it.col,metalness:.6,roughness:.15}),0,.03,.11,g);mesh(new THREE.TorusGeometry(.135,.012,4,20),blackM,0,.03,0,g).rotation.x=Math.PI/2;
-   const x=-3+i*2;add(it.id,g,x,1.05,2.6,x,3.9,1.8)});
- // checkout counter + clerk
- mesh(new THREE.BoxGeometry(4,1.1,1.2),wood,8.6,.55,5.6,S);mesh(new THREE.BoxGeometry(4.2,.1,1.4),M({color:0xe8dccb,roughness:.4}),8.6,1.15,5.6,S);SCOL.push({x0:6.5,x1:10.7,z0:4.9,z1:6.3});
- const reg=mesh(new THREE.BoxGeometry(.6,.4,.5),M({color:0x2a2a2a}),9.6,1.4,5.6,S);
- clerk=makeAvatar();setLook(clerk,{sport:'ski',eq:'ski0',hat:'hat3',jacket:'jacket0',gog:'gog0'});clerk.gog.visible=false;clerk.root.position.set(8.6,0,7.1);clerk.root.rotation.y=Math.PI;setName(clerk,'Rudolph (shopkeeper)');S.add(clerk.root);
- // decorations
- const tg=new THREE.Group();tg.position.set(-10.3,0,7.3);S.add(tg);[[1.6,2,1.3],[1.2,1.8,2.5],[.7,1.4,3.5]].forEach(([r,h,y])=>mesh(new THREE.ConeGeometry(r,h,12),M({color:0x1b5e35}),0,y,0,tg));mesh(new THREE.OctahedronGeometry(.3),new THREE.MeshBasicMaterial({color:0xffe066}),0,4.4,0,tg);
- for(let i=0;i<30;i++){const t=i/30,a=t*Math.PI*10,r=(1-t)*1.5+.15;addBulb(-10.3+Math.cos(a)*r,.6+t*3.6,7.3+Math.sin(a)*r,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}SCOL.push({x0:-11.8,x1:-8.8,z0:5.8,z1:8.8});
- for(let i=0;i<120;i++){const t=i/120*4,side=t|0,f=t-side;let x,z;if(side===0){x=-SW+.2+f*(SW*2-.4);z=-SD+.2}else if(side===1){x=SW-.2;z=-SD+.2+f*(SD*2-.4)}else if(side===2){x=SW-.2-f*(SW*2-.4);z=SD-.2}else{x=-SW+.2;z=SD-.2-f*(SD*2-.4)}
-   addBulb(x,6.3-Math.abs(Math.sin(f*Math.PI*7))*.35,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
- for(const [x,z] of [[-6,-2],[6,-2],[0,4]]){const pl=new THREE.PointLight(0xffd8a8,26,18,1.5);pl.position.set(x,6,z);S.add(pl);mesh(new THREE.ConeGeometry(.5,.4,16,1,true),M({color:0x1f3b2a,side:THREE.DoubleSide}),x,6.5,z,S);addGlow(x,6.25,z,0xffe0b0)}
- // glowing trails on pedestals (front left) and pets on cushions (front right)
+   const x=-34+i*2;add(it.id,g,x,1.05,.4,x,1.7,1.8)});
+ // glowing trails on pedestals and pets on cushions
  ITEMS.filter(i=>i.cat==='trail'&&i.price).forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.3,.36,.9,14),wood,0,.45,0,g);
-   for(let k=0;k<26;k++){const t=k/26,a=t*Math.PI*5,c=it.pal[k%it.pal.length];mesh(new THREE.SphereGeometry(.045,6,5),new THREE.MeshBasicMaterial({color:c}),Math.cos(a)*(.28-t*.15),1.05+t*.75,Math.sin(a)*(.28-t*.15),g);if(k%5===0)addBulb(-8+i*1.6+Math.cos(a)*(.28-t*.15),1.05+t*.75,5.4+Math.sin(a)*(.28-t*.15),c)}
-   const x=-8+i*1.6;add(it.id,g,x,0,5.4,x,4.1,2.2);SCOL.push({x0:x-.4,x1:x+.4,z0:5,z1:5.8})});
- ITEMS.filter(i=>i.cat==='pet'&&i.price).forEach((it,i)=>{const g=new THREE.Group();const cu=mesh(new THREE.CylinderGeometry(.42,.45,.18,16),M({color:0xd62839,roughness:.9}),0,.09,0,g);const p=petMesh(it.id);p.position.y=.18;p.rotation.y=-.3;g.add(p);
-   const x=2.4+i*1.5;add(it.id,g,x,0,6.3,x,5,1.4);SCOL.push({x0:x-.45,x1:x+.45,z0:5.85,z1:6.75})});
- buildGlows(shopS,.45,2.5);GLOW_S.length=0;GLOW_L.length=0}
-const SHOP_DOOR=V3(0,0,SD-1.6),COUNTER_SPOT=V3(8.6,0,4.1);
-function refreshShopLabels(){for(const d of DISPLAYS){const it=ITEM[d.id];const own=SAVE.owned.includes(d.id),eq=SAVE.eq[it.cat]===d.id;
-  const txt=eq?'★ Wearing':own?'✓ Owned':(it.price?fmt(it.price)+' pts':'Free');const key=txt;if(d.key===key)continue;d.key=key;
+   const x=-38+i*1.6;for(let k=0;k<26;k++){const t=k/26,a=t*Math.PI*5,c=it.pal[k%it.pal.length];mesh(new THREE.SphereGeometry(.045,6,5),new THREE.MeshBasicMaterial({color:c}),Math.cos(a)*(.28-t*.15),1.05+t*.75,Math.sin(a)*(.28-t*.15),g);if(k%5===0)addBulb(x+Math.cos(a)*(.28-t*.15),1.05+t*.75,4.6+Math.sin(a)*(.28-t*.15),c)}
+   add(it.id,g,x,0,4.6,x,3.3,2.2);LCOL.push({x0:x-.4,x1:x+.4,z0:4.2,z1:5})});
+ ITEMS.filter(i=>i.cat==='pet'&&i.price).forEach((it,i)=>{const g=new THREE.Group();mesh(new THREE.CylinderGeometry(.42,.45,.18,16),M({color:0xd62839,roughness:.9}),0,.09,0,g);mesh(new THREE.TorusGeometry(.44,.04,6,20),gold,0,.18,0,g).rotation.x=Math.PI/2;const p=petMesh(it.id);p.position.y=.18;p.rotation.y=-.3;g.add(p);
+   const x=-29.5+i*1.5;add(it.id,g,x,0,4.8,x,3.5,1.4);LCOL.push({x0:x-.45,x1:x+.45,z0:4.35,z1:5.25})});
+ // sleigh showroom: three sleighs on a velvet-roped stage
+ {const cx=-20.4,cz=-6.6;mesh(new THREE.BoxGeometry(7.6,.3,7.4),M({color:0x7a1020,roughness:.8}),cx,.15,cz,S);for(const [w,d,x,z] of [[7.7,.08,cx,cz+3.7],[.08,7.5,cx-3.8,cz],[.08,7.5,cx+3.8,cz]])mesh(new THREE.BoxGeometry(w,.06,d),gold,x,.31,z,S);
+  ['sleigh1','sleigh2','sleigh3'].forEach((id,k)=>{const sl=sleighMesh(id),x=cx-2.4+k*2.4;sl.scale.setScalar(.62);sl.rotation.y=Math.PI;add(id,sl,x,.3,cz+1.6,x,cz+4.6,2.3)});
+  for(let i=0;i<=8;i++){const px=cx-3.8+i*.95,pz=cz+4.1;mesh(new THREE.CylinderGeometry(.05,.07,1,8),gold,px,.5,pz,S);mesh(new THREE.SphereGeometry(.09,8,6),gold,px,1.02,pz,S)}
+  const rope=mesh(new THREE.BoxGeometry(7.6,.07,.07),M({color:0xb3122c}),cx,.86,cz+4.1,S);
+  for(const x of [cx-2.4,cx+2.4]){const sp=new THREE.SpotLight(0xfff0d0,40,14,.5,.5,1.2);sp.position.set(x,7.6,cz+3);sp.target.position.set(x,0,cz-1);S.add(sp,sp.target)}
+  const sg=signPlane([["🛷 RUDOLPH'S SLEIGHS",.5,'#ffd54d'],['Unlock one and press 4 outside to ride',.28]],5.6,1.3,{bg:'#3b0d12',border:'#ffd54d'});sg.position.set(cx,5.2,-LD+.06);S.add(sg);
+  for(let i=0;i<=24;i++)addBulb(cx-2.9+i/24*5.8,5.92,-LD+.15,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4]);
+  LCOL.push({x0:cx-3.9,x1:cx+3.9,z0:cz-3.8,z1:cz+4.2})}
+ // checkout counter + Rudolph
+ mesh(new THREE.BoxGeometry(4,1.1,1.2),M({color:0x7a1020,roughness:.6}),-21,.55,6,S);mesh(new THREE.BoxGeometry(4.2,.1,1.4),gold,-21,1.15,6,S);LCOL.push({x0:-23.1,x1:-18.9,z0:5.3,z1:6.7});
+ mesh(new THREE.BoxGeometry(.6,.4,.5),M({color:0x2a2a2a}),-20,1.4,6,S);
+ clerk=makeAvatar();setLook(clerk,{sport:'ski',eq:'ski0',hat:'hat3',jacket:'jacket0',gog:'gog0'});clerk.gog.visible=false;clerk.root.position.set(-21,0,7.5);clerk.root.rotation.y=Math.PI;setName(clerk,'Rudolph (shopkeeper)');S.add(clerk.root);
+ const cs=signPlane([['🛍 CHECKOUT',.55,'#ffd54d'],['Full catalog · press E',.32]],3,1,{bg:'#3b0d12',border:'#ffd54d'});cs.position.set(-21,3.4,LD-.05);cs.rotation.y=Math.PI;S.add(cs);
+ // big title over the boards
+ const tt=signPlane([["🦌 RUDOLPH'S GEAR SHOP",.5,'#ffd54d'],['Skis · Boards · Jackets · Hats · Goggles · Trails · Pets · Sleigh',.22,'#ffe6b0']],10,1.6,{bg:'#7a1020',border:'#ffd54d'});tt.position.set(-31.5,6,-LD+.06);S.add(tt);
+ for(let i=0;i<=40;i++){const t=i/40,x=-36.6+t*10.2;addBulb(x,6.92,-LD+.15,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4]);addBulb(x,5.08,-LD+.15,[0xffd030,0xff3030,0x30ff60,0x30a0ff][i%4])}
+ // wreaths with bows on the walls
+ for(const [x,z,ry] of [[-37,LD-.2,Math.PI],[-17.5,LD-.2,Math.PI],[LX0+.2,-1.5,Math.PI/2]]){const g=new THREE.Group();g.position.set(x,5.3,z);g.rotation.y=ry;S.add(g);mesh(new THREE.TorusGeometry(.6,.2,8,22),M({color:0x1d5a32,roughness:.9}),0,0,0,g);
+   for(let k=0;k<8;k++){const a=k/8*Math.PI*2;mesh(new THREE.SphereGeometry(.08,6,5),M({color:0xd62839}),Math.cos(a)*.6,Math.sin(a)*.6,.18,g)}mesh(new THREE.BoxGeometry(.5,.3,.1),M({color:0xd62839}),0,-.6,.2,g)}
+ // golden chandelier
+ {const g=new THREE.Group();g.position.set(-28,6.6,-1);S.add(g);mesh(new THREE.TorusGeometry(1.4,.07,8,32),gold,0,0,0,g).rotation.x=Math.PI/2;mesh(new THREE.CylinderGeometry(.03,.03,1.2),gold,0,.6,0,g);
+  for(let k=0;k<10;k++){const a=k/10*Math.PI*2;mesh(new THREE.CylinderGeometry(.05,.05,.25,8),white,Math.cos(a)*1.4,.15,Math.sin(a)*1.4,g);addGlow(-28+Math.cos(a)*1.4,6.9,-1+Math.sin(a)*1.4,0xffd890);addBulb(-28+Math.cos(a)*1.4,6.85,-1+Math.sin(a)*1.4,0xfff0c0)}
+  const pl=new THREE.PointLight(0xffd8a8,45,26,1.4);pl.position.set(-28,6,-1);S.add(pl)}
+ for(const [x,z] of [[-36,-6],[-36,6],[-20,1]]){const pl=new THREE.PointLight(0xffd8a8,22,16,1.5);pl.position.set(x,6.5,z);S.add(pl)}
+ // hanging ornaments from the ceiling
+ for(let i=0;i<26;i++){const x=-39+((i*7.31)%22),z=-10+((i*5.17)%20),h=.6+((i*3)%5)*.25,c=[0xd62839,0xffc934,0x2f7bff,0x1f9d55,0xc0c6d0][i%5];mesh(new THREE.CylinderGeometry(.01,.01,h),M({color:0xdddddd}),x,8-h/2,z,S);mesh(new THREE.SphereGeometry(.22,12,10),M({color:c,metalness:.7,roughness:.2}),x,8-h-.2,z,S)}
+ // decorated tree and piles of gifts
+ const tg=new THREE.Group();tg.position.set(-38,0,8.6);S.add(tg);{const f=new THREE.Mesh(firGeo(4.6,1.6,3,3,9),M({vertexColors:true,roughness:.9}));tg.add(f)}mesh(new THREE.OctahedronGeometry(.3),new THREE.MeshBasicMaterial({color:0xffe066}),0,4.8,0,tg);
+ for(let i=0;i<34;i++){const t=i/34,a=t*Math.PI*10,r=(1-t)*1.5+.2;addBulb(-38+Math.cos(a)*r,.6+t*3.8,8.6+Math.sin(a)*r,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}LCOL.push({x0:-40,x1:-36.4,z0:7,z1:11});
+ for(const [gx,gz] of [[-17.8,-9.6],[-38.6,-9.6],[-24.5,9.6]])for(let k=0;k<4;k++){const s=.45+((k*7)%3)*.15;const b=mesh(new THREE.BoxGeometry(s,s*.8,s),M({color:[0xd62839,0x1f9d55,0xffc934,0x2f7bff][k]}),gx+(k%2)*.55-.25,s*.4+(k>1?.5:0),gz+((k>>1)?.1:0),S);b.rotation.y=k;mesh(new THREE.BoxGeometry(s*1.02,s*.82,s*.16),white,0,0,0,b)}
+ // garland of lights around the store ceiling
+ for(let i=0;i<140;i++){const t=i/140*3,side=t|0,f=t-side;let x,z;if(side===0){x=-LW-.2-f*(HW*2-.4);z=-LD+.2}else if(side===1){x=LX0+.2;z=-LD+.2+f*(LD*2-.4)}else{x=LX0+.2+f*(HW*2-.4);z=LD-.2}
+   addBulb(x,7.3-Math.abs(Math.sin(f*Math.PI*7))*.35,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
+ buildGlows(lodge,.45,2.5);GLOW_S.length=0;GLOW_L.length=0}
+const COUNTER_SPOT=V3(-21,0,4.5);
+function refreshShopLabels(){for(const d of DISPLAYS){const it=ITEM[d.id];const own=SAVE.owned.includes(d.id),eq=it.cat==='sleigh'?own&&curSleigh()===d.id:SAVE.eq[it.cat]===d.id;
+  const txt=it.cat==='sleigh'?(own?(curSleigh()===d.id?'★ Selected':'✓ Owned'):fmt(it.price)+' pts'):eq?'★ Wearing':own?'✓ Owned':(it.price?fmt(it.price)+' pts':'Free');const key=txt;if(d.key===key)continue;d.key=key;
   if(d.label){shopS.remove(d.label);d.label.material.map.dispose()}d.label=textSprite(txt,{bg:eq?'rgba(31,157,85,.85)':own?'rgba(14,26,46,.8)':'rgba(122,31,31,.85)',scale:.0045});d.label.position.set(d.x+(d.ix-d.x)*.35,d.ly,d.z+(d.iz-d.z)*.35);shopS.add(d.label)}}
-const ROOMS={lodge:{scene:lodge,W:LW,D:LD,H:8,col:LCOL,door:LODGE_DOOR,out:LODGE,name:'🏠 Cocoa Lodge · lounge',l:1},shop:{scene:shopS,W:SW,D:SD,H:7,col:SCOL,door:SHOP_DOOR,out:SHOP,name:"🛍️ Rudolph's Rentals · store",l:2}};
-const LOC_BY_L={0:'mtn',1:'lodge',2:'shop'};
+const ROOMS={lodge:{scene:lodge,W:LW,D:LD,H:8,X0:LX0,X1:LW,col:LCOL,door:LODGE_DOOR,out:LODGE,name:"🏠 Cocoa Lodge & Rudolph's Gear",l:1}};
+const LOC_BY_L={0:'mtn',1:'lodge',2:'lodge'};
 const sceneOf=loc=>ROOMS[loc]?ROOMS[loc].scene:mtn;
 const INDOOR=()=>P.loc!=='mtn';
 
@@ -1097,7 +1239,11 @@ const P={pos:V3(),vel:V3(),yaw:Math.PI,mode:'ride',loc:'mtn',air:null,grind:null
   combo:{n:0,last:0},seat:null,walkPhase:0,foodT:0,lastAlt:0,rHold:0,tuck:false,brake:false,spinVis:0};
 const SPAWN=V3(-30,0,1392);
 const VILLAGE_Z=ZB-42;
-function setOnFoot(on,sport){if(P.loc!=='mtn')return;if(on){if(P.pos.z<VILLAGE_Z+2){toast('Ride down to the village to take your gear off');return}if(P.mode!=='ride'&&P.mode!=='walk')return;P.mode='walk'}else{if(sport&&sport!==SAVE.sport){SAVE.sport=sport;applyLook();save()}if(P.mode==='walk'){P.mode='ride';P.yaw=P.yaw}}P.vel.set(0,0,0);sfx.blip(on?500:760);updateModeBar()}
+function setOnFoot(on,sport){if(P.loc!=='mtn')return;
+  if(on){if(P.pos.z<VILLAGE_Z+2){toast('Ride down to the village to take your gear off');return}if(P.mode!=='ride'&&P.mode!=='walk')return;P.mode='walk'}
+  else{if(sport==='sleigh'){if(!['sleigh1','sleigh2','sleigh3'].some(i=>SAVE.owned.includes(i))){toast("🛷 Unlock a sleigh in Rudolph's Gear first (from 50,000 pts)");return}RIDE_SLEIGH=true}
+    else{RIDE_SLEIGH=false;if(sport&&sport!==SAVE.sport){SAVE.sport=sport;save()}}if(P.mode==='walk')P.mode='ride'}
+  applyLook();P.vel.set(0,0,0);updateModeBar()}
 function spawnAtBase(){P.loc='mtn';P.mode='walk';P.pos.set(SPAWN.x,groundH(SPAWN.x,SPAWN.z),SPAWN.z);P.vel.set(0,0,0);P.yaw=Math.PI;P.air=P.grind=P.lift=null;P.lastAlt=P.pos.y;camS.yaw=Math.PI;switchScene()}
 const keys=new Set();
 const held=(...c)=>c.some(k=>keys.has(k));
@@ -1119,11 +1265,11 @@ function crash(msg){if(P.mode==='crash')return;P.mode='crash';P.crashT=1.2;P.com
 function scoreAir(a,q){
   const sport=SAVE.sport,board=sport==='board';const parts=[];let pts=0;
   const flips=Math.round(Math.abs(a.flip)/(Math.PI*2));
-  if(flips>0){parts.push((['','','Double ','Triple ','Quad '][flips]||flips+'x ')+(a.flip<0?'Backflip':'Frontflip'));pts+=500*flips*(1+.35*(flips-1))}
+  if(flips>0){parts.push((['','','Double ','Triple ','Quad '][flips]||flips+'x ')+(a.flip<0?'Backflip':'Frontflip'));pts+=200*flips*(1+.35*(flips-1))}
   const halves=Math.round(Math.abs(a.spin)/Math.PI);
-  if(halves>0){const deg=halves*180;parts.push((a.sw?'Switch ':'')+(board?(a.spin>0?'Frontside ':'Backside '):'')+deg);pts+=100*halves*(1+.25*(halves-1))}
-  for(const [code,t] of Object.entries(a.grabs))if(t>=.25){parts.push(GRABS[sport][code]);pts+=100+Math.min(2,t)*150}
-  if(a.t>1.3){if(pts>0)pts+=a.t*40;else{parts.push('Big Air');pts+=a.t*35}}
+  if(halves>0){const deg=halves*180;parts.push((a.sw?'Switch ':'')+(board?(a.spin>0?'Frontside ':'Backside '):'')+deg);pts+=50*halves*(1+.25*(halves-1))}
+  for(const [code,t] of Object.entries(a.grabs))if(t>=.25){parts.push(GRABS[sport][code]);pts+=50+Math.min(2,t)*70}
+  if(a.t>1.3){if(pts>0)pts+=a.t*20;else{parts.push('Big Air');pts+=a.t*18}}
   if(!parts.length)return 0;
   let quality=1,tag='';if(q<.3){quality=1.25;tag='Perfect landing'}else if(q>.8){quality=.6;tag='Sketchy'}
   if(a.grab){quality*=.5;tag='Sketchy (still grabbing)'}
@@ -1160,7 +1306,7 @@ function stepRide(dt){
   const spd=Math.hypot(vf,vs);let decel=.32+(P.brake?7.5:0)+(spd<3&&!P.tuck?1.1:0)+(P.tuck?.0024:.0042)/eq.spd*spd*spd;
   if(P.charge>0)decel+=.3;
   if(spd>0){const f=Math.max(0,spd-decel*dt)/spd;vf*=f;vs*=f}
-  if(P.tuck&&Math.abs(vf)<7.5*eq.spd)vf+=dir*3.4*dt;
+  if(RIDE_SLEIGH){if(P.tuck&&vf<16)vf+=7*dt;}else if(P.tuck&&Math.abs(vf)<7.5*eq.spd)vf+=dir*3.4*dt;
   P.vel.copy(_f).multiplyScalar(vf).addScaledVector(_s,vs);
   P.steerS=lerp(P.steerS,steer*Math.min(1,sp/8)*dir,1-Math.exp(-8*dt));
   P.pos.addScaledVector(P.vel,dt);
@@ -1177,7 +1323,7 @@ function stepAir(dt){
   {const gap=P.pos.y-groundH(P.pos.x,P.pos.z),tl=P.vel.y<0?gap/(-P.vel.y):9;
    if(tl<.5){if(!fl){const d=Math.round(a.flip/(Math.PI*2))*Math.PI*2-a.flip;if(Math.abs(d)<2.4){a.flip+=Math.sign(d)*Math.min(Math.abs(d),6*dt);a.flipV*=.8}}
      const hv=Math.hypot(P.vel.x,P.vel.z);if(!steer&&hv>3){const vy=Math.atan2(P.vel.x,P.vel.z);let d=wrapA(vy-P.yaw);if(Math.abs(d)>Math.PI/2)d=wrapA(vy+Math.PI-P.yaw);if(Math.abs(d)<2.2){const st=Math.sign(d)*Math.min(Math.abs(d),5*dt);P.yaw+=st;a.spin+=st;a.spinV*=.8}}}}
-  a.grab=null;for(const k of ['KeyJ','KeyK','KeyL','KeyI'])if(keys.has(k)){a.grab=k;a.grabs[k]=(a.grabs[k]||0)+dt;break}
+  a.grab=null;if(!RIDE_SLEIGH)for(const k of ['KeyJ','KeyK','KeyL','KeyI'])if(keys.has(k)){a.grab=k;a.grabs[k]=(a.grabs[k]||0)+dt;break}
   P.pos.addScaledVector(P.vel,dt);
   // superpipe: real riders keep their airs over the deck; nudge back into the pipe
   const pm=pipeMask(P.pos.z),d=P.pos.x-PIPE.x;
@@ -1186,7 +1332,7 @@ function stepAir(dt){
   const gh=groundH(P.pos.x,P.pos.z);
   if(P.pos.y<=gh)land(gh)}
 function land(gh){
-  const a=P.air;P.pos.y=gh;const n=normalAt(P.pos.x,P.pos.z,V3());
+  const a=P.air;P.pos.y=gh;const n=normalAt(P.pos.x,P.pos.z,V3());P.landFlip=wrapA(a.flip);
   const flipRes=Math.abs(wrapA(a.flip));const hv=Math.hypot(P.vel.x,P.vel.z);let yawRes=0;
   const inPipe=pipeMask(P.pos.z)>.5&&Math.abs(P.pos.x-PIPE.x)>PIPE.flat-1&&Math.abs(P.pos.x-PIPE.x)<PIPE.flat+PIPE.R+1;
   if(hv>3&&!inPipe){const vy=Math.atan2(P.vel.x,P.vel.z);yawRes=Math.abs(wrapA(P.yaw-vy));yawRes=Math.min(yawRes,Math.PI-yawRes)}
@@ -1194,7 +1340,7 @@ function land(gh){
   if(a.t<.35&&Math.abs(a.spin)<1&&Math.abs(a.flip)<1){P.mode='ride';P.air=null;return}
   if(flipRes>1.3||yawRes>1.3){P.air=null;P.mode='ride';crash(flipRes>1.3?'Wipeout! Land on your feet':'Wipeout! Land straight');return}
   if(vn<-32){P.air=null;P.mode='ride';crash('Too big! Hard landing');return}
-  if(hv>3){const vy=Math.atan2(P.vel.x,P.vel.z);P.yaw=Math.abs(wrapA(P.yaw-vy))>Math.PI/2?vy+Math.PI:vy}
+  if(hv>3){const vy=Math.atan2(P.vel.x,P.vel.z),ny=Math.abs(wrapA(P.yaw-vy))>Math.PI/2?vy+Math.PI:vy;P.visYaw=wrapA((P.visYaw||0)+P.yaw-ny);P.yaw=ny}
   const q=Math.max(flipRes/1.3,yawRes/1.3);P.mode='ride';
   sfx.thud(.35+Math.min(.6,-vn*.03));sfx.land(Math.min(1,-vn*.04));scoreAir(a,q);P.air=null}
 function checkRails(){
@@ -1224,12 +1370,28 @@ function boardLift(L){
   hint('Get ready… your chair is coming. Hold <span class="kbd">F</span> to ride faster.',4)}
 function stepLift(dt){
   const lf=P.lift,L=lf.L;
-  if(P.mode==='liftwait'){lf.wait-=dt;P.pos.copy(L.load);if(lf.wait<=0){P.mode='lift';lf.s=0;sfx.lift()}return}
+  if(P.mode==='liftwait'){lf.wait-=dt;P.pos.copy(L.load);if(lf.wait<=0){lf.seat=pickSeat(L,0);if(lf.seat<0){lf.wait+=L.spacingR/L.speed;toast('That chair is full. Hop on the next one!');return}P.mode='lift';lf.s=0}return}
   const fast=held('KeyF');lf.s+=L.speed*dt*(fast?6:1);
   if(lf.s>=L.unload){P.mode='ride';P.lift=null;P.pos.set(L.top.x-4.5,0,L.top.z-4);P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.yaw=0;P.lastAlt=P.pos.y;camS.yaw=0;
     toast('Top of '+L.name+'! Ski down when you\'re ready.');return}
-  L.at(lf.s,P.pos);P.pos.y-=CABLE_H;L.at(lf.s+1,_v);P.yaw=Math.atan2(_v.x-P.pos.x,_v.z-P.pos.z);P.vel.set(0,0,0);P.lastAlt=P.pos.y}
-function stepWalk(dt){
+  L.at(lf.s,P.pos);P.pos.y-=CABLE_H;L.at(lf.s+1,_v);P.yaw=Math.atan2(_v.x-P.pos.x,_v.z-P.pos.z);
+  if(!fast){const sp=seatPos(P.pos,P.yaw,lf.seat,_sv);for(const [id,o] of others)if(id<myId&&o.loc==='mtn'&&o.tgt&&o.tgt.anim===3&&Math.hypot(o.pos.x-sp.x,o.pos.z-sp.z)<.3&&Math.abs(o.pos.y-sp.y)<1){const k=pickSeat(L,lf.s,lf.seat);if(k>=0)lf.seat=k;break}}
+  seatPos(P.pos,P.yaw,lf.seat,P.pos);P.vel.set(0,0,0);P.lastAlt=P.pos.y}
+// quad chairs: four seats side by side, shared with whoever boards the same chair
+const SEAT_OFF=[-.29,.29,-.87,.87],_sv=V3(),_cc=V3(),_cn=V3();
+function seatPos(c,yaw,k,out){const o=SEAT_OFF[k]||0;return out.set(c.x+Math.cos(yaw)*o,c.y,c.z-Math.sin(yaw)*o)}
+function pickSeat(L,s,skip){L.at(s,_cc);_cc.y-=CABLE_H;L.at(s+1,_cn);const yaw=Math.atan2(_cn.x-_cc.x,_cn.z-_cc.z);
+  for(let k=0;k<4;k++){if(k===skip)continue;const sp=seatPos(_cc,yaw,k,_sv);let taken=false;for(const o of others.values())if(o.loc==='mtn'&&o.tgt&&(o.tgt.anim===3)&&Math.hypot(o.pos.x-sp.x,o.pos.z-sp.z)<.45&&Math.abs(o.pos.y-sp.y)<1.5){taken=true;break}if(!taken)return k}return -1}
+// the rope line: open country to look at, but the resort is where you can go
+let boundHint=-99;
+function boundWorld(){if(P.loc!=='mtn')return;const X=246,ZA=-55,ZE=1500;let hit=false;
+  if(P.pos.x>X){P.pos.x=X;P.vel.x=Math.min(0,P.vel.x);hit=true}else if(P.pos.x<-X){P.pos.x=-X;P.vel.x=Math.max(0,P.vel.x);hit=true}
+  if(P.pos.z<ZA){P.pos.z=ZA;P.vel.z=Math.max(0,P.vel.z);hit=true}else if(P.pos.z>ZE){P.pos.z=ZE;P.vel.z=Math.min(0,P.vel.z);hit=true}
+  if(hit){if(P.mode==='walk'||P.mode==='ride')P.pos.y=Math.max(P.pos.y,groundH(P.pos.x,P.pos.z));if(T-boundHint>6){boundHint=T;hint('That\'s the backcountry. The resort ends at the rope line.',3)}}}
+function doJump(){if(state!=='play'||panelKind||P.mode!=='walk'||(P.jh||0)>0||(P.jv||0)>0)return;P.jv=8.6;P.jh=.001}
+function stepWalk(dt){if(P.mode!=='walk'){P.jh=0;P.jv=0}else if(P.jh>0){P.jv-=27*dt;P.jh+=P.jv*dt;if(P.jh<=0){P.jh=0;P.jv=0;sfx.land&&sfx.land(.3)}}
+  stepWalk0(dt);if(P.mode==='walk')P.pos.y+=P.jh||0}
+function stepWalk0(dt){
   if(P.mode==='sit'){if(held('KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'))standUp();return}
   const f=(held('KeyW','ArrowUp')?1:0)-(held('KeyS','ArrowDown')?1:0),r=(held('KeyD','ArrowRight')?1:0)-(held('KeyA','ArrowLeft')?1:0);
   const a=camS.mode==='first'?P.yaw:camS.yaw+camS.yawOff;const fx=Math.sin(a),fz=Math.cos(a),rx=-Math.cos(a),rz=Math.sin(a);
@@ -1238,10 +1400,10 @@ function stepWalk(dt){
   if(m>0){mx/=m;mz/=m;P.vel.set(mx*spd,0,mz*spd);if(camS.mode!=='first')P.yaw=angLerp(P.yaw,Math.atan2(mx,mz),1-Math.exp(-12*dt));const ph0=P.walkPhase;P.walkPhase+=dt*spd*2.2;if(Math.floor(P.walkPhase/Math.PI)!==Math.floor(ph0/Math.PI))sfx.step(P.loc==='mtn')}else P.vel.set(0,0,0);
   P.pos.x+=P.vel.x*dt;P.pos.z+=P.vel.z*dt;
   if(P.loc==='mtn'){if(P.pos.z<VILLAGE_Z){P.pos.z=VILLAGE_Z;if(T-(P.edgeHint||-99)>6){P.edgeHint=T;hint('That\'s the ski hill! Put on skis <span class="kbd">G</span> or pick a board below to ride it.',4)}}
-    collideWorld();P.pos.y=groundH(P.pos.x,P.pos.z);return}
+    collideWorld();boundWorld();P.pos.y=groundH(P.pos.x,P.pos.z);return}
   const RM=ROOMS[P.loc];for(const c of RM.col){const pad=.35;if(P.pos.x>c.x0-pad&&P.pos.x<c.x1+pad&&P.pos.z>c.z0-pad&&P.pos.z<c.z1+pad){const d=[P.pos.x-(c.x0-pad),(c.x1+pad)-P.pos.x,P.pos.z-(c.z0-pad),(c.z1+pad)-P.pos.z],m2=Math.min(...d);
     if(m2===d[0])P.pos.x=c.x0-pad;else if(m2===d[1])P.pos.x=c.x1+pad;else if(m2===d[2])P.pos.z=c.z0-pad;else P.pos.z=c.z1+pad}}
-  P.pos.x=clamp(P.pos.x,-RM.W+.5,RM.W-.5);P.pos.z=clamp(P.pos.z,-RM.D+.5,RM.D-.5);P.pos.y=0}
+  P.pos.x=clamp(P.pos.x,(RM.X0??-RM.W)+.5,(RM.X1??RM.W)-.5);P.pos.z=clamp(P.pos.z,-RM.D+.5,RM.D-.5);P.pos.y=0}
 const angLerp=(a,b,t)=>a+wrapA(b-a)*t;
 function standUp(){if(!P.seat)return;const s=P.seat;P.mode='walk';P.pos.set(s.x+Math.sin(s.yaw)*.9,0,s.z+Math.cos(s.yaw)*.9);if(P.loc==='mtn')P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.seat=null}
 function sitOn(s){P.mode='sit';P.seat=s;P.pos.set(s.x,s.y,s.z);P.yaw=s.yaw;P.vel.set(0,0,0)}
@@ -1251,7 +1413,7 @@ function step(dt){
   if(INDOOR()||P.mode==='walk'){stepWalk(dt);return}
   if(P.mode==='lift'||P.mode==='liftwait'){stepLift(dt);return}
   if(P.mode==='ride')stepRide(dt);else if(P.mode==='air')stepAir(dt);else if(P.mode==='grind')stepGrind(dt);else if(P.mode==='crash')stepCrash(dt);
-  if(P.mode!=='grind')collideWorld()}
+  if(P.mode!=='grind')collideWorld();boundWorld()}
 function afterStep(dt){
   if(P.loc!=='mtn'||P.mode==='lift'||P.mode==='liftwait')return;
   // points for skiing downhill
@@ -1261,14 +1423,14 @@ function afterStep(dt){
     if(!g.taken&&Math.abs(P.pos.x-g.x)<1.8&&Math.abs(P.pos.z-g.z)<1.8&&Math.abs(P.pos.y-g.y)<3){g.taken=T;g.g.visible=false;const pts=Math.round(150*buffMult());addPoints(pts);showTrick('🎁 Present!',pts);sfx.chime(2)}}}
 
 /* ---------- interactions ---------- */
-function shopAct(id){const it=ITEM[id];if(SAVE.owned.includes(id)){if(SAVE.eq[it.cat]!==id){equip(it);sfx.blip(800);toast('Now wearing '+it.name)}}else if(!buyItem(id))toast('You need '+fmt(it.price-SAVE.points)+' more points for '+it.name);refreshShopLabels()}
+function shopAct(id){const it=ITEM[id];if(it.cat==='sleigh'&&SAVE.owned.includes(id)){equip(it);refreshShopLabels();toast('🛷 '+it.name+' selected. Go outside and press 4 to ride it!');return}if(SAVE.owned.includes(id)){if(SAVE.eq[it.cat]!==id){equip(it);sfx.blip(800);toast('Now wearing '+it.name)}}else if(!buyItem(id))toast('You need '+fmt(it.price-SAVE.points)+' more points for '+it.name);refreshShopLabels()}
 function nearestInteract(){
   if(P.mode==='sit')return{label:'Stand up',act:standUp};
   if(INDOOR()){const R=ROOMS[P.loc];
     if(Math.hypot(P.pos.x-R.door.x,P.pos.z-R.door.z)<2.4)return{label:'Head back to the slopes',act:exitRoom};
     if(P.loc==='lodge'){
       if(Math.hypot(P.pos.x-BAR_SPOT.x,P.pos.z-BAR_SPOT.z)<3.2)return{label:'Order at the Cocoa Bar',act:()=>openPanel('cocoa')};
-      const s=nearSeat(SEATS);if(s)return{label:'Sit down',act:()=>sitOn(s)};return null}
+      const s=nearSeat(SEATS);if(s)return{label:'Sit down',act:()=>sitOn(s)}}
     if(Math.hypot(P.pos.x-COUNTER_SPOT.x,P.pos.z-COUNTER_SPOT.z)<2)return{label:'Talk to Rudolph · full catalog',act:()=>openPanel('shop')};
     let best=null,bd=1.7;for(const d of DISPLAYS){const dd=Math.hypot(P.pos.x-d.ix,P.pos.z-d.iz);if(dd<bd){bd=dd;best=d}}
     if(best){const it=ITEM[best.id],own=SAVE.owned.includes(best.id),eq=SAVE.eq[it.cat]===best.id;
@@ -1277,9 +1439,8 @@ function nearestInteract(){
     return null}
   if(P.mode!=='ride'&&P.mode!=='walk')return null;
   const sp=P.vel.length();
-  for(const L of LIFTS)if(Math.hypot(P.pos.x-L.load.x,P.pos.z-L.load.z)<7&&sp<9)return{label:'Ride the '+L.name+(P.mode==='walk'?' (puts your '+(SAVE.sport==='board'?'board':'skis')+' on)':''),act:()=>{if(P.mode==='walk')setOnFoot(false);boardLift(L)}};
-  if(Math.hypot(P.pos.x-LODGE.door.x,P.pos.z-LODGE.door.z)<4.5&&sp<8)return{label:'Go inside the Cocoa Lodge',act:()=>enterRoom('lodge')};
-  if(Math.hypot(P.pos.x-SHOP.door.x,P.pos.z-SHOP.door.z)<4.5&&sp<8)return{label:"Walk into Rudolph's Rentals",act:()=>enterRoom('shop')};
+  for(const L of LIFTS)if(Math.hypot(P.pos.x-L.load.x,P.pos.z-L.load.z)<7&&sp<9)return{label:'Ride the '+L.name+(P.mode==='walk'?' (puts your '+(SAVE.sport==='board'?'board':'skis')+' on)':''),act:()=>{if(P.mode==='walk'||RIDE_SLEIGH)setOnFoot(false,SAVE.sport);boardLift(L)}};
+  if(Math.hypot(P.pos.x-LODGE.door.x,P.pos.z-LODGE.door.z)<4.5&&sp<8)return{label:"Go inside the Cocoa Lodge & Rudolph's Gear",act:()=>enterRoom('lodge')};
   if(sp<4){const s=nearSeat(MSEATS);if(s)return{label:'Sit by the fire',act:()=>sitOn(s)}}
   for(const f of EXTRA_INTERACT){const r=f(sp);if(r)return r}
   return null}
@@ -1288,8 +1449,8 @@ let fadeBusy=false;
 function fadeTo(fn){if(fadeBusy)return;fadeBusy=true;$('fade').style.opacity=1;setTimeout(()=>{fn();$('fade').style.opacity=0;setTimeout(()=>fadeBusy=false,350)},360)}
 function switchScene(){sceneOf(P.loc).add(me.root)}
 function enterRoom(k){sfx.door();fadeTo(()=>{const R=ROOMS[k];P.loc=k;P.mode='walk';P.seat=null;P.lift=null;P.air=null;P.pos.copy(R.door);P.pos.z-=1;P.vel.set(0,0,0);P.yaw=Math.PI;camS.yaw=Math.PI;camS.yawOff=0;switchScene();
-  if(k==='shop'){refreshShopLabels();hint('Walk up to any skis, board, hat, jacket, goggles, trail or pet and press <span class="kbd">E</span> to buy or wear them.',6)}
-  else hint('Welcome to the lounge! Walk with <span class="kbd">WASD</span>, press <span class="kbd">Enter</span> to chat, <span class="kbd">E</span> to sit or order.',6)})}
+  refreshShopLabels();hint('Cocoa bar on the right · Rudolph\'s Gear shop through the arch on the left. Walk up to anything and press <span class="kbd">E</span>.',6);
+  })}
 function exitRoom(){sfx.door();fadeTo(()=>{const B=ROOMS[P.loc].out;P.loc='mtn';P.mode='walk';P.seat=null;P.pos.copy(B.door);P.pos.z-=1.5;P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.yaw=Math.PI;camS.yaw=Math.PI;P.lastAlt=P.pos.y;switchScene()})}
 const enterLodge=()=>enterRoom('lodge'),exitLodge=exitRoom;
 
@@ -1380,12 +1541,12 @@ function updateOthers(dt){for(const [id,o] of others){if(T-o.last>9){chatSys(o.n
   const g=o.tgt;if(!g)continue;const age=Math.min(.4,T-g.time);_v.copy(g.p).addScaledVector(g.v,age);
   if(o.pos.distanceTo(_v)>25)o.pos.copy(_v);else o.pos.lerp(_v,1-Math.exp(-12*dt));o.yaw=angLerp(o.yaw,g.yaw,1-Math.exp(-14*dt));
   const R=o.A.root;R.position.copy(o.pos);
-  if(o.loc==='mtn'&&(g.anim===0||g.anim===2)){normalAt(o.pos.x,o.pos.z,_nn);_tq.setFromUnitVectors(UP,_nn)}else _tq.identity();
+  if(o.loc==='mtn'&&(g.anim===0||g.anim===2||g.anim===9)){normalAt(o.pos.x,o.pos.z,_nn);_tq.setFromUnitVectors(UP,_nn)}else _tq.identity();
   _yq.setFromAxisAngle(UP,o.yaw);R.quaternion.copy(_tq).multiply(_yq);
-  if(g.anim===1)o.A.pivot.quaternion.setFromAxisAngle(g.fax==='z'?V3(0,0,1):V3(1,0,0),g.flip);else if(g.anim===2)o.A.pivot.rotation.set(T*7,0,T*3);else o.A.pivot.quaternion.identity();
-  pose(o.A,{anim:g.anim,crouch:g.crouch,grab:g.grab,edge:g.edge,time:T,phase:T*8,emote:o.A.emote});tickBubble(o.A,dt);tickFx(o.A,dt)}}
+  if(g.anim===1){o.fv=o.fv==null?g.flip:o.fv+wrapA(g.flip-o.fv)*(1-Math.exp(-18*dt));o.A.pivot.quaternion.setFromAxisAngle(g.fax==='z'?V3(0,0,1):V3(1,0,0),o.fv)}else if(g.anim===2){o.fv=0;o.A.pivot.rotation.set(T*7,0,T*3)}else if(Math.abs(o.fv=wrapA(o.fv||0)*Math.exp(-9*dt))>.004)o.A.pivot.quaternion.setFromAxisAngle(g.fax==='z'?V3(0,0,1):V3(1,0,0),o.fv);else o.A.pivot.quaternion.identity();
+  pose(o.A,{anim:g.anim,crouch:g.crouch,grab:g.grab,edge:g.edge,time:T,phase:T*8,emote:o.A.emote,sl:o.sl});tickBubble(o.A,dt);tickFx(o.A,dt)}}
 let sendT=0;
-function animCode(){if(P.mode==='sit')return 5;if(P.skate&&P.mode==='walk'&&P.loc==='mtn')return P.vel.lengthSq()>.1?8:6;if(INDOOR()||P.mode==='walk')return P.vel.lengthSq()>.1?4:6;return{ride:0,air:1,crash:2,lift:3,liftwait:0,grind:7}[P.mode]??0}
+function animCode(){if(P.mode==='sit')return 5;if(P.skate&&P.mode==='walk'&&P.loc==='mtn')return P.vel.lengthSq()>.1?8:6;if(INDOOR()||P.mode==='walk')return P.jh>.05?10:P.vel.lengthSq()>.1?4:6;if(RIDE_SLEIGH&&(P.mode==='ride'||P.mode==='air'))return 9;return{ride:0,air:1,crash:2,lift:3,liftwait:0,grind:7}[P.mode]??0}
 function sendState(dt){sendT-=dt;if(sendT>0||!world.connected)return;sendT=INDOOR()&&P.vel.lengthSq()<.01?.25:.1;
   const r=v=>Math.round(v*100)/100;
   world.send({k:'s',n:SAVE.name,sp:SAVE.sport,e:curEquip().id,h:SAVE.eq.hat,j:SAVE.eq.jacket,o:SAVE.eq.gog,p:[r(P.pos.x),r(P.pos.y),r(P.pos.z)],v:[r(P.vel.x),r(P.vel.y),r(P.vel.z)],
@@ -1407,8 +1568,8 @@ $('chatlog').classList.add('fade');
 let hintT=0,toastT=0;
 function hint(html,sec=4){$('hint').innerHTML=html;$('hint').classList.remove('hidden');hintT=sec}
 function toast(t){$('toast').textContent=t;$('toast').style.opacity=1;toastT=3}
-const KEYS_HTML=()=>INDOOR()||P.mode==='walk'?`<b>${P.loc==='shop'?'Shop':P.loc==='lodge'?'Lodge':'Walking'}</b><br><span class="kbd">WASD</span> walk · <span class="kbd">Shift</span> jog<br><span class="kbd">E</span> ${P.loc==='shop'?'buy / wear / exit':'sit / order / exit'}<br>${P.loc==='mtn'?'<span class="kbd">G</span> put on skis / board<br>':''}<span class="kbd">Enter</span> chat · <span class="kbd">V</span> camera<br><span class="kbd">Tab</span> players · <span class="kbd">N</span> music<br><span class="kbd">Esc</span> menu`:
- `<b>Riding</b><br><span class="kbd">W</span> tuck / push · <span class="kbd">S</span> brake<br><span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the 🔴 red-lipped snow bumps to fly<br><b>In the air</b><br><span class="kbd">A</span><span class="kbd">D</span> spin · <span class="kbd">W</span><span class="kbd">S</span> flip<br><span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span><span class="kbd">I</span> grabs<br><b>Other</b><br><span class="kbd">E</span> lifts, shop, lodge · <span class="kbd">F</span> fast lift<br><span class="kbd">V</span> 1st / 3rd person<br><span class="kbd">Enter</span> chat · <span class="kbd">G</span> walk<br>hold <span class="kbd">R</span> back to base · <span class="kbd">N</span> music`;
+const KEYS_HTML=()=>INDOOR()||P.mode==='walk'?`<b>${P.loc==='shop'?'Shop':P.loc==='lodge'?'Lodge':'Walking'}</b><br><span class="kbd">WASD</span> walk · <span class="kbd">Shift</span> jog<br><span class="kbd">Space</span> jump<br><span class="kbd">E</span> ${P.loc==='lodge'?'sit / order / shop / exit':'interact'}<br>${P.loc==='mtn'?'<span class="kbd">1</span>-<span class="kbd">4</span> walk · ski · board · sleigh<br>':''}<span class="kbd">Enter</span> chat · <span class="kbd">V</span> camera<br><span class="kbd">Tab</span> players · <span class="kbd">N</span> music<br><span class="kbd">Esc</span> menu`:
+ `<b>Riding</b><br><span class="kbd">W</span> tuck / push · <span class="kbd">S</span> brake<br><span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the 🔴 red-lipped snow bumps to fly<br><b>In the air</b><br><span class="kbd">A</span><span class="kbd">D</span> spin · <span class="kbd">W</span><span class="kbd">S</span> flip<br><span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span><span class="kbd">I</span> grabs<br><b>Other</b><br><span class="kbd">E</span> lifts, shop, lodge · <span class="kbd">F</span> fast lift<br><span class="kbd">V</span> 1st / 3rd person<br><span class="kbd">Enter</span> chat · <span class="kbd">1</span>-<span class="kbd">4</span> walk/ski/board/sleigh<br>hold <span class="kbd">R</span> back to base · <span class="kbd">N</span> music`;
 function locName(){if(INDOOR())return ROOMS[P.loc].name;if(P.mode==='sit')return'🔥 The Plaza · by the fire';if(P.lift)return'🚡 '+P.lift.L.name+(P.mode==='lift'?' · hold F to ride faster':'');
   const z=P.pos.z,x=P.pos.x,alt=Math.round(1650+P.pos.y);let n;
   if(z>ZB-30)n=Math.hypot(x-PLAZA.x,z-PLAZA.z)<14?'🔥 The Plaza':"Base Village";else if(z<70)n='Summit';else if(x>PARK.x0&&x<PARK.x1&&z>PARK.z0&&z<PARK.z1)n='Jingle Jumps Park';else if(pipeMask(z)>.5&&Math.abs(x-PIPE.x)<20)n='Superpipe';
@@ -1440,7 +1601,7 @@ const hex=c=>'#'+c.toString(16).padStart(6,'0');
 function openPanel(kind){panelKind=kind;if(document.pointerLockElement){chatUnlock=true;document.exitPointerLock()}keys.clear();$('panel').classList.remove('hidden');renderPanel()}
 function closePanel(){panelKind=null;$('panel').classList.add('hidden');save();if(state==='menu')refreshMenu()}
 function renderPanel(){const c=$('panelcard');const pts=`<span class="pill" style="color:var(--gold)">${fmt(SAVE.points)} pts</span>`;
-  if(panelKind==='shop'){shopTab=shopTab||SAVE.sport;const cats=[['ski','⛷️ Skis'],['board','🏂 Snowboards'],['hat','🎅 Hats'],['jacket','🧥 Jackets'],['gog','🥽 Goggles'],['trail','✨ Trails'],['pet','🐾 Pets']];
+  if(panelKind==='shop'){shopTab=shopTab||SAVE.sport;const cats=[['ski','⛷️ Skis'],['board','🏂 Snowboards'],['hat','🎅 Hats'],['jacket','🧥 Jackets'],['gog','🥽 Goggles'],['trail','✨ Trails'],['pet','🐾 Pets'],['sleigh','🛷 Sleigh']];
     c.innerHTML=`<div class="chead"><div><h2>Rudolph's Rentals</h2><div class="sub">Spend the points you earn from tricks, presents and runs on better gear.</div></div>${pts}</div>
      <div class="tabs">${cats.map(([k,l])=>`<button data-tab="${k}" class="${shopTab===k?'on':''}">${l}</button>`).join('')}</div>
      <div class="grid">${ITEMS.filter(i=>i.cat===shopTab).map(i=>{const own=SAVE.owned.includes(i.id),eq=SAVE.eq[i.cat]===i.id;
@@ -1457,10 +1618,10 @@ function renderPanel(){const c=$('panelcard');const pts=`<span class="pill" styl
   else if(panelKind==='book'){const g=GRABS[SAVE.sport];c.innerHTML=`<h2>Trick book</h2><div class="sub">Land tricks to earn points. Chain them within 5 seconds for a combo multiplier (up to ×3).</div>
      <div class="cols"><div><h4>Riding</h4><div class="krow"><span class="kbd">W</span> tuck for speed (push when slow)<br><span class="kbd">S</span> brake · <span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the snow bumps (red lip) on every run, or the park jumps, to get air. Landing is forgiving: let go of the keys near the ground and you'll straighten out.<br><span class="kbd">G</span> switch between walking and your skis / board in the village<br><span class="kbd">E</span> ride lifts, enter the shop and lodge<br><span class="kbd">F</span> hold on a chairlift to ride faster<br><span class="kbd">V</span> switch between 3rd and 1st person<br><span class="kbd">Tab</span> players<br>Hold <span class="kbd">R</span> to return to the base village<br>Click the game to look around with the mouse</div>
       <h4>Where to learn</h4><div class="krow">Take the <b>Elf Quad</b> to the <b>Jingle Jumps</b> park: small, medium and large jumps plus rails. The <b>Superpipe</b> is on Dasher's Drop. Grab 🎁 presents on any run for +150.</div></div>
-      <div><h4>Points</h4><div class="trow"><span>Spin 180 / 360 / 540 / 720 (<span class="kbd">A</span><span class="kbd">D</span> in air)</span><b>100 / 250 / 450 / 700</b>
-       <span>Backflip / Frontflip (<span class="kbd">S</span> / <span class="kbd">W</span> in air)</span><b>500</b><span>Double flip</span><b>1,350</b>
-       ${Object.entries(g).map(([k,n])=>`<span>${n} (hold <span class="kbd">${k.slice(3)}</span>)</span><b>100 + 150/s</b>`).join('')}
-       <span>Rail grind / slide (land on a rail)</span><b>80 + 170/s</b><span>Big air (over 1.3 s)</span><b>35/s</b><span>Perfect landing</span><b>×1.25</b><span>Sketchy landing or still grabbing</span><b>×0.5</b><span>Every 10 m you ski down</span><b>3</b><span>🎁 Present</span><b>150</b></div>
+      <div><h4>Points</h4><div class="trow"><span>Spin 180 / 360 / 540 / 720 (<span class="kbd">A</span><span class="kbd">D</span> in air)</span><b>50 / 125 / 225 / 350</b>
+       <span>Backflip / Frontflip (<span class="kbd">S</span> / <span class="kbd">W</span> in air)</span><b>200</b><span>Double flip</span><b>540</b>
+       ${Object.entries(g).map(([k,n])=>`<span>${n} (hold <span class="kbd">${k.slice(3)}</span>)</span><b>50 + 70/s</b>`).join('')}
+       <span>Rail grind / slide (land on a rail)</span><b>80 + 170/s</b><span>Big air (over 1.3 s)</span><b>18/s</b><span>Perfect landing</span><b>×1.25</b><span>Sketchy landing or still grabbing</span><b>×0.5</b><span>Every 10 m you ski down</span><b>3</b><span>🎁 Present</span><b>150</b></div>
        <h4>Landing</h4><div class="krow">Finish your flip with your feet under you and land facing down the hill (riding backwards counts). Let go of grabs before you touch down.</div></div></div>
      <div class="foot"><button class="btn" data-close>Got it</button></div>`}
   else if(panelKind==='settings'){const s=SAVE.set;c.innerHTML=`<h2>Settings</h2>
@@ -1487,8 +1648,8 @@ $('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');i
   save();renderPanel()});
 $('panelcard').addEventListener('input',e=>{const k=e.target.dataset.set;if(!k)return;SAVE.set[k]=+e.target.value;if(k==='fov'){camera.fov=SAVE.set.fov;camera.updateProjectionMatrix()}e.target.nextElementSibling.textContent=k==='vol'||k==='mus'?Math.round(SAVE.set[k]*100):SAVE.set[k];save()});
 $('panel').addEventListener('click',e=>{if(e.target.id==='panel')closePanel()});
-function buyItem(id){const it=ITEM[id];if(!it||SAVE.owned.includes(id)||SAVE.points<it.price)return false;SAVE.points-=it.price;SAVE.owned.push(id);equip(it);sfx.coin();toast('Bought '+it.name+'! You\'re wearing it now.');refreshShopLabels();return true}
-function equip(it){SAVE.eq[it.cat]=it.id;if(it.cat==='ski'||it.cat==='board')SAVE.sport=it.cat;applyLook();save()}
+function buyItem(id){const it=ITEM[id];if(!it||SAVE.owned.includes(id)||SAVE.points<it.price)return false;SAVE.points-=it.price;SAVE.owned.push(id);equip(it);sfx.coin();toast(it.cat==='sleigh'?'🛷 Unlocked the '+it.name+'! Go outside and press 4 to ride it.':'Bought '+it.name+'! You\'re wearing it now.');refreshShopLabels();return true}
+function equip(it){if(it.cat==='sleigh'){SAVE.eq.sleigh=it.id;save();return}SAVE.eq[it.cat]=it.id;if(it.cat==='ski'||it.cat==='board')SAVE.sport=it.cat;applyLook();save()}
 function refreshTag(){const lv=levelOf(SAVE.earned);if(me.lv!==lv||me.nm!==SAVE.name){if(me.lv&&lv>me.lv&&state==='play'){toast('⭐ Level up! You\'re now level '+lv);sfx.chime(4)}me.lv=lv;me.nm=SAVE.name;setName(me,SAVE.name,true,lv)}}
 function applyLook(){setLook(me,{sport:SAVE.sport,eq:curEquip().id,hat:SAVE.eq.hat,jacket:SAVE.eq.jacket,gog:SAVE.eq.gog})}
 
@@ -1508,24 +1669,17 @@ function updateRoll(dt){if(!P.roll)return;if(state!=='play'||P.loc!=='mtn'||P.mo
   if(Math.hypot(myBall.position.x-DROP.x,myBall.position.z-DROP.z)<DROP.r){depositBall();return}
   if(sp>.2){const d=sp*dt;if(!P.skate&&!onIce(myBall.position.x,myBall.position.z))R.r=Math.min(1.15,R.r+d*.007/R.r);_ax.set(Math.cos(P.yaw),0,-Math.sin(P.yaw));myBall.rotateOnWorldAxis(_ax,d/R.r)}}
 // one giant shared snowman: every snowball rolled into the circle adds to it
-const GS_GOAL=300,GS_STAY=15*60000,GSR=[3.6,2.7,1.9];let GS={c:0,list:[]},gsSeq=0,gsShown=0,gsKey='';
+const GS_GOAL=300,GS_STAY=15*60000,GPARTS=snowmanParts(3.6,21,'top',0xd62839),GSR=GPARTS.R;let GS={c:0,list:[]},gsSeq=0,gsShown=0,gsKey='';
 try{const s=JSON.parse(localStorage.getItem('frostypeaks_gs')||'null');if(s&&Array.isArray(s.list)&&typeof s.c==='number')GS=s}catch{}
 const gsTotal=()=>GS.list.reduce((s,x)=>s+x[1],0);
 function gsDoneAt(){const l=[...GS.list].sort((a,b)=>a[2]-b[2]);let s=0;for(const x of l){s+=x[1];if(s>=GS_GOAL)return x[2]}return 0}
 function gsMerge(c,rows){c=num(c);if(c<GS.c||!Array.isArray(rows))return 0;let added=0;if(c>GS.c){GS={c,list:[]};added=1}
   for(const r of rows){if(!Array.isArray(r)||typeof r[0]!=='string'||r[0].length>24)continue;const a=clamp(num(r[1])|0,1,60),t=num(r[2]);if(GS.list.length>=120||GS.list.some(x=>x[0]===r[0]))continue;GS.list.push([r[0],a,t]);added+=a}
   if(added)try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}return added}
-const giant=new THREE.Group(),giantBalls=[0,1,2].map(()=>{const m=new THREE.Mesh(BALL_GEO,snowBallM);m.castShadow=true;m.visible=false;giant.add(m);return m}),giantDeco=new THREE.Group();
+const giant=new THREE.Group(),giantBalls=[0,1,2].map(i=>{const m=new THREE.Mesh(lumpyGeo(1,4,.07,21+i*3.1),snowRealM);m.castShadow=true;m.receiveShadow=true;m.visible=false;giant.add(m);return m}),giantDeco=new THREE.Group();
 giant.add(giantDeco);giant.position.set(GIANT.x,groundH(GIANT.x,GIANT.z),GIANT.z);giant.rotation.y=Math.PI;mtn.add(giant);
-{const coal=M({color:0x151515,roughness:.6}),[r0,r1,r2]=GSR,my=r0*.9+r0*.8+r1*.8,hy=my+r1*.8+r2*.8;
-  for(const s of [-1,1])mesh(new THREE.SphereGeometry(r2*.09,10,8),coal,s*r2*.33,hy+r2*.25,r2*.88,giantDeco);
-  const n=mesh(new THREE.ConeGeometry(r2*.12,r2*.8,12),M({color:0xff7a1a}),0,hy,r2*1.25,giantDeco);n.rotation.x=Math.PI/2;
-  for(let i=0;i<5;i++){const a=(i-2)*.3;mesh(new THREE.SphereGeometry(r2*.05,6,4),coal,Math.sin(a)*r2*.5,hy-r2*.38+Math.abs(i-2)*r2*.06,Math.cos(a)*r2*.86,giantDeco)}
-  for(let i=0;i<3;i++)mesh(new THREE.SphereGeometry(r1*.08,8,6),coal,0,my+r1*(.45-i*.4),r1*.95-Math.abs(i-1)*r1*.06,giantDeco);
-  const sc=mesh(new THREE.TorusGeometry(r2*.85,r2*.16,8,24),M({color:0xd62839}),0,hy-r2*.8,0,giantDeco);sc.rotation.x=Math.PI/2;
-  const tw=M({color:0x5b3a1e});for(const s of [-1,1]){const a=mesh(new THREE.CylinderGeometry(.12,.16,r1*2.4,6),tw,s*r1*1.6,my+r1*.4,0,giantDeco);a.rotation.z=s*-1.0}
-  mesh(new THREE.CylinderGeometry(r2*.55,r2*.55,r2*.85,16),coal,0,hy+r2*1.22,0,giantDeco);mesh(new THREE.CylinderGeometry(r2*.88,r2*.88,r2*.08,18),coal,0,hy+r2*.82,0,giantDeco);
-  mesh(new THREE.CylinderGeometry(r2*.56,r2*.56,r2*.14,16),M({color:0xd62839}),0,hy+r2*.95,0,giantDeco);giantDeco.visible=false}
+{const [bg,,bm]=GPARTS.L[3];const base=new THREE.Mesh(bg,snowRealM);base.applyMatrix4(bm);base.receiveShadow=true;giant.add(base);
+ for(const [geo,c,m,mat] of GPARTS.L.slice(4)){const x=new THREE.Mesh(geo,mat||M({color:c,roughness:c===0x1a1a1c?.45:.7}));x.applyMatrix4(m);x.castShadow=true;giantDeco.add(x)}giantDeco.visible=false}
 const gsCv=document.createElement('canvas');gsCv.width=512;gsCv.height=110;const gsTex=new THREE.CanvasTexture(gsCv);gsTex.colorSpace=THREE.SRGBColorSpace;
 const gsSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:gsTex,depthWrite:false}));gsSprite.scale.set(12,2.58,1);gsSprite.position.set(GIANT.x,groundH(GIANT.x,GIANT.z)+16.5,GIANT.z);mtn.add(gsSprite);
 function drawGsBar(p,done){const g=gsCv.getContext('2d'),W=512,H=110;g.clearRect(0,0,W,H);g.fillStyle='rgba(14,26,46,.85)';g.beginPath();g.roundRect(4,4,W-8,H-8,22);g.fill();
@@ -1533,15 +1687,15 @@ function drawGsBar(p,done){const g=gsCv.getContext('2d'),W=512,H=110;g.clearRect
   g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.roundRect(30,62,W-60,28,14);g.fill();const gr=g.createLinearGradient(30,0,W-30,0);gr.addColorStop(0,'#9fe0ff');gr.addColorStop(1,'#ffffff');g.fillStyle=gr;g.beginPath();g.roundRect(30,62,Math.max(28,(W-60)*p),28,14);g.fill();gsTex.needsUpdate=true}
 function renderGiant(dt){const target=Math.min(1,gsTotal()/GS_GOAL);gsShown+=(target-gsShown)*(1-Math.exp(-2*dt));if(Math.abs(target-gsShown)<.002)gsShown=target;const p=gsShown;
   const st=[clamp(p/.45,0,1),clamp((p-.45)/.35,0,1),clamp((p-.8)/.2,0,1)];let y=0;
-  st.forEach((s,i)=>{const b=giantBalls[i];b.visible=s>0;if(!s)return;const r=GSR[i]*(.3+.7*s);b.scale.setScalar(r);y=i?y+giantBalls[i-1].scale.x*.8+r*.8:r*.9;b.position.y=y});
+  st.forEach((s,i)=>{const b=giantBalls[i];b.visible=s>0;if(!s)return;const r=GSR[i]*(.3+.7*s);b.scale.setScalar(r);y=i?y+giantBalls[i-1].scale.x*.78+r*.8:r*.88;b.position.y=y;b.position.x=[0,.03,-.02][i]*3.6*s});
   giantDeco.visible=p>=.999;const key=Math.floor(p*100)+'|'+giantDeco.visible;if(key!==gsKey){gsKey=key;drawGsBar(p,giantDeco.visible)}
   const near=state==='play'&&P.loc==='mtn'&&(P.roll||Math.hypot(P.pos.x-YARD.x,P.pos.z-YARD.z)<40),bar=$('gsbar');bar.classList.toggle('hidden',!near);
   if(near){const pc=Math.floor(target*100);bar.innerHTML=`☃ Giant Snowman <b>${pc}%</b><i style="width:${pc}%"></i>`}}
 let gsT=0;function updateGiant(dt){renderGiant(dt);gsT-=dt;if(gsT>0)return;gsT=3;const d=gsDoneAt();if(d&&Date.now()>d+GS_STAY){GS={c:d+GS_STAY,list:[]};try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}}}
 function depositBall(){const R=P.roll,a=clamp(Math.round(R.r*R.r*45),1,60),wasDone=gsTotal()>=GS_GOAL;const bp=myBall.position;trailEmit(bp.x,bp.y-R.r*.5,bp.z,[0xffffff,0xdff3ff,0x9fe0ff],60);dropRoll();
   if(wasDone){toast('The giant snowman is already finished! It melts soon and a new one starts.');return}
-  const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});addPoints(a);
-  const pc=Math.min(100,Math.floor(gsTotal()/GS_GOAL*100));if(gsTotal()>=GS_GOAL){toast('☃ You finished the giant snowman! +'+a+' points');chatSys('☃ The giant snowman in the Snowman Yard is finished!')}else toast(`❄ +${a} snow added. The giant snowman is ${pc}% built. +${a} points`)}
+  const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});const fin=gsTotal()>=GS_GOAL,pts=a*2+(fin?200:0);addPoints(pts);
+  const pc=Math.min(100,Math.floor(gsTotal()/GS_GOAL*100));if(fin){toast('☃ You finished the giant snowman! +'+pts+' points');chatSys('☃ The giant snowman in the Snowman Yard is finished!')}else toast(`❄ +${a} snow added. The giant snowman is ${pc}% built. +${pts} points`)}
 // ---------- Jingle Race + leaderboard
 let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
 function mergeLB(rows){let ch=false;for(const r of rows){if(!Array.isArray(r))continue;const n=cleanName(String(r[0]||'')),t=num(r[1]),d=num(r[2]);if(!n||t<12||t>400)continue;
@@ -1578,9 +1732,12 @@ function skateStep(dt,mx,mz){P.skate=true;const v=P.vel;v.y=0;const push=!!(mx||
   P.pos.y=groundH(P.pos.x,P.pos.z)+.07}
 // ---------- pets
 const PETS=new Map();
-function updatePet(key,id,pos,yaw,scene,speed,dt){let p=PETS.get(key);
+function updatePet(key,id,pos,yaw,scene,speed,dt,onLift=false){let p=PETS.get(key);
   if(!id||!ITEM[id]||ITEM[id].cat!=='pet'||id==='pet0'||!scene){if(p){p.obj.parent&&p.obj.parent.remove(p.obj);PETS.delete(key)}return}
   if(!p||p.id!==id){if(p&&p.obj.parent)p.obj.parent.remove(p.obj);p={id,obj:petMesh(id),pos:pos.clone(),yaw,ph:Math.random()*6};PETS.set(key,p)}
+  if(onLift){if(p.obj.parent!==scene)scene.add(p.obj);p.pos.set(pos.x+Math.sin(yaw)*.42,0,pos.z+Math.cos(yaw)*.42);p.yaw=yaw;p.obj.position.set(p.pos.x,pos.y+.6,p.pos.z);p.obj.rotation.y=yaw;p.obj.scale.setScalar(.72);p.lift=1;
+    const b=p.obj.userData.body;b.rotation.set(0,0,0);b.position.y=0;return}
+  if(p.lift){p.lift=0;p.obj.scale.setScalar(1)}
   const tx=pos.x-Math.sin(yaw)*1.5-Math.cos(yaw)*.9,tz=pos.z-Math.cos(yaw)*1.5+Math.sin(yaw)*.9;
   if(p.obj.parent!==scene){scene.add(p.obj);p.pos.set(tx,0,tz)}
   if(Math.hypot(tx-p.pos.x,tz-p.pos.z)>14)p.pos.set(tx,0,tz);
@@ -1601,19 +1758,21 @@ function updateTrails(dt){for(let i=0;i<TR_N;i++){const k=i*3;if(trLife[i]<=0){i
   for(let j=0;j<3;j++){trPos[k+j]+=trVel[k+j]*dt;trCol[k+j]=trBase[k+j]*f}}trGeo.attributes.position.needsUpdate=trGeo.attributes.color.needsUpdate=true}
 // ---------- hand-drawn fireworks
 const FWC=['#ff3b4d','#ffd54d','#4dff88','#4dc3ff','#c77dff','#ffffff','#ff8a3d'];
-const FD_N=3200,fdPos=new Float32Array(FD_N*3),fdCol=new Float32Array(FD_N*3),fdBase=new Float32Array(FD_N*3),fdVel=new Float32Array(FD_N*3),fdLife=new Float32Array(FD_N),fdMax=new Float32Array(FD_N),fdGrav=new Float32Array(FD_N),fdDrag=new Float32Array(FD_N);let fdI=0;
+const FD_N=7000,fdPos=new Float32Array(FD_N*3),fdCol=new Float32Array(FD_N*3),fdBase=new Float32Array(FD_N*3),fdVel=new Float32Array(FD_N*3),fdLife=new Float32Array(FD_N),fdMax=new Float32Array(FD_N),fdGrav=new Float32Array(FD_N),fdDrag=new Float32Array(FD_N);let fdI=0;
 const fdGeo=new THREE.BufferGeometry();fdGeo.setAttribute('position',new THREE.BufferAttribute(fdPos,3));fdGeo.setAttribute('color',new THREE.BufferAttribute(fdCol,3));
-{const pts=new THREE.Points(fdGeo,new THREE.PointsMaterial({size:2.8,map:glowTex,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));pts.frustumCulled=false;mtn.add(pts)}
+{const pts=new THREE.Points(fdGeo,new THREE.PointsMaterial({size:4.6,map:glowTex,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));pts.frustumCulled=false;mtn.add(pts)}
 function fdSpawn(x,y,z,vx,vy,vz,col,life,grav,drag){const i=fdI;fdI=(fdI+1)%FD_N;fdPos.set([x,y,z],i*3);fdVel.set([vx,vy,vz],i*3);_c.set(col);fdBase.set([_c.r,_c.g,_c.b],i*3);fdLife[i]=fdMax[i]=life;fdGrav[i]=grav;fdDrag[i]=drag}
 const ROCKETS=[];
-function launchDrawn(d){const m=WORKSHOP.mortar;ROCKETS.push({x:m.x,y:m.y,z:m.z,vy:42,t:0,d,top:m.y+58})}
+const FW_SLOPE_Z=1110;
+function launchDrawn(d){const m=WORKSHOP.mortar;for(let k=0;k<40;k++)fdSpawn(m.x,m.y,m.z,(Math.random()-.5)*4,4+Math.random()*8,(Math.random()-.5)*4,k%2?'#ffd54d':'#fff2c0',.9,6,1.5);
+  const z=FW_SLOPE_Z+(Math.random()-.5)*40,x=mainX(z)+(Math.random()-.5)*30,y=groundH(x,z);ROCKETS.push({x,y,z,vy:60,t:0,d,top:y+105})}
 const _rv=V3();
-function burstDrawn(r){_rv.set(1,0,0).applyQuaternion(camera.quaternion);_rv.y=0;if(_rv.lengthSq()<1e-4)_rv.set(1,0,0);_rv.normalize();const S=24,d=r.d;
-  for(let k=0;k+2<d.length;k+=3){const px=d[k]/100*S,py=d[k+1]/100*S,col=FWC[d[k+2]]||'#fff';const ox=_rv.x*px,oz=_rv.z*px;for(let j=0;j<2;j++)fdSpawn(r.x,r.y,r.z,ox*1.25+(Math.random()-.5)*(j?1.4:.4),py*1.25+(Math.random()-.5)*(j?1.4:.4),oz*1.25+(Math.random()-.5)*(j?1.4:.4),col,4.8-j*.6,.25,1.25)}
-  for(let k=0;k<70;k++){const u=Math.random()*2-1,th=Math.random()*6.283,q=Math.sqrt(1-u*u),sp=6+Math.random()*6;fdSpawn(r.x,r.y,r.z,Math.cos(th)*q*sp,u*sp,Math.sin(th)*q*sp,'#fff2c0',1.3,2,1.6)}}
-function updateDrawn(dt){for(let i=ROCKETS.length-1;i>=0;i--){const r=ROCKETS[i];r.t+=dt;r.y+=r.vy*dt;r.vy=Math.max(16,r.vy-9*dt);
+function burstDrawn(r){_rv.set(1,0,0).applyQuaternion(camera.quaternion);_rv.y=0;if(_rv.lengthSq()<1e-4)_rv.set(1,0,0);_rv.normalize();const S=44,d=r.d;
+  for(let k=0;k+2<d.length;k+=3){const px=d[k]/100*S,py=d[k+1]/100*S,col=FWC[d[k+2]]||'#fff';const ox=_rv.x*px,oz=_rv.z*px;for(let j=0;j<3;j++)fdSpawn(r.x,r.y,r.z,ox*1.25+(Math.random()-.5)*(j?2.2:.5),py*1.25+(Math.random()-.5)*(j?2.2:.5),oz*1.25+(Math.random()-.5)*(j?2.2:.5),col,5.4-j*.6,.25,1.25)}
+  for(let k=0;k<140;k++){const u=Math.random()*2-1,th=Math.random()*6.283,q=Math.sqrt(1-u*u),sp=10+Math.random()*10;fdSpawn(r.x,r.y,r.z,Math.cos(th)*q*sp,u*sp,Math.sin(th)*q*sp,'#fff2c0',1.3,2,1.6)}}
+function updateDrawn(dt){for(let i=ROCKETS.length-1;i>=0;i--){const r=ROCKETS[i];r.t+=dt;r.y+=r.vy*dt;r.vy=Math.max(22,r.vy-10*dt);
     for(let k=0;k<3;k++)fdSpawn(r.x+(Math.random()-.5)*.3,r.y-k*.3,r.z+(Math.random()-.5)*.3,(Math.random()-.5)*1.2,-2-Math.random()*2,(Math.random()-.5)*1.2,k?'#ffb050':'#fff6d0',.6,3,1);
-    if(r.y>=r.top||r.t>3.5){burstDrawn(r);ROCKETS.splice(i,1)}}
+    if(r.y>=r.top||r.t>5){burstDrawn(r);ROCKETS.splice(i,1)}}
   for(let i=0;i<FD_N;i++){const k=i*3;if(fdLife[i]<=0){if(fdCol[k]||fdCol[k+1]||fdCol[k+2])fdCol[k]=fdCol[k+1]=fdCol[k+2]=0;continue}fdLife[i]-=dt;const dr=Math.exp(-fdDrag[i]*dt);
     fdVel[k]*=dr;fdVel[k+1]=fdVel[k+1]*dr-fdGrav[i]*dt;fdVel[k+2]*=dr;fdPos[k]+=fdVel[k]*dt;fdPos[k+1]+=fdVel[k+1]*dt;fdPos[k+2]+=fdVel[k+2]*dt;
     const L=fdLife[i],f=Math.max(0,L>1.4?1:L/1.4)*(fdMax[i]>3?.85+.15*Math.sin(L*30+i):1);for(let j=0;j<3;j++)fdCol[k+j]=fdBase[k+j]*f}
@@ -1641,9 +1800,9 @@ $('panelcard').addEventListener('click',e=>{if(panelKind!=='fwdraw')return;const
   if('fwclear' in d){fwStrokes=[];redrawFw()}
   if('fwundo' in d){fwStrokes.pop();redrawFw()}
   if('fwlaunch' in d){if(!fwStrokes.length){$('fwmsg').textContent='Draw something first!';return}const wait=Math.ceil(10-(T-fwLast));if(wait>0){$('fwmsg').textContent=`The launcher is reloading… ${wait}s`;return}
-    fwLast=T;const data=sampleFw();launchDrawn(data);world.send({k:'fd',d:data,n:SAVE.name});closePanel();toast('🚀 Launched! Look up at the sky over the village.')}},true);
+    fwLast=T;const data=sampleFw();launchDrawn(data);world.send({k:'fd',d:data,n:SAVE.name});closePanel();toast('🚀 Launched! Look up the mountain: it bursts over the ski slopes.')}},true);
 // ---------- network hooks
-function netExtra(){const o={};if(SAVE.eq.trail&&SAVE.eq.trail!=='trail0')o.tr=SAVE.eq.trail;if(SAVE.eq.pet&&SAVE.eq.pet!=='pet0')o.pt=SAVE.eq.pet;if(P.roll)o.rb=rnd2(P.roll.r);return o}
+function netExtra(){const o={};if(RIDE_SLEIGH)o.sl=curSleigh();if(SAVE.eq.trail&&SAVE.eq.trail!=='trail0')o.tr=SAVE.eq.trail;if(SAVE.eq.pet&&SAVE.eq.pet!=='pet0')o.pt=SAVE.eq.pet;if(P.roll)o.rb=rnd2(P.roll.r);return o}
 const fdLastFrom=new Map();
 {const base=world.onmsg;world.onmsg=m=>{
   if(m.k==='gs'||m.k==='gss'){const before=gsTotal();gsMerge(m.c,m.r);if(m.k==='gs'&&before<GS_GOAL&&gsTotal()>=GS_GOAL)chatSys('☃ The giant snowman in the Snowman Yard is finished!');return}
@@ -1652,14 +1811,32 @@ const fdLastFrom=new Map();
   if(m.k==='fd'){if(!Array.isArray(m.d)||m.d.length>900||m.d.length%3)return;const last=fdLastFrom.get(m.i)||-99;if(T-last<6)return;fdLastFrom.set(m.i,T);
     const d=m.d.map((v,k)=>k%3===2?clamp(num(v)|0,0,FWC.length-1):clamp(num(v),-110,110));launchDrawn(d);chatSys(`🎆 ${cleanName(String(m.n||''))||'Someone'} launched a firework from the workshop`);return}
   base(m);
-  if(m.k==='s'){const o=others.get(m.i);if(o){o.tr=ITEM[m.tr]&&ITEM[m.tr].cat==='trail'?m.tr:null;o.pt=ITEM[m.pt]&&ITEM[m.pt].cat==='pet'?m.pt:null;o.rb=clamp(num(m.rb),0,1.2)}}}}
+  if(m.k==='s'){const o=others.get(m.i);if(o){o.sl=ITEM[m.sl]&&ITEM[m.sl].cat==='sleigh'?m.sl:null;o.tr=ITEM[m.tr]&&ITEM[m.tr].cat==='trail'?m.tr:null;o.pt=ITEM[m.pt]&&ITEM[m.pt].cat==='pet'?m.pt:null;o.rb=clamp(num(m.rb),0,1.2)}}}}
+// ---------- circular village minimap
+const MM_SPOTS=[['🏠','Lodge & Gear',LODGE.x,LODGE.z-4],['⛸','Pond',POND.x,POND.z],['☃','Snowman Yard',GIANT.x,GIANT.z],['🎆','Workshop',WORKSHOP.x,WORKSHOP.z],['🏁','Race board',LBPOS.x,LBPOS.z],['🔥','Plaza',PLAZA.x,PLAZA.z],['🎄','Great Tree',XTREE.x,XTREE.z],...LIFTS.map(L=>['🚡',L.name,L.x+2.5,L.zb])];
+let mmT=0;const _mf=V3();
+function drawMinimap(dt){const cv=$('minimap');const on=state==='play'&&P.loc==='mtn'&&P.pos.z>VILLAGE_Z-30&&P.mode!=='lift';cv.classList.toggle('hidden',!on);if(!on)return;mmT-=dt;if(mmT>0)return;mmT=1/15;
+  const g=cv.getContext('2d'),W=cv.width,C=W/2,R=C-4,SC=R/110;camera.getWorldDirection(_mf);let fx=_mf.x,fz=_mf.z;const fl=Math.hypot(fx,fz)||1;fx/=fl;fz/=fl;const rx=-fz,rz=fx;
+  const toS=(x,z)=>{const dx=x-P.pos.x,dz=z-P.pos.z;return[C+(dx*rx+dz*rz)*SC,C-(dx*fx+dz*fz)*SC]};
+  g.clearRect(0,0,W,W);g.save();g.beginPath();g.arc(C,C,R,0,7);g.clip();const bg=g.createRadialGradient(C,C,10,C,C,R);bg.addColorStop(0,'#eef4ff');bg.addColorStop(1,'#b9c8e6');g.fillStyle=bg;g.fillRect(0,0,W,W);
+  // ski hill edge and lodge footprint
+  g.fillStyle='rgba(120,140,190,.35)';g.beginPath();const e=[[-260,VILLAGE_Z],[260,VILLAGE_Z],[260,VILLAGE_Z-400],[-260,VILLAGE_Z-400]].map(([x,z])=>toS(x,z));e.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.fill();
+  g.fillStyle='#8a4a2a';g.beginPath();[[LODGE.x-LODGE.w/2,LODGE.z-LODGE.d/2],[LODGE.x+LODGE.w/2,LODGE.z-LODGE.d/2],[LODGE.x+LODGE.w/2,LODGE.z+LODGE.d/2],[LODGE.x-LODGE.w/2,LODGE.z+LODGE.d/2]].map(([x,z])=>toS(x,z)).forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.fill();
+  {const [px,py]=toS(POND.x,POND.z);g.fillStyle='#8fd3ff';g.beginPath();g.arc(px,py,POND.r*SC,0,7);g.fill()}
+  for(const L of LIFTS){const [ax,ay]=toS(L.x+2.5,L.zb),[bx,by]=toS(L.x+2.5,L.zb-300);g.strokeStyle='rgba(60,60,80,.6)';g.lineWidth=3;g.setLineDash([6,5]);g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();g.setLineDash([])}
+  g.textAlign='center';g.textBaseline='middle';
+  for(const [ic,nm,x,z] of MM_SPOTS){let [sx,sy]=toS(x,z);const dx=sx-C,dy=sy-C,d=Math.hypot(dx,dy);if(d>R-16){sx=C+dx/d*(R-16);sy=C+dy/d*(R-16)}
+    g.font='26px serif';g.fillText(ic,sx,sy);if(d<R-16){g.font='700 15px Fredoka, sans-serif';g.lineWidth=4;g.strokeStyle='rgba(255,255,255,.9)';g.strokeText(nm,sx,sy+20);g.fillStyle='#1c2440';g.fillText(nm,sx,sy+20)}}
+  for(const [,o] of others){if(o.loc!=='mtn')continue;const [sx,sy]=toS(o.pos.x,o.pos.z);if(Math.hypot(sx-C,sy-C)>R-6)continue;g.fillStyle='#ff5d73';g.beginPath();g.arc(sx,sy,5,0,7);g.fill()}
+  g.restore();g.save();g.translate(C,C);const a=Math.atan2(Math.sin(P.yaw)*rx+Math.cos(P.yaw)*rz,Math.sin(P.yaw)*fx+Math.cos(P.yaw)*fz);g.rotate(a);g.fillStyle='#d62839';g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(0,-13);g.lineTo(9,10);g.lineTo(0,5);g.lineTo(-9,10);g.closePath();g.stroke();g.fill();g.restore();
+  g.font='700 16px Fredoka, sans-serif';g.fillStyle='#b3202c';g.fillText('VILLAGE',C,W-22)}
 // ---------- per-frame update
-function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updateGiant(dt);
+function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updateGiant(dt);drawMinimap(dt);
   if(state!=='play'&&state!=='menu')return;
   updateRoll(dt);updateRace(dt);updateSync(dt);
-  if(state==='play'){const sp=Math.hypot(P.vel.x,P.vel.z);updatePet('me',SAVE.eq.pet,P.pos,P.yaw,me.root.parent,sp,dt);
+  if(state==='play'){const sp=Math.hypot(P.vel.x,P.vel.z);updatePet('me',SAVE.eq.pet,P.pos,P.yaw,me.root.parent,sp,dt,P.mode==='lift');
     if(P.loc==='mtn'&&['ride','air','grind'].includes(P.mode))trailFor('me',SAVE.eq.trail,P.pos,P.vel.length(),dt)}
-  for(const [id,o] of others){const g=o.tgt;const sp=g?Math.hypot(g.v.x,g.v.z):0;updatePet(id,o.pt,o.pos,o.yaw,o.A.root.parent,sp,dt);
+  for(const [id,o] of others){const g=o.tgt;const sp=g?Math.hypot(g.v.x,g.v.z):0;updatePet(id,o.pt,o.pos,o.yaw,o.A.root.parent,sp,dt,!!(g&&g.anim===3));
     if(g&&o.loc==='mtn'&&(g.anim===0||g.anim===1||g.anim===7)&&o.tr)trailFor(id,o.tr,o.pos,g.v.length(),dt);
     let b=OBALLS.get(id);if(o.rb>.1&&o.loc==='mtn'){if(!b){b=new THREE.Mesh(BALL_GEO,snowBallM);b.castShadow=true;mtn.add(b);OBALLS.set(id,b)}b.scale.setScalar(o.rb);ballAt(o.pos,o.yaw,o.rb,b.position);if(sp>.2)b.rotateOnWorldAxis(_ax.set(Math.cos(o.yaw),0,-Math.sin(o.yaw)),sp*dt/o.rb)}
     else if(b){mtn.remove(b);OBALLS.delete(id)}}
@@ -1668,7 +1845,7 @@ function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updateGiant(dt);
 // ---------- interactions in the village
 EXTRA_INTERACT.push(sp=>{if(P.mode!=='walk')return null;
   if(P.roll){    return{label:'Drop your snowball (roll it into the glowing circle to add it to the giant snowman)',act:dropRoll}}
-  if(Math.hypot(P.pos.x-WORKSHOP.x,P.pos.z-WORKSHOP.z)<4.2)return{label:'Design your own firework',act:()=>openPanel('fwdraw')};
+  if(Math.hypot(P.pos.x-WORKSHOP.x,P.pos.z-WORKSHOP.z)<5.2)return{label:'Design your own firework',act:()=>openPanel('fwdraw')};
   if(Math.hypot(P.pos.x-LBPOS.x,P.pos.z-LBPOS.z)<4.5)return{label:'See the Jingle Race leaderboard',act:()=>openPanel('race')};
   if(Math.hypot(P.pos.x-YARD.x,P.pos.z-YARD.z)<YARD.r)return{label:'Start rolling a snowball',act:startRoll};
   return null});
@@ -1684,7 +1861,6 @@ function updateCamera(dt){
     me.root.updateMatrixWorld(true);me.head.getWorldPosition(_cp);
     me.pivot.getWorldQuaternion(_hq);
     if((INDOOR()||P.mode==='walk')){camS.lookYaw=0}
-    else if(sinceMouse>2.5&&P.loc==='mtn'){camS.lookYaw*=Math.exp(-2*dt);camS.lookPitch=lerp(camS.lookPitch,-.12,1-Math.exp(-2*dt))}
     _e.set(camS.lookPitch,Math.PI+camS.lookYaw,0);_tq.setFromEuler(_e);camera.quaternion.copy(_hq).multiply(_tq);
     // keep the horizon level on the ground (head bob from terrain is enough)
     camera.position.copy(_cp).add(_v.set(0,.24,0));_f.set(0,0,-.12).applyQuaternion(camera.quaternion);camera.position.add(_f);
@@ -1697,26 +1873,25 @@ function updateCamera(dt){
   else if(hv>2.5)tyaw=Math.atan2(P.vel.x,P.vel.z);
   else tyaw=P.mode==='air'?camS.yaw:camS.yaw;
   if(!freeCam())camS.yaw=angLerp(camS.yaw,tyaw,1-Math.exp(-(P.mode==='air'?1.2:3)*dt));
-  if(P.loc==='mtn'&&sinceMouse>1.5){camS.yawOff*=Math.exp(-1.6*dt);camS.pitchOff*=Math.exp(-1.6*dt)}
   const yaw=camS.yaw+camS.yawOff,pitch=clamp(.26+camS.pitchOff,-.3,1.3);
   const dist=freeCam()?4.4:(P.mode==='lift'?7.5:5.8+Math.min(3,P.vel.length()*.06));
   _ct.copy(P.pos);_ct.y+=freeCam()?1.5:(P.mode==='lift'?1.2:1.6);
   _cp.set(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(dist).add(_ct);
   if(P.loc==='mtn'){const gh=groundH(_cp.x,_cp.z)+.7;if(_cp.y<gh)_cp.y=gh}
-  else{const R=ROOMS[P.loc];_cp.x=clamp(_cp.x,-R.W+.4,R.W-.4);_cp.z=clamp(_cp.z,-R.D+.4,R.D-.4);_cp.y=clamp(_cp.y,.4,R.H-.4)}
+  else{const R=ROOMS[P.loc];_cp.x=clamp(_cp.x,(R.X0??-R.W)+.4,(R.X1??R.W)-.4);_cp.z=clamp(_cp.z,-R.D+.4,R.D-.4);_cp.y=clamp(_cp.y,.4,R.H-.4)}
   camera.position.copy(_cp);camera.lookAt(_ct)}
 
 /* ================= Local avatar pose ================= */
 function updateMe(dt){
   const R=me.root;R.position.copy(P.pos);
   if(P.loc==='mtn'&&(P.mode==='ride'||P.mode==='crash')){normalAt(P.pos.x,P.pos.z,_nn);_tq.setFromUnitVectors(UP,_nn)}else _tq.identity();
-  P.tilt.slerp(_tq,1-Math.exp(-14*dt));_yq.setFromAxisAngle(UP,P.yaw);R.quaternion.copy(P.tilt).multiply(_yq);
+  P.tilt.slerp(_tq,1-Math.exp(-14*dt));P.visYaw=(P.visYaw||0)*Math.exp(-9*dt);_yq.setFromAxisAngle(UP,P.yaw+P.visYaw);R.quaternion.copy(P.tilt).multiply(_yq);
   if(P.mode==='air')me.pivot.quaternion.setFromAxisAngle(SAVE.sport==='board'?V3(0,0,1):V3(1,0,0),P.air.flip);
-  else if(P.mode==='crash')me.pivot.rotation.set(T*7,0,T*3);else me.pivot.quaternion.identity();
+  else if(P.mode==='crash'){me.pivot.rotation.set(T*7,0,T*3);P.landFlip=0}else if(Math.abs(P.landFlip||0)>.004){P.landFlip*=Math.exp(-9*dt);me.pivot.quaternion.setFromAxisAngle(SAVE.sport==='board'?V3(0,0,1):V3(1,0,0),P.landFlip)}else me.pivot.quaternion.identity();
   const anim=animCode();
   const crouch=P.charge>0?Math.min(1,.3+P.charge*1.6):(P.mode==='ride'?(P.tuck?.55:P.brake?.3:.12):0);curCrouch=lerp(curCrouch,crouch,1-Math.exp(-12*dt));
   if(P.foodT>0){P.foodT-=dt;if(P.foodT<=0)setFood(me,null)}
-  pose(me,{anim,crouch:curCrouch,grab:P.air&&P.air.grab,edge:P.steerS,tuck:P.tuck&&P.mode==='ride',time:T,phase:P.walkPhase,emote:me.emote});tickBubble(me,dt);tickFx(me,dt);if(me.emote&&me.emote.id===2&&P.vel.lengthSq()>1)me.emote=null}
+  pose(me,{anim:anim===4&&P.jh>.05?10:anim,sl:curSleigh(),crouch:curCrouch,grab:P.air&&P.air.grab,edge:P.steerS,tuck:P.tuck&&P.mode==='ride',time:T,phase:P.walkPhase,emote:me.emote});tickBubble(me,dt);tickFx(me,dt);if(me.emote&&me.emote.id===2&&P.vel.lengthSq()>1)me.emote=null}
 
 /* ================= Input ================= */
 let state='loading',paused=false;
@@ -1734,7 +1909,9 @@ addEventListener('keydown',e=>{
   keys.add(e.code);
   if(e.code==='KeyE'&&curInteract){curInteract.act();sfx.blip(700)}
   else if(e.code==='KeyV'){camS.mode=camS.mode==='first'?'third':'first';SAVE.cam=camS.mode;camS.lookYaw=camS.lookPitch=0;save();toast(camS.mode==='first'?'1st person view':'3rd person view')}
+  else if(e.code==='Space'&&!e.repeat)doJump();
   else if(e.code==='KeyG'&&P.loc==='mtn')setOnFoot(P.mode!=='walk');
+  else if(/^(Digit|Numpad)[1-4]$/.test(e.code)&&P.loc==='mtn'){const n=+e.code.slice(-1);if(n===1)setOnFoot(true);else setOnFoot(false,['ski','board','sleigh'][n-2])}
   else if(e.code==='KeyN')music.toggle();
   else if(e.code==='KeyH')$('keys').classList.toggle('hidden');
 });
@@ -1765,14 +1942,14 @@ $('m_play').onclick=()=>{sfx.init();music.start();SAVE.name=cleanName($('m_name'
   me.lv=0;refreshTag();applyLook();
   fadeTo(()=>{state='play';paused=false;$('menu').classList.add('hidden');$('hud').classList.remove('hidden');$('keys').innerHTML=KEYS_HTML();spawnAtBase();updateModeBar();
   $('clicktoplay').classList.remove('hidden');setTimeout(()=>$('clicktoplay').classList.add('hidden'),6000);
-  if(!SAVE.tut){SAVE.tut=1;save();$('keys').classList.remove('hidden');setTimeout(()=>$('keys').classList.add('hidden'),30000);hint('Welcome to the village! Walk with <span class="kbd">WASD</span>. Press <span class="kbd">G</span> or pick skis or a board below, then press <span class="kbd">E</span> at a chairlift.',10)}
-  else hint('Press <span class="kbd">H</span> for controls · <span class="kbd">G</span> to put your gear on',5)})};
+  if(!SAVE.tut){SAVE.tut=1;save();$('keys').classList.remove('hidden');setTimeout(()=>$('keys').classList.add('hidden'),30000);hint('Welcome to the village! Walk with <span class="kbd">WASD</span>. Press <span class="kbd">Space</span> to jump, <span class="kbd">1</span>-<span class="kbd">4</span> to walk, ski, board or ride a sleigh, and <span class="kbd">E</span> at a chairlift.',10)}
+  else hint('Press <span class="kbd">H</span> for controls · <span class="kbd">1</span>-<span class="kbd">4</span> walk · ski · board · sleigh',5)})};
 $('m_room').addEventListener('keydown',e=>e.stopPropagation());
 function toMenu(){state='menu';world.send({k:'x'});closeChat();$('hud').classList.add('hidden');$('menu').classList.remove('hidden');
   if(INDOOR()||P.mode==='sit'){P.loc='mtn';P.mode='walk';P.seat=null;switchScene()}P.pos.set(9999,-999,0);refreshMenu();save()}
 $('musbtn').addEventListener('click',()=>{sfx.init();music.toggle()});
 $('modebar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const m=b.dataset.m;if(m==='walk')setOnFoot(true);else setOnFoot(false,m);b.blur()});
-function updateModeBar(){const on=state==='play'&&P.loc==='mtn';$('modebar').classList.toggle('hidden',!on);if(!on)return;const cur=P.mode==='walk'?'walk':SAVE.sport;for(const b of $('modebar').children)b.classList.toggle('on',b.dataset.m===cur)}
+function updateModeBar(){const on=state==='play'&&P.loc==='mtn';$('modebar').classList.toggle('hidden',!on);if(!on)return;const cur=P.mode==='walk'?'walk':RIDE_SLEIGH?'sleigh':SAVE.sport;for(const b of $('modebar').children)b.classList.toggle('on',b.dataset.m===cur)}
 addEventListener('beforeunload',()=>{save();world.stop()});
 
 /* ================= Main loop ================= */
@@ -1797,7 +1974,7 @@ function frame(){
   if(scene===mtn){const c=camera.position;updateSnow(dt,c);sun.position.copy(c).addScaledVector(SUN,300);sun.target.position.copy(c);sun.position.x+=0;mtn.userData.sky.position.copy(c);
     const tg=state==='play'?P.pos:c;sun.target.position.copy(tg);sun.position.copy(tg).addScaledVector(SUN,300)}
   else{fireLight.intensity=50+Math.sin(T*13)*8+Math.sin(T*7.3)*6;fireBits.forEach((f,i)=>{f.scale.y=.8+Math.sin(T*9+i*2)*.25;f.position.y=.95+Math.sin(T*11+i)*.05})}
-  if(scene===lodge)pose(barista,{anim:6,time:T});else if(scene===shopS){pose(clerk,{anim:6,time:T});for(const d of DISPLAYS)if(d.label)d.label.visible=camera.position.distanceTo(d.label.position)>2.6}
+  if(scene===lodge){pose(barista,{anim:6,time:T});pose(clerk,{anim:6,time:T});for(const d of DISPLAYS)if(d.label)d.label.visible=camera.position.distanceTo(d.label.position)>2.6}
   if(state==='play')refreshTag();
   renderer.render(scene,camera)}
 
