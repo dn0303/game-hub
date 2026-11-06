@@ -62,9 +62,6 @@ input{font-family:inherit}
 #musbtn{position:absolute;right:14px;bottom:96px;pointer-events:auto;cursor:pointer;font-size:13px}
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;z-index:10;pointer-events:none}
-#minimap{position:absolute;left:14px;top:14px;width:150px;height:240px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:#dfe9f5;box-shadow:0 4px 16px rgba(0,0,0,.3)}
-#mapbig{position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;background:rgba(5,12,25,.6);pointer-events:none}
-#mapbig canvas{height:min(88vh,1000px);border-radius:16px;border:3px solid #fff;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 #topright{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:600;font-size:15px}
 #pts{font-size:24px;color:var(--gold);padding:6px 16px}
@@ -131,7 +128,7 @@ input{font-family:inherit}
 .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
 #pause .card{width:min(360px,100%);display:flex;flex-direction:column;gap:10px;text-align:center}
 #toast{position:fixed;left:50%;top:150px;transform:translateX(-50%);z-index:40;background:var(--panel);border:1px solid var(--line);padding:8px 16px;border-radius:12px;font-weight:600;transition:opacity .3s;pointer-events:none}
-@media (max-width:640px){#minimap{width:100px;height:160px}#keys{display:none}#trickname{font-size:24px}}
+@media (max-width:640px){#keys{display:none}#trickname{font-size:24px}}
 </style>
 </head>
 <body>
@@ -153,7 +150,6 @@ input{font-family:inherit}
 </div>
 
 <div id="hud" class="hidden">
-  <canvas id="minimap" width="300" height="480"></canvas>
   <div id="locname"></div>
   <div id="topright"><div class="pill" id="pts">0<small>pts</small></div><div class="pill hidden" id="buff"></div><div class="pill" id="online">Connecting…</div></div>
   <div class="pill" id="musbtn" title="Music (N)">🎹 Music on</div>
@@ -170,7 +166,6 @@ input{font-family:inherit}
   <div id="crosshair" class="hidden"></div>
   <div id="clicktoplay" class="hidden">Click the game to look around with the mouse</div>
 </div>
-<div id="mapbig" class="hidden"><canvas id="bigmap" width="600" height="960"></canvas></div>
 
 <div id="panel" class="screen hidden"><div class="card" id="panelcard"></div></div>
 <div id="pause" class="screen hidden"><div class="card">
@@ -1175,28 +1170,28 @@ function exitRoom(){sfx.door();fadeTo(()=>{const B=ROOMS[P.loc].out;P.loc='mtn';
 const enterLodge=()=>enterRoom('lodge'),exitLodge=exitRoom;
 
 /* ================= Audio ================= */
-const sfx=(()=>{let AC=null,master,wind,carve,fire,grindG,noiseBuf;
+const sfx=(()=>{let AC=null,master,wind,carve,carveB,fire,grindG,noiseBuf;
   function init(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
     master=AC.createGain();master.connect(AC.destination);master.gain.value=SAVE.set.vol;
     noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const d=noiseBuf.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;b=(b+.02*w)/1.02;d[i]=w*.5+b*3}
     const loop=(type,f,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl).connect(g).connect(master);s.start();return g};
-    wind=loop('bandpass',500,.6);carve=loop('highpass',2400,.7);fire=loop('lowpass',380,.5);grindG=loop('bandpass',3200,8)}
+    wind=loop('bandpass',500,.6);carve=loop('highpass',2600,.7);carveB=loop('bandpass',750,.9);fire=loop('lowpass',380,.5);grindG=loop('bandpass',3200,8)}
   function tone(f,d,type='sine',v=.15,f2){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;if(f2)o.frequency.exponentialRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g).connect(master);o.start();o.stop(AC.currentTime+d)}
   return{init,get ok(){return !!AC},
     update(speed,ground,turn,inLodge){if(!AC)return;const t=AC.currentTime;master.gain.setTargetAtTime(SAVE.set.vol,t,.1);
-      wind.gain.setTargetAtTime(inLodge?0:Math.min(.5,.04+speed/45),t,.15);carve.gain.setTargetAtTime(inLodge||!ground?0:Math.min(.35,speed/40*(.25+Math.abs(turn))),t,.08);fire.gain.setTargetAtTime(inLodge?.12+Math.random()*.1:0,t,.05)},
-    grind(on){if(grindG)grindG.gain.setTargetAtTime(on?.18:0,AC.currentTime,.03)},
-    chime(k=1){tone(880,.25,'triangle',.12);setTimeout(()=>tone(1320,.3,'triangle',.1),70);if(k>2)setTimeout(()=>tone(1760,.35,'triangle',.08),140)},
-    thud(v=1){tone(140,.25,'sine',.25*v,50)},blip(f=600,d=.06){tone(f,d,'square',.05)},pop(){tone(500,.12,'triangle',.12,1100)},
-    boom(){tone(90,.6,'sine',.18,40);setTimeout(()=>{for(let i=0;i<5;i++)setTimeout(()=>tone(2000+Math.random()*2000,.05,'square',.015),i*60)},150)},
-    coin(){tone(988,.08,'square',.06);setTimeout(()=>tone(1319,.25,'square',.06),80)},
+      wind.gain.setTargetAtTime(inLodge?0:Math.min(.5,.04+speed/45),t,.15);const cg=inLodge||!ground||P.mode==='walk'?0:Math.min(.4,speed/38*(.3+Math.abs(turn))),bd=SAVE.sport==='board';carve.gain.setTargetAtTime(bd?cg*.25:cg,t,.08);carveB.gain.setTargetAtTime(bd?cg*1.3:0,t,.08);fire.gain.setTargetAtTime(0,t,.05)},
+    grind(){},
+    chime(){},
+    thud(){},blip(){},pop(){},
+    boom(){},
+    coin(){},
     noise(dur,type,f,q,v){if(!AC)return;const s=AC.createBufferSource();s.buffer=noiseBuf;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain(),t=AC.currentTime;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(fl).connect(g).connect(master);s.start(t,Math.random()*1.5);s.stop(t+dur)},
-    step(snow){if(snow)this.noise(.11,'bandpass',1500+Math.random()*700,1.2,.22);else{this.noise(.07,'lowpass',420,1,.3);tone(95+Math.random()*20,.08,'sine',.08)}},
+    step(snow){if(snow){this.noise(.13,'bandpass',1100+Math.random()*500,1.4,.28);this.noise(.06,'lowpass',380,1,.2)}},
     bells(){for(let i=0;i<7;i++)setTimeout(()=>{tone(2093+Math.random()*900,.35,'triangle',.035);tone(3136+Math.random()*600,.25,'sine',.02)},i*45+Math.random()*30)},
-    door(){this.noise(.25,'lowpass',260,2,.35);this.bells()},
-    lift(){tone(70,.35,'square',.06,55);this.noise(.2,'bandpass',900,4,.15)},
-    click(){tone(1200,.035,'triangle',.06)},
-    land(v){this.noise(.18+v*.15,'lowpass',900,.7,.25+v*.35)},
+    door(){},
+    lift(){},
+    click(){},
+    land(v){this.noise(.2+v*.15,'lowpass',700,.7,.2+v*.3)},
     get ctx(){return AC},get out(){return master}}})();
 
 /* ================= Piano carols (public domain, synthesized) ================= */
@@ -1289,32 +1284,12 @@ let hintT=0,toastT=0;
 function hint(html,sec=4){$('hint').innerHTML=html;$('hint').classList.remove('hidden');hintT=sec}
 function toast(t){$('toast').textContent=t;$('toast').style.opacity=1;toastT=3}
 const KEYS_HTML=()=>INDOOR()||P.mode==='walk'?`<b>${P.loc==='shop'?'Shop':P.loc==='lodge'?'Lodge':'Walking'}</b><br><span class="kbd">WASD</span> walk · <span class="kbd">Shift</span> jog<br><span class="kbd">E</span> ${P.loc==='shop'?'buy / wear / exit':'sit / order / exit'}<br>${P.loc==='mtn'?'<span class="kbd">G</span> put on skis / board<br>':''}<span class="kbd">Enter</span> chat · <span class="kbd">V</span> camera<br><span class="kbd">Tab</span> players · <span class="kbd">N</span> music<br><span class="kbd">Esc</span> menu`:
- `<b>Riding</b><br><span class="kbd">W</span> tuck / push · <span class="kbd">S</span> brake<br><span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the 🔴 red-lipped snow bumps to fly<br><b>In the air</b><br><span class="kbd">A</span><span class="kbd">D</span> spin · <span class="kbd">W</span><span class="kbd">S</span> flip<br><span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span><span class="kbd">I</span> grabs<br><b>Other</b><br><span class="kbd">E</span> lifts, shop, lodge · <span class="kbd">F</span> fast lift<br><span class="kbd">V</span> 1st / 3rd person · <span class="kbd">M</span> map<br><span class="kbd">Enter</span> chat · <span class="kbd">G</span> walk<br>hold <span class="kbd">R</span> back to base · <span class="kbd">N</span> music`;
+ `<b>Riding</b><br><span class="kbd">W</span> tuck / push · <span class="kbd">S</span> brake<br><span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the 🔴 red-lipped snow bumps to fly<br><b>In the air</b><br><span class="kbd">A</span><span class="kbd">D</span> spin · <span class="kbd">W</span><span class="kbd">S</span> flip<br><span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span><span class="kbd">I</span> grabs<br><b>Other</b><br><span class="kbd">E</span> lifts, shop, lodge · <span class="kbd">F</span> fast lift<br><span class="kbd">V</span> 1st / 3rd person<br><span class="kbd">Enter</span> chat · <span class="kbd">G</span> walk<br>hold <span class="kbd">R</span> back to base · <span class="kbd">N</span> music`;
 function locName(){if(INDOOR())return ROOMS[P.loc].name;if(P.mode==='sit')return'🔥 The Plaza · by the fire';if(P.lift)return'🚡 '+P.lift.L.name+(P.mode==='lift'?' · hold F to ride faster':'');
   const z=P.pos.z,x=P.pos.x,alt=Math.round(1650+P.pos.y);let n;
   if(z>ZB-30)n=Math.hypot(x-PLAZA.x,z-PLAZA.z)<14?'🔥 The Plaza':"Base Village";else if(z<70)n='Summit';else if(x>PARK.x0&&x<PARK.x1&&z>PARK.z0&&z<PARK.z1)n='Jingle Jumps Park';else if(pipeMask(z)>.5&&Math.abs(x-PIPE.x)<20)n='Superpipe';
   else{const d=[[Math.abs(x-mainX(z)),'Candy Cane Lane'],[Math.abs(x-leftX(z)),"Dasher's Drop"],[z<PARK.z0?Math.abs(x-rightX(z)):999,"Prancer's Path"]].sort((a,b)=>a[0]-b[0])[0];n=d[0]<50?d[1]:'Off-piste in the trees'}
   return n+' · '+alt+' m'}
-// static trail map image
-const MAPS=2,mapImg=document.createElement('canvas');mapImg.width=(XW*2)/MAPS;mapImg.height=(Z1-Z0)/MAPS;
-{const g=mapImg.getContext('2d'),W=mapImg.width,H=mapImg.height,img=g.createImageData(W,H);
- for(let j=0;j<H;j++)for(let i=0;i<W;i++){const x=-XW+i*MAPS,z=Z0+j*MAPS,k=(j*W+i)*4;const gm=groomMask(x,z),ax=Math.abs(x);let r=lerp(196,245,gm),gg=lerp(212,248,gm),b=lerp(232,255,gm);
-   if(ax>238||z<-70||z>1490){r=150;gg=164;b=186}if(pipeMask(z)>.5&&Math.abs(x-PIPE.x)<PIPE.flat+PIPE.R){r=150;gg=200;b=255}
-   const sh=(baseH(x,z)-baseH(x+2,z+2))*.6;img.data[k]=clamp(r+sh*10,0,255);img.data[k+1]=clamp(gg+sh*10,0,255);img.data[k+2]=clamp(b+sh*10,0,255);img.data[k+3]=255}
- g.putImageData(img,0,0);const X=x=>(x+XW)/MAPS,Z=z=>(z-Z0)/MAPS;
- g.fillStyle='#2d6b45';for(const t of TREES){g.fillRect(X(t.x)-1,Z(t.z)-1,2.4,2.4)}
- g.fillStyle='#2f7bff';for(const k of KICKERS)g.fillRect(X(k.x-k.w/2),Z(k.z-k.L),k.w/MAPS,k.L/MAPS);g.strokeStyle='#555';g.lineWidth=1.2;for(const r of RAILS){g.beginPath();g.moveTo(X(r.x),Z(r.z1));g.lineTo(X(r.x),Z(r.z2));g.stroke()}
- g.lineWidth=2.5;for(const L of LIFTS){g.strokeStyle='#c41d30';g.setLineDash([5,3]);g.beginPath();g.moveTo(X(L.x+2.5),Z(L.zb));g.lineTo(X(L.x+2.5),Z(L.zt));g.stroke();g.setLineDash([]);g.fillStyle='#c41d30';g.fillRect(X(L.x)-3,Z(L.zb)-3,9,6);g.fillRect(X(L.x)-3,Z(L.zt)-3,9,6)}
- g.fillStyle='#7a3b1f';for(const B of [LODGE,SHOP])g.fillRect(X(B.x-B.w/2),Z(B.z-B.d/2),B.w/MAPS,B.d/MAPS);g.fillStyle='#1b5e35';g.beginPath();g.arc(X(XTREE.x),Z(XTREE.z),4,0,7);g.fill()}
-function drawMap(cv,full){const g=cv.getContext('2d'),W=cv.width,H=cv.height;g.fillStyle='#96a4ba';g.fillRect(0,0,W,H);
-  let sx,sy,sw,sh,scale;if(full){sw=mapImg.width;sh=mapImg.height;sx=0;sy=0;scale=Math.min(W/sw,H/sh)}else{scale=1.6;sw=W/scale;sh=H/scale;sx=(P.pos.x+XW)/MAPS-sw/2;sy=(P.pos.z-Z0)/MAPS-sh/2}
-  g.save();if(full)g.translate((W-sw*scale)/2,(H-sh*scale)/2);g.drawImage(mapImg,sx,sy,sw,sh,0,0,sw*scale,sh*scale);
-  const toS=(x,z)=>[((x+XW)/MAPS-sx)*scale,((z-Z0)/MAPS-sy)*scale];
-  if(full){g.font='600 13px Fredoka, sans-serif';g.fillStyle='#0e1a2e';g.textAlign='center';
-    for(const [t,x,z] of [['Summit',0,30],['Candy Cane Lane',mainX(500),500],["Dasher's Drop",leftX(300),300],['Superpipe',PIPE.x,680],['Jingle Jumps',125,900],["Prancer's Path",rightX(300),300],['Base Village',-20,1400],['North Pole Express',LIFTS[0].x+2.5,700],['Elf Quad',LIFTS[1].x+2.5,1000]]){const [a,b]=toS(x,z);g.fillText(t,a,b)}}
-  for(const o of others.values())if(o.loc==='mtn'&&o.tgt){const [a,b]=toS(o.pos.x,o.pos.z);g.fillStyle='#ff9f1c';g.beginPath();g.arc(a,b,full?4:3.5,0,7);g.fill()}
-  if(P.loc==='mtn'){const [a,b]=toS(P.pos.x,P.pos.z);g.translate(a,b);g.rotate(-P.yaw+Math.PI);g.fillStyle='#e2283a';g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.moveTo(0,-8);g.lineTo(6,7);g.lineTo(0,3);g.lineTo(-6,7);g.closePath();g.fill();g.stroke()}
-  g.restore()}
 function updateHUD(dt){
   $('pts').innerHTML=fmt(SAVE.points)+'<small>pts</small>';
   const b=SAVE.buff;if(b&&b.until>Date.now()){const s=Math.ceil((b.until-Date.now())/1000);$('buff').classList.remove('hidden');$('buff').textContent=`${FOODI[b.id]?.icon||'☕'} Toasty ×${b.mult.toFixed(2)} · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}else $('buff').classList.add('hidden');
@@ -1328,7 +1303,6 @@ function updateHUD(dt){
   if(it){$('prompt').innerHTML='<kbd>E</kbd>'+esc(it.label);$('prompt').classList.remove('hidden')}else $('prompt').classList.add('hidden');
   if(P.rHold>0&&P.loc==='mtn'){$('prompt').innerHTML='Returning to base… '+Math.ceil((1-P.rHold)*10)/10;$('prompt').classList.remove('hidden')}
   $('crosshair').classList.toggle('hidden',camS.mode!=='first');
-  mapT-=dt;if(mapT<=0){mapT=.1;$('minimap').classList.toggle('hidden',INDOOR());if(P.loc==='mtn')drawMap($('minimap'),false);if(!$('mapbig').classList.contains('hidden'))drawMap($('bigmap'),true)}
   if(!$('tablist').classList.contains('hidden'))renderTab()}
 let mapT=0,curInteract=null;
 const LOCN={mtn:'Mountain',lodge:'Lodge',shop:'Shop'};
@@ -1357,7 +1331,7 @@ function renderPanel(){const c=$('panelcard');const pts=`<span class="pill" styl
        <div style="display:flex;justify-content:space-between;align-items:center"><span class="price">${f.price} pts</span><button class="btn small gold" data-food="${f.id}" ${SAVE.points<f.price?'disabled':''}>Buy</button></div></div>`).join('')}</div>
      <div class="foot"><button class="btn" data-close>Done</button></div>`}
   else if(panelKind==='book'){const g=GRABS[SAVE.sport];c.innerHTML=`<h2>Trick book</h2><div class="sub">Land tricks to earn points. Chain them within 5 seconds for a combo multiplier (up to ×3).</div>
-     <div class="cols"><div><h4>Riding</h4><div class="krow"><span class="kbd">W</span> tuck for speed (push when slow)<br><span class="kbd">S</span> brake · <span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the snow bumps (red lip) on every run, or the park jumps, to get air. Landing is forgiving: let go of the keys near the ground and you'll straighten out.<br><span class="kbd">G</span> switch between walking and your skis / board in the village<br><span class="kbd">E</span> ride lifts, enter the shop and lodge<br><span class="kbd">F</span> hold on a chairlift to ride faster<br><span class="kbd">V</span> switch between 3rd and 1st person<br><span class="kbd">M</span> trail map · <span class="kbd">Tab</span> players<br>Hold <span class="kbd">R</span> to return to the base village<br>Click the game to look around with the mouse</div>
+     <div class="cols"><div><h4>Riding</h4><div class="krow"><span class="kbd">W</span> tuck for speed (push when slow)<br><span class="kbd">S</span> brake · <span class="kbd">A</span><span class="kbd">D</span> turn<br>Hit the snow bumps (red lip) on every run, or the park jumps, to get air. Landing is forgiving: let go of the keys near the ground and you'll straighten out.<br><span class="kbd">G</span> switch between walking and your skis / board in the village<br><span class="kbd">E</span> ride lifts, enter the shop and lodge<br><span class="kbd">F</span> hold on a chairlift to ride faster<br><span class="kbd">V</span> switch between 3rd and 1st person<br><span class="kbd">Tab</span> players<br>Hold <span class="kbd">R</span> to return to the base village<br>Click the game to look around with the mouse</div>
       <h4>Where to learn</h4><div class="krow">Take the <b>Elf Quad</b> to the <b>Jingle Jumps</b> park: small, medium and large jumps plus rails. The <b>Superpipe</b> is on Dasher's Drop. Grab 🎁 presents on any run for +150.</div></div>
       <div><h4>Points</h4><div class="trow"><span>Spin 180 / 360 / 540 / 720 (<span class="kbd">A</span><span class="kbd">D</span> in air)</span><b>100 / 250 / 450 / 700</b>
        <span>Backflip / Frontflip (<span class="kbd">S</span> / <span class="kbd">W</span> in air)</span><b>500</b><span>Double flip</span><b>1,350</b>
@@ -1453,7 +1427,6 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyE'&&curInteract){curInteract.act();sfx.blip(700)}
   else if(e.code==='KeyV'){camS.mode=camS.mode==='first'?'third':'first';SAVE.cam=camS.mode;camS.lookYaw=camS.lookPitch=0;save();toast(camS.mode==='first'?'1st person view':'3rd person view')}
   else if(e.code==='KeyG'&&P.loc==='mtn')setOnFoot(P.mode!=='walk');
-  else if(e.code==='KeyM')$('mapbig').classList.toggle('hidden');
   else if(e.code==='KeyN')music.toggle();
   else if(e.code==='KeyH')$('keys').classList.toggle('hidden');
 });
@@ -1485,9 +1458,9 @@ $('m_play').onclick=()=>{sfx.init();music.start();SAVE.name=cleanName($('m_name'
   fadeTo(()=>{state='play';paused=false;$('menu').classList.add('hidden');$('hud').classList.remove('hidden');$('keys').innerHTML=KEYS_HTML();spawnAtBase();updateModeBar();
   $('clicktoplay').classList.remove('hidden');setTimeout(()=>$('clicktoplay').classList.add('hidden'),6000);
   if(!SAVE.tut){SAVE.tut=1;save();$('keys').classList.remove('hidden');setTimeout(()=>$('keys').classList.add('hidden'),30000);hint('Welcome to the village! Walk with <span class="kbd">WASD</span>. Press <span class="kbd">G</span> or pick skis or a board below, then press <span class="kbd">E</span> at a chairlift.',10)}
-  else hint('Press <span class="kbd">H</span> for controls · <span class="kbd">G</span> to put your gear on · <span class="kbd">M</span> for the trail map',5)})};
+  else hint('Press <span class="kbd">H</span> for controls · <span class="kbd">G</span> to put your gear on',5)})};
 $('m_room').addEventListener('keydown',e=>e.stopPropagation());
-function toMenu(){state='menu';world.send({k:'x'});closeChat();$('hud').classList.add('hidden');$('mapbig').classList.add('hidden');$('menu').classList.remove('hidden');
+function toMenu(){state='menu';world.send({k:'x'});closeChat();$('hud').classList.add('hidden');$('menu').classList.remove('hidden');
   if(INDOOR()||P.mode==='sit'){P.loc='mtn';P.mode='walk';P.seat=null;switchScene()}P.pos.set(9999,-999,0);refreshMenu();save()}
 $('musbtn').addEventListener('click',()=>{sfx.init();music.toggle()});
 $('modebar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const m=b.dataset.m;if(m==='walk')setOnFoot(true);else setOnFoot(false,m);b.blur()});
