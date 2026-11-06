@@ -40,5 +40,40 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/games/$(id)).data.owner == request.auth.uid);
       }
     }
+      // ---------- Frosty Peaks: one cloud save per Google account
+    match /fp_saves/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid && fpSaveOk()
+        && request.resource.data.points <= 3000000 && request.resource.data.earned <= 3000000;
+      allow update: if request.auth != null && request.auth.uid == uid && fpSaveOk()
+        && request.time > resource.data.at + duration.value(5, 's')
+        && request.resource.data.earned >= resource.data.earned
+        && request.resource.data.earned - resource.data.earned <= 3000000
+        && request.resource.data.points - resource.data.points <= 3000000;
+    }
+    function fpSaveOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['s', 'points', 'earned', 'name', 'at'])
+        && d.s is string && d.s.size() < 100000
+        && d.points is int && d.points >= 0 && d.points <= 100000000
+        && d.earned is int && d.earned >= 0
+        && d.name is string && d.name.size() <= 16
+        && d.at == request.time;
+    }
+
+    // ---------- Frosty Peaks: all-time Jingle Race board (one best time per account)
+    match /fp_lb/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid && fpLbOk();
+      allow update: if request.auth != null && request.auth.uid == uid && fpLbOk()
+        && request.resource.data.t < resource.data.t;
+    }
+    function fpLbOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 't', 'at'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 16
+        && d.t is number && d.t >= 12 && d.t <= 400
+        && d.at == request.time;
+    }
   }
 }

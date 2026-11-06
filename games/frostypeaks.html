@@ -49,6 +49,7 @@ input{font-family:inherit}
 .seg button{flex:1;background:rgba(255,255,255,.08);border:2px solid var(--line);color:#fff;padding:12px;border-radius:12px;font-size:18px;font-weight:600}
 .seg button.on{background:rgba(159,216,255,.22);border-color:var(--ice)}
 #m_play{font-size:24px;padding:15px 34px;border-radius:16px;width:min(340px,100%)}
+#m_acct{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}#m_acct .acct{font-size:14px;color:#cfe6ff}#m_acct .acct.sub{font-size:12.5px;opacity:.75;max-width:420px;text-align:center}#m_acct .acct.off{opacity:.6}#m_acct .btn.gold{width:min(380px,100%);font-size:16px}
 #m_online{font-size:14px;color:#bfe6c9}
 .room{font-size:13px;opacity:.7}
 .room input{background:rgba(255,255,255,.1);border:1px solid var(--line);color:#fff;border-radius:8px;padding:4px 8px;width:110px;text-transform:uppercase}
@@ -1712,7 +1713,7 @@ function openChat(){if(state!=='play')return;$('chatbox').classList.remove('hidd
 let chatUnlock=false;
 function closeChat(){$('chatbox').classList.add('hidden');$('chatin').value='';$('chatin').blur();$('chatlog').classList.add('fade')}
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){const t=$('chatin').value.replace(/\s+/g,' ').trim().slice(0,120);
-  {const mm=t.match(/^\/points\s+(\d{1,8})$/i);if(mm){const n=+mm[1];SAVE.points+=n;saveT=1;save();chatSys('🧪 Test command: +'+fmt(n)+' pts');closeChat();return}}
+  {const mm=t.match(/^\/points\s+(\d{1,8})$/i);if(mm){if(typeof CLOUD!=='undefined'&&CLOUD.user&&!CLOUD.admin){chatSys('🧪 /points only works for guests and arcade admins');closeChat();return}const n=Math.min(+mm[1],typeof CLOUD!=='undefined'&&CLOUD.user?1000000:1e8);SAVE.points+=n;saveT=1;save();chatSys('🧪 Test command: +'+fmt(n)+' pts');closeChat();return}}
   if(t&&performance.now()-lastChat>900){lastChat=performance.now();say(me,t);chatLine(SAVE.name,t);world.send({k:'c',t})}closeChat()}else if(e.key==='Escape')closeChat()});
 $('chatlog').classList.add('fade');
 
@@ -2734,6 +2735,50 @@ function updateHouses(dt){houseT-=dt;if(houseT<=0){houseT=1;refreshHouses();cons
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);updateHouses(dt);updateLabels()}}
 MM_SPOTS.push(['🏡','Holly Lane',-90,LANE_Z+10]);
 Object.assign(window.__fx,{ni:()=>nearestInteract(),PLOTS,HOUSES,DECO,buildCottage,claimPlot,refreshHouses,houseCfgSet,myHouse,decoThumb,LANE_Z});
+/* ================= Accounts + cloud save + shared race leaderboard (Firebase, same project as the arcade) ================= */
+const FB_CFG={apiKey:"AIzaSyC0KmT-dE8_Yi9Qr2Z6Ux2q9XgqQ7XolSk",authDomain:"game-hub-22e2e.firebaseapp.com",projectId:"game-hub-22e2e",storageBucket:"game-hub-22e2e.firebasestorage.app",messagingSenderId:"866870954989",appId:"1:866870954989:web:8349d89126cd3e5a8b35e4"};
+const FBV='https://www.gstatic.com/firebasejs/10.12.2/';
+const CLOUD={on:false,user:null,admin:false,fs:null,A:null,F:null,lastJSON:'',lastWrite:0,loading:false,status:''};
+const cloudPayload=()=>{const o={};for(const k in SAVE)if(k!=='set'&&k!=='uid')o[k]=SAVE[k];return o};
+function cloudUI(){let box=$('m_acct');if(!box){box=document.createElement('div');box.id='m_acct';$('m_play').before(box);
+    box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.in!==undefined)cloudSignIn();if(b.dataset.out!==undefined)cloudSignOut()})}
+  const u=CLOUD.user;box.innerHTML=!CLOUD.on?`<span class="acct off">☁ Account saving is unavailable right now. Progress saves in this browser.</span>`
+   :u?`<span class="acct">☁ Saved to your account${u.displayName?` · <b>${esc(u.displayName.split(' ')[0])}</b>`:''}${CLOUD.status?` · ${CLOUD.status}`:''}</span><button class="btn small" data-out>Sign out</button>`
+   :`<button class="btn gold" data-in>☁ Sign in with Google to save your progress</button><span class="acct sub">Points, pets, gear and your cottage follow you to any computer. Your race times go on the all-time board.</span>`}
+async function cloudInit(){cloudUI();try{
+    const [app,auth,fs]=await Promise.all([import(FBV+'firebase-app.js'),import(FBV+'firebase-auth.js'),import(FBV+'firebase-firestore.js')]);
+    const a=app.initializeApp(FB_CFG,'frostypeaks');CLOUD.A=auth;CLOUD.F=fs;CLOUD.auth=auth.getAuth(a);CLOUD.fs=fs.getFirestore(a);CLOUD.on=true;cloudUI();
+    auth.onAuthStateChanged(CLOUD.auth,u=>{CLOUD.user=u;CLOUD.admin=false;cloudUI();if(u)cloudLoad(u)});cloudLoadLB()}
+  catch(e){CLOUD.on=false;cloudUI()}}
+async function cloudSignIn(){if(!CLOUD.on)return;try{await CLOUD.A.signInWithPopup(CLOUD.auth,new CLOUD.A.GoogleAuthProvider())}catch(e){if(e&&e.code!=='auth/popup-closed-by-user')toast('☁ Sign-in didn\'t work: '+(e.code||'try again'))}}
+async function cloudSignOut(){if(!CLOUD.on)return;await cloudWrite(true);await CLOUD.A.signOut(CLOUD.auth);
+  const keepSet=SAVE.set,keepName=SAVE.name;for(const k of Object.keys(SAVE))delete SAVE[k];Object.assign(SAVE,JSON.parse(JSON.stringify(DEF_SAVE)),{set:keepSet,name:keepName,tut:1});save();applyLook();refreshMenu();toast('☁ Signed out. This browser is back to a fresh guest save.')}
+async function cloudLoad(u){const F=CLOUD.F;CLOUD.loading=true;CLOUD.status='loading…';cloudUI();
+  try{const snap=await F.getDoc(F.doc(CLOUD.fs,'fp_saves',u.uid));const local=SAVE,localMine=!local.uid||local.uid===u.uid;
+    try{if(u.email){const ap=await F.getDoc(F.doc(CLOUD.fs,'approved',u.email.toLowerCase()));CLOUD.admin=ap.exists()&&ap.data().admin===true}}catch{}
+    if(snap.exists()){const d=snap.data();let cloud=null;try{cloud=JSON.parse(d.s)}catch{}
+      if(cloud&&(!localMine||(cloud.earned||0)>=(local.earned||0))){const keepSet=SAVE.set;for(const k of Object.keys(SAVE))delete SAVE[k];
+        Object.assign(SAVE,JSON.parse(JSON.stringify(DEF_SAVE)),cloud,{set:keepSet,uid:u.uid});SAVE.eq=Object.assign({},DEF_SAVE.eq,SAVE.eq);if(!Array.isArray(SAVE.owned))SAVE.owned=[...DEF_SAVE.owned];if(!Array.isArray(SAVE.deco))SAVE.deco=[];
+        save();CLOUD.lastJSON=JSON.stringify(cloudPayload());applyLook();if(state==='menu')refreshMenu();toast('☁ Loaded your saved progress: '+fmt(SAVE.points)+' pts')}
+      else{SAVE.uid=u.uid;save();await cloudWrite(true);toast('☁ This browser had more progress, so it\'s now saved to your account')}}
+    else{if(!localMine){const keepSet=SAVE.set,keepName=SAVE.name;for(const k of Object.keys(SAVE))delete SAVE[k];Object.assign(SAVE,JSON.parse(JSON.stringify(DEF_SAVE)),{set:keepSet,name:keepName,tut:1})}
+      SAVE.uid=u.uid;save();await cloudWrite(true);toast('☁ Your progress is now saved to your Google account')}
+    CLOUD.status='';}catch(e){CLOUD.status='offline';}
+  CLOUD.loading=false;cloudUI()}
+async function cloudWrite(force){const u=CLOUD.user;if(!CLOUD.on||!u||CLOUD.loading||SAVE.uid!==u.uid)return;const now=Date.now();if(!force&&now-CLOUD.lastWrite<12000)return;
+  const p=cloudPayload(),js=JSON.stringify(p);if(js===CLOUD.lastJSON)return;if(now-CLOUD.lastWrite<6000)return;CLOUD.lastWrite=now;const F=CLOUD.F;
+  try{await F.setDoc(F.doc(CLOUD.fs,'fp_saves',u.uid),{s:js,points:Math.max(0,Math.floor(SAVE.points)),earned:Math.max(0,Math.floor(SAVE.earned||0)),name:cleanName(SAVE.name)||'Skier',at:F.serverTimestamp()});CLOUD.lastJSON=js;if(CLOUD.status){CLOUD.status='';cloudUI()}}
+  catch(e){CLOUD.status='couldn\'t save, will retry';cloudUI()}}
+async function cloudLoadLB(){if(!CLOUD.on)return;const F=CLOUD.F;try{const q=F.query(F.collection(CLOUD.fs,'fp_lb'),F.orderBy('t'),F.limit(20));const r=await F.getDocs(q);
+  const rows=[];r.forEach(d=>{const x=d.data();rows.push([String(x.name||''),num(x.t),x.at&&x.at.toMillis?x.at.toMillis():Date.now()])});if(rows.length)mergeLB(rows)}catch(e){}}
+async function cloudPostLB(t){const u=CLOUD.user;if(!CLOUD.on||!u||t<12||t>400)return;const F=CLOUD.F,ref=F.doc(CLOUD.fs,'fp_lb',u.uid);
+  try{const s=await F.getDoc(ref);if(s.exists()&&num(s.data().t,999)<=t)return;await F.setDoc(ref,{name:cleanName(SAVE.name)||'Skier',t:rnd2(t),at:F.serverTimestamp()});toast('🏁 Saved to the all-time Jingle Race board!')}catch(e){}}
+{const b=finishRace;finishRace=time=>{b(time);if(CLOUD.user)cloudPostLB(time);else if(CLOUD.on)setTimeout(()=>toast('🏁 Sign in on the menu to put your times on the all-time board'),3200)}}
+let cloudT=0,lbT=0;
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);cloudT-=dt;if(cloudT<=0){cloudT=3;cloudWrite(false)}lbT-=dt;if(lbT<=0){lbT=90;cloudLoadLB()}}}
+addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')cloudWrite(true)});
+cloudInit();
+window.__cloud=CLOUD;window.__cloudFx={cloudLoad,cloudWrite,cloudPostLB};
 
 /* ================= Camera ================= */
 let curCrouch=0;
