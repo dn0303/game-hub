@@ -99,6 +99,9 @@ td.num{font-variant-numeric:tabular-nums}
 #h_keys{position:absolute;left:16px;bottom:14px;font-size:13px;color:var(--mute)}
 #h_combo{position:absolute;left:50%;top:calc(50% + 44px);transform:translateX(-50%);font-size:16px;font-weight:700;color:var(--acc2);opacity:0;transition:opacity .2s;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 #count{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:12;font-size:110px;font-weight:700;pointer-events:none;text-shadow:0 6px 30px rgba(0,0,0,.5)}
+#dmg{position:fixed;inset:0;z-index:11;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(255,40,60,0) 40%,rgba(255,40,60,.55))}
+#dmg.on{animation:dmg .5s ease-out}
+@keyframes dmg{0%{opacity:1}100%{opacity:0}}
 #count.pop{animation:pop .5s ease-out}
 @keyframes pop{0%{transform:translate(-50%,-50%) scale(1.5);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-50%) scale(1)}}
 
@@ -122,6 +125,20 @@ td.num{font-variant-numeric:tabular-nums}
 .chart{background:var(--panel2);border-radius:12px;padding:10px 12px}
 .chart h5{margin:0 0 6px;color:var(--mute);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;font-weight:500}
 .chart canvas{width:100%;display:block}
+.tip{position:absolute;z-index:3;width:200px;background:#0d1122;border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;font-size:13px}
+.tip .th{color:var(--mute);font-size:11px;margin-bottom:2px}
+.tip .ts{font-size:20px;font-weight:700;margin-bottom:4px}
+.tip .tr{display:flex;justify-content:space-between;gap:8px;padding:2px 0;color:var(--mute)}
+.tip .tr b{color:var(--ink);font-variant-numeric:tabular-nums}
+.lbline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel2);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:15px}
+.lbline b{color:var(--acc2)}
+.nameinp{background:rgba(255,255,255,.07);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 10px;font-size:15px;width:170px}
+.lbctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.lbctl select{background:rgba(255,255,255,.07);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 10px;font-size:15px}
+.lbctl select option{background:#151a2e}
+tr.me td{background:rgba(255,176,60,.1)}
+td.rk{color:var(--mute);width:48px}
+tr:nth-child(1) td.rk{color:#ffcc4d}tr:nth-child(2) td.rk{color:#c7cfdc}tr:nth-child(3) td.rk{color:#c98a5a}
 .chart .cap{color:var(--mute);font-size:12px;margin-top:4px}
 </style>
 </head>
@@ -143,12 +160,13 @@ td.num{font-variant-numeric:tabular-nums}
   <div id="h_keys"><kbd>Esc</kbd> pause &nbsp; <kbd>R</kbd> restart</div>
 </div>
 <div id="count" class="hidden"></div>
+<div id="dmg"></div>
 
 <div id="menu" class="screen hidden">
  <div class="wrap">
   <div class="top">
     <div><div class="logo">Reflex <i>Range</i></div><div class="sub">A 3D aim trainer. Pick a drill, beat your best, climb the ranks.</div></div>
-    <div class="tabs" id="tabs"><button data-tab="drills" class="on">Drills</button><button data-tab="settings">Settings</button><button data-tab="stats">Stats</button></div>
+    <div class="tabs" id="tabs"><button data-tab="drills" class="on">Drills</button><button data-tab="settings">Settings</button><button data-tab="stats">Stats</button><button data-tab="lb">Leaderboard</button></div>
   </div>
 
   <div id="tab_drills" class="pane">
@@ -190,6 +208,17 @@ td.num{font-variant-numeric:tabular-nums}
     </div>
   </div>
 
+  <div id="tab_lb" class="pane hidden">
+    <div class="lbctl">
+      <select id="lb_drill"></select>
+      <div class="seg" id="lb_dur"><button data-d="30">30s</button><button data-d="60">60s</button><button data-d="90">90s</button></div>
+      <span style="flex:1"></span>
+      <label class="hint" for="lb_name">Your name</label><input class="nameinp" id="lb_name" maxlength="16" placeholder="Pick a name">
+    </div>
+    <div class="hint" id="lb_status" style="margin-bottom:8px">Loading…</div>
+    <div class="tblwrap"><table><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Accuracy</th><th>When</th></tr></thead><tbody id="lb_body"></tbody></table></div>
+  </div>
+
   <div id="tab_stats" class="pane hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
       <div class="hint" id="stathint">Best runs per drill.</div>
@@ -221,8 +250,9 @@ td.num{font-variant-numeric:tabular-nums}
     <div class="sgrid" id="r_stats"></div>
     <div class="charts">
       <div class="chart"><h5>Where your shots landed</h5><canvas id="r_spread" height="200"></canvas><div class="cap" id="r_spreadcap"></div></div>
-      <div class="chart"><h5>Recent runs</h5><canvas id="r_hist" height="200"></canvas><div class="cap" id="r_histcap"></div></div>
+      <div class="chart" style="position:relative"><h5>Recent runs</h5><canvas id="r_hist" height="200" style="cursor:crosshair"></canvas><div class="cap" id="r_histcap"></div><div class="tip hidden" id="r_tip"></div></div>
     </div>
+    <div class="lbline" id="r_lb"><span id="r_lbtext">Leaderboard…</span><span id="r_lbname" class="hidden"><input class="nameinp" id="r_name" maxlength="16" placeholder="Your name"> <button class="btn small" id="r_post">Post score</button></span></div>
     <div class="btns"><button class="btn main" id="r_again">Play again <kbd>R</kbd></button><button class="btn" id="r_menu">Menu</button></div>
   </div>
 </div>
@@ -244,7 +274,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 /* ---------------- settings & saved stats ---------------- */
 const LS_SET='reflexrange_settings_v1', LS_STATS='reflexrange_stats_v1';
 const DEF={scale:'val',sens:0.4,dpi:800,fov:103,theme:'midnight',tColor:'#ff5a3c',gun:true,vol:0.6,
-  xStyle:'crossdot',xColor:'#3dffb5',xSize:7,xGap:3,xThick:2,xOutline:true,drill:'grid',dur:60};
+  xStyle:'crossdot',xColor:'#3dffb5',xSize:7,xGap:3,xThick:2,xOutline:true,drill:'grid',dur:60,name:''};
 const SCALES={val:{name:'Valorant',yaw:0.07},cs:{name:'CS2 / Apex Legends',yaw:0.022},ow:{name:'Overwatch 2',yaw:0.0066},deg:{name:'Degrees per count',yaw:1}};
 function load(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -257,12 +287,15 @@ const degPerCount=()=>Math.max(1e-5,S.sens*SCALES[S.scale].yaw);
 const RANKS=[['Bronze','#c98a5a'],['Silver','#c7cfdc'],['Gold','#ffcc4d'],['Platinum','#5fe3d0'],['Diamond','#7fb2ff'],['Elite','#ff6bd6']];
 const DRILLS={
   grid:{name:'Gridshot',kind:'Speed',desc:'Three targets sit on a 3×3 wall. Clear them as fast as you can; every new one pops up somewhere else.',ranks:[4000,8000,12000,16000,21000,26000]},
-  flick:{name:'Wide Flick',kind:'Flicking',desc:'One target at a time, anywhere in a wide arc. Snap to it fast. Quicker hits score more.',ranks:[2000,3500,5000,6500,8000,9500]},
+  snap:{name:'Center Snap',kind:'Flicking',desc:'Hit the middle target, flick out to one anywhere on screen, then snap back to the middle. Repeat.',ranks:[2500,4500,6500,8500,10500,12500]},
   micro:{name:'Pinpoint',kind:'Precision',desc:'Tiny targets close to the middle. Slow down and click the exact pixel.',ranks:[1500,3000,4500,6000,7500,9000]},
   reflex:{name:'Blink',kind:'Reaction',desc:'Targets shrink and vanish after a second. Hit them before they go.',ranks:[2000,4000,6000,8000,10000,12000]},
+  peek:{name:'Corner Peek',kind:'Reaction + flicks',desc:'Targets peek out from behind walls for a split second, then duck back. React, flick, click.',ranks:[1500,3000,4500,6000,7500,9000]},
   drift:{name:'Drift',kind:'Moving clicks',desc:'Three targets float and bounce around the wall. Lead them and click.',ranks:[2000,4000,6000,8000,10000,12500]},
   track:{name:'Glide Track',kind:'Tracking',desc:'One target strafes and dodges. Keep your crosshair on it, no clicking needed.',ranks:[1500,2500,3300,4000,4700,5300]},
+  tac:{name:'Tactical Duel',kind:'Valorant practice',desc:'Bots strafe A-D and stop like real players. One headshot kills, body needs four. Kill them before they shoot you.',ranks:[1500,3000,4500,6000,7500,9000]},
 };
+if(!DRILLS[S.drill])S.drill='grid';
 function rankOf(drill,score,dur){
   const th=DRILLS[drill].ranks, m=dur/60; let i=-1;
   for(let k=0;k<th.length;k++) if(score>=th[k]*m) i=k;
@@ -329,7 +362,7 @@ function applyTheme(){
     if(s.mesh.material.map)s.mesh.material.map.dispose();
     s.mesh.material.map=t; s.mesh.material.emissiveMap=t; s.mesh.material.emissive.set('#ffffff'); s.mesh.material.emissiveIntensity=S.theme==='daylight'?.25:.55; s.mesh.material.needsUpdate=true;
   }
-  stripMat.color.set(th.strip); frameMat.color.set(th.strip);
+  stripMat.color.set(th.strip); frameMat.color.set(th.strip); coverMat.color.set(th.major); coverEdge.color.set(th.strip);
 }
 
 /* ---------------- gun ---------------- */
@@ -361,24 +394,15 @@ let targets=[];
 function makeTarget(pos,r,extra){
   const col=new THREE.Color(S.tColor);
   const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.28,roughness:.35,metalness:.05,transparent:true,opacity:1});
-  const mesh=new THREE.Mesh(sphereGeo,mat); mesh.position.copy(pos); mesh.scale.setScalar(r*.01); scene.add(mesh);
+  const mesh=new THREE.Mesh(sphereGeo,mat); mesh.position.copy(pos); mesh.position.y=Math.max(mesh.position.y,r+.15); mesh.scale.setScalar(r*.01); scene.add(mesh);
   const t=Object.assign({mesh,pos:mesh.position,r,r0:r,born:performance.now(),age:0,pop:0},extra||{});
   targets.push(t); return t;
 }
-function removeTarget(t){scene.remove(t.mesh);t.mesh.material.dispose();targets=targets.filter(x=>x!==t);}
+function removeTarget(t){scene.remove(t.mesh);t.mesh.traverse(o=>{if(o.material)o.material.dispose();if(o.geometry&&o.geometry!==sphereGeo)o.geometry.dispose();});targets=targets.filter(x=>x!==t);}
 function clearTargets(){for(const t of [...targets])removeTarget(t);}
 function dirPos(yawD,pitchD,dist){const y=yawD*D2R,p=pitchD*D2R;return new THREE.Vector3(-Math.sin(y)*Math.cos(p)*dist,1.6+Math.sin(p)*dist,-Math.cos(y)*Math.cos(p)*dist);}
 const fwd=new THREE.Vector3(), rightV=new THREE.Vector3(), upV=new THREE.Vector3(), tmp=new THREE.Vector3();
 function aimBasis(){camera.updateMatrixWorld();camera.getWorldDirection(fwd);rightV.setFromMatrixColumn(camera.matrixWorld,0);upV.setFromMatrixColumn(camera.matrixWorld,1);}
-// returns {t,dist}: nearest target hit by the center ray, or null
-function rayHit(){
-  let best=null,bd=1e9;
-  for(const t of targets){
-    tmp.subVectors(t.pos,camera.position); const tc=tmp.dot(fwd); if(tc<0)continue;
-    const d2=tmp.lengthSq()-tc*tc; if(d2<=t.r*t.r&&tc<bd){best=t;bd=tc;}
-  }
-  return best;
-}
 // aim offset relative to the nearest target's center, in target radii (x right, y up)
 function aimOffset(){
   let best=null,ba=1e9;
@@ -423,6 +447,8 @@ const sfx={
   hit(c){const f=740*Math.pow(2,Math.min(c,12)/24);tone(f,.09,'sine',.28);tone(f*1.5,.07,'triangle',.08);},
   miss(){tone(150,.08,'sine',.12,90);},
   tick(){tone(660,.08,'sine',.2);},
+  head(){tone(1320,.07,'sine',.25);tone(1980,.12,'triangle',.12);},
+  hurt(){tone(110,.25,'sawtooth',.14,60);},
   go(){tone(990,.18,'sine',.25);},
   end(){tone(520,.14,'triangle',.22);setTimeout(()=>tone(780,.22,'triangle',.22),120);},
 };
@@ -455,57 +481,172 @@ function drawCrosshair(cv,scale,hit){
 let state='loading'; // menu | count | play | paused | results
 let R=null, yaw=0, pitch=0, prevState=null;
 function newRun(){
-  R={drill:S.drill,dur:S.dur,t:0,count:3,lastCount:4,score:0,hits:0,shots:0,expired:0,combo:0,bestCombo:0,rts:[],spread:[],onT:0,trackT:0,lastCell:-1,wait:0,sinceHit:0};
+  R={drill:S.drill,dur:S.dur,t:0,count:3,lastCount:4,score:0,hits:0,shots:0,expired:0,combo:0,bestCombo:0,rts:[],spread:[],onT:0,trackT:0,lastCell:-1,wait:0,sinceHit:0,kills:0,hsKills:0,headHits:0,deaths:0,center:false};
 }
 
-const GRID=[];for(let r=0;r<3;r++)for(let c=0;c<3;c++)GRID.push(new THREE.Vector3((c-1)*1.25,1.6+(1-r)*1.25,-10));
+/* ---- spawn zone: everything spawns inside what the player sees when looking straight ahead ---- */
+const EYE=1.6;
+const restCam=new THREE.PerspectiveCamera();
+function syncRest(){restCam.fov=camera.fov;restCam.aspect=camera.aspect;restCam.near=.03;restCam.far=200;restCam.position.set(0,EYE,0);restCam.rotation.set(0,0,0);restCam.updateProjectionMatrix();restCam.updateMatrixWorld();}
+const _v=new THREE.Vector3();
+// true when a sphere at p with radius r is fully on screen (clear of the top HUD) and above the floor
+function onScreen(p,r){
+  if(p.y-r<.15)return false;
+  _v.copy(p).project(restCam); if(_v.z>1||_v.z<-1)return false;
+  const dist=p.distanceTo(restCam.position), rN=r/(dist*Math.tan(restCam.fov*D2R/2));
+  return Math.abs(_v.x)+rN/restCam.aspect<.86&&_v.y-rN>-.8&&_v.y+rN<.7;
+}
+// a random on-screen spot at a given distance; sx/sy shrink the area toward the middle; minDeg keeps it away from the current aim
+function viewPos(dist,r,sx=1,sy=1,minDeg=0){
+  syncRest(); aimBasis(); let p=null;
+  for(let i=0;i<60;i++){
+    _v.set(rnd(-.84,.84)*sx,rnd(-.78,.68)*sy,.5).unproject(restCam).sub(restCam.position).normalize();
+    const q=restCam.position.clone().addScaledVector(_v,dist);
+    if(!onScreen(q,r))continue;
+    p=q; tmp.subVectors(q,camera.position); if(tmp.angleTo(fwd)>=minDeg*D2R)break;
+  }
+  return p||new THREE.Vector3(0,EYE,-dist);
+}
+
+/* ---- cover walls for Corner Peek ---- */
+const coverGroup=new THREE.Group(); coverGroup.visible=false; scene.add(coverGroup);
+const covers=[]; const coverMat=new THREE.MeshStandardMaterial({color:0x2a3150,roughness:.8});
+const coverEdge=new THREE.MeshBasicMaterial({color:0x5b7cff});
+for(const [x,z] of [[-5,-10],[-1.7,-13.5],[1.9,-8.5],[5.3,-12]]){
+  const w=1.7,h=3.3,d=.6, m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),coverMat); m.position.set(x,h/2,z); coverGroup.add(m);
+  for(const s of [-1,1]){const e=new THREE.Mesh(new THREE.BoxGeometry(.04,h,.04),coverEdge);e.position.set(x+s*w/2,h/2,z+d/2);coverGroup.add(e);}
+  covers.push({x,z,w,h,d,box:new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x,h/2,z),new THREE.Vector3(w,h,d))});
+}
+
+/* ---- Tactical bots (Valorant practice) ---- */
+const HEAD_Y=1.62, HEAD_R=.14, BODY_R=.25, BODY_A=.15, BODY_B=1.36;
+function makeBot(pos){
+  const g=new THREE.Group(); g.position.copy(pos);
+  const body=new THREE.MeshStandardMaterial({color:0x6b7389,roughness:.6,transparent:true});
+  const head=new THREE.MeshStandardMaterial({color:new THREE.Color(S.tColor),emissive:new THREE.Color(S.tColor),emissiveIntensity:.3,roughness:.4,transparent:true});
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(BODY_R,BODY_B-BODY_A-BODY_R*2+.1,6,16),body); torso.position.y=(BODY_A+BODY_B)/2; g.add(torso);
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(BODY_R+.01,BODY_R+.01,.08,16),head); band.position.y=1.12; g.add(band);
+  const h=new THREE.Mesh(new THREE.SphereGeometry(HEAD_R,24,14),head); h.position.y=HEAD_Y; g.add(h);
+  scene.add(g);
+  const t={bot:true,mesh:g,pos:g.position,r:.3,born:performance.now(),age:0,pop:1,hp:150,dir:Math.random()<.5?-1:1,vx:0,switchT:rnd(.25,.8),stopT:0,fireAt:Math.max(1.05,1.5-R.kills*.01),bodyMat:body,flashT:0};
+  targets.push(t); return t;
+}
+function botXMax(z){syncRest();return -z*Math.tan(restCam.fov*D2R/2)*restCam.aspect*.78;}
+
+/* ---- ray tests ---- */
+const ray=new THREE.Ray(), _hp=new THREE.Vector3(), _a=new THREE.Vector3(), _b=new THREE.Vector3();
+function sphereT(c,r){tmp.subVectors(c,ray.origin);const tc=tmp.dot(ray.direction);if(tc<0)return -1;const d2=tmp.lengthSq()-tc*tc;return d2<=r*r?tc:-1;}
+function capsuleT(a,b,r){ // closest approach between the ray and segment a-b
+  const e=_b.clone().copy(b).sub(a), w0=ray.origin.clone().sub(a), B=ray.direction.dot(e), C=e.dot(e), D=ray.direction.dot(w0), E=e.dot(w0);
+  const den=C-B*B; let u=den>1e-9?(E-B*D)/den:0; u=clamp(u,0,1); let s=u*B-D; if(s<0)return -1;
+  const p=ray.origin.clone().addScaledVector(ray.direction,s), q=a.clone().addScaledVector(e,u);
+  return p.distanceTo(q)<=r?s:-1;
+}
+function coverDist(){
+  if(!coverGroup.visible)return 1e9; let best=1e9;
+  for(const c of covers)if(ray.intersectBox(c.box,_hp)){const d=_hp.distanceTo(ray.origin);if(d<best)best=d;}
+  return best;
+}
+// nearest thing under the crosshair: {t, d, part} or null (walls block shots)
+function rayHit(){
+  ray.origin.copy(camera.position); ray.direction.copy(fwd);
+  let best=null,bd=1e9,part=null;
+  for(const t of targets){
+    if(t.bot){
+      _a.set(t.pos.x,t.pos.y+HEAD_Y,t.pos.z); let d=sphereT(_a,HEAD_R);
+      if(d>=0&&d<bd){best=t;bd=d;part='head';}
+      d=capsuleT(_a.set(t.pos.x,t.pos.y+BODY_A+BODY_R*.6,t.pos.z),new THREE.Vector3(t.pos.x,t.pos.y+BODY_B-BODY_R*.6,t.pos.z),BODY_R);
+      if(d>=0&&d<bd-.05){best=t;bd=d;part='body';}
+    }else{const d=sphereT(t.pos,t.r);if(d>=0&&d<bd){best=t;bd=d;part=null;}}
+  }
+  if(best&&coverDist()<bd)return null;
+  return best?{t:best,d:bd,part}:null;
+}
+
+/* ---- drills ---- */
+const GRID=[];for(let r=0;r<3;r++)for(let c=0;c<3;c++)GRID.push(new THREE.Vector3((c-1)*1.25,2.0+(1-r)*1.25,-10));
 function spawnGrid(avoid){
   const used=new Set(targets.map(t=>t.cell)); let free=[];
   for(let i=0;i<9;i++)if(!used.has(i)&&i!==avoid)free.push(i);
   if(!free.length)for(let i=0;i<9;i++)if(!used.has(i))free.push(i);
   const cell=free[Math.floor(Math.random()*free.length)]; makeTarget(GRID[cell],.42,{cell});
 }
-function farFromAim(make,minDeg){
-  aimBasis(); let p;
-  for(let i=0;i<20;i++){p=make();tmp.subVectors(p,camera.position);if(tmp.angleTo(fwd)>minDeg*D2R)break;}
-  return p;
+function spawnPeek(){
+  const c=covers[Math.floor(Math.random()*covers.length)], s=Math.random()<.5?-1:1, r=.34;
+  const edge=c.x+s*c.w/2, y=rnd(1.0,2.5), z=c.z+c.d/2-r-.05;
+  const t=makeTarget(new THREE.Vector3(edge-s*(r+.12),y,z),r,{peek:true,ph:'out',pt:0,
+    x0:edge-s*(r+.12),x1:edge+s*r*1.3,stay:Math.max(.45,.85-R.hits*.006)});
+  t.pop=1;
+}
+function spawnBot(){
+  for(let i=0;i<30;i++){
+    const z=-rnd(7,15), xm=botXMax(z), p=new THREE.Vector3(rnd(-xm,xm),0,z);
+    if(onScreen(new THREE.Vector3(p.x,HEAD_Y,z),.4)){const t=makeBot(p);t.xm=xm;return t;}
+  }
+  const t=makeBot(new THREE.Vector3(0,0,-12)); t.xm=botXMax(-12); return t;
 }
 const SPAWN={
   grid(){spawnGrid(R.lastCell);},
-  flick(){makeTarget(farFromAim(()=>dirPos(rnd(-55,55),rnd(-8,26),12),14),.38);},
-  micro(){makeTarget(farFromAim(()=>dirPos(rnd(-22,22),rnd(-10,14),10),4),.15);},
-  reflex(){makeTarget(farFromAim(()=>dirPos(rnd(-35,35),rnd(-6,22),11),8),.34,{life:1.05});},
-  drift(){const a=rnd(0,Math.PI*2),s=rnd(1.6,3);makeTarget(new THREE.Vector3(rnd(-5,5),rnd(.6,4.4),-11),.4,{vx:Math.cos(a)*s,vy:Math.sin(a)*s});},
-  track(){makeTarget(new THREE.Vector3(0,1.6,-11),.45,{vx:0,goal:rnd(3,5)*(Math.random()<.5?-1:1),switchT:rnd(.4,1.1),ph:0});},
+  snap(){ if(R.center){makeTarget(viewPos(10,.36,1,1,12),.36);R.center=false;} else {makeTarget(new THREE.Vector3(0,EYE,-10),.4,{center:true});R.center=true;} },
+  micro(){makeTarget(viewPos(10,.15,.4,.45,4),.15);},
+  reflex(){makeTarget(viewPos(11,.34,.8,.85,8),.34,{life:1.05});},
+  drift(){const a=rnd(0,Math.PI*2),s=rnd(1.6,3);makeTarget(new THREE.Vector3(rnd(-5,5),rnd(.8,4.4),-11),.4,{vx:Math.cos(a)*s,vy:Math.sin(a)*s});},
+  track(){makeTarget(new THREE.Vector3(0,1.9,-11),.45,{vx:0,goal:rnd(3,5)*(Math.random()<.5?-1:1),switchT:rnd(.4,1.1),ph:0});},
+  peek(){spawnPeek();},
+  tac(){spawnBot();},
 };
 function startDrill(){
   const d=R.drill;
+  coverGroup.visible=d==='peek';
   if(d==='grid'){for(let i=0;i<3;i++)spawnGrid(-1);}
   else if(d==='drift'){for(let i=0;i<3;i++)SPAWN.drift();}
+  else if(d==='snap'){R.center=false;SPAWN.snap();}
+  else if(d==='peek'){R.wait=.6;}
   else SPAWN[d]();
   for(const t of targets)t.born=performance.now();
 }
+function lose(t,pen){removeTarget(t);R.expired++;R.combo=0;R.score=Math.max(0,R.score-(pen||0));}
 function updateDrill(dt){
   const d=R.drill;
   for(const t of targets){t.age+=dt;}
+  if((d==='reflex'||d==='peek'||d==='tac')&&R.wait>0){R.wait-=dt;if(R.wait<=0)SPAWN[d]();}
   if(d==='reflex'){
-    if(R.wait>0){R.wait-=dt;if(R.wait<=0){SPAWN.reflex();}}
     for(const t of [...targets]){
       const k=t.age/t.life; t.r=t.r0*(1-.55*k);
-      if(k>=1){removeTarget(t);R.expired++;R.combo=0;R.wait=.25;sfx.miss();}
+      if(k>=1){lose(t);R.wait=.25;sfx.miss();}
+    }
+  }
+  if(d==='peek'){
+    for(const t of [...targets]){
+      t.pt+=dt; const sl=.11;
+      if(t.ph==='out'){t.pos.x=t.x0+(t.x1-t.x0)*Math.min(1,t.pt/sl);if(t.pt>=sl){t.ph='hold';t.pt=0;t.born=performance.now()-sl*1000*.5;}}
+      else if(t.ph==='hold'){if(t.pt>=t.stay){t.ph='back';t.pt=0;}}
+      else {t.pos.x=t.x1+(t.x0-t.x1)*Math.min(1,t.pt/sl);if(t.pt>=sl){lose(t);R.wait=rnd(.25,.8);sfx.miss();}}
+    }
+  }
+  if(d==='tac'){
+    for(const t of [...targets]){
+      if(!t.bot)continue;
+      if(t.stopT>0)t.stopT-=dt;
+      else{t.switchT-=dt;if(t.switchT<=0){t.switchT=rnd(.25,.85);if(Math.random()<.3)t.stopT=rnd(.2,.45);else t.dir=-t.dir;}}
+      if(t.pos.x<-t.xm)t.dir=1; if(t.pos.x>t.xm)t.dir=-1;
+      const goal=t.stopT>0?0:t.dir*3.2; t.vx+=(goal-t.vx)*Math.min(1,dt*14); t.pos.x+=t.vx*dt;
+      t.mesh.children[0].rotation.z=-t.vx*.03;
+      if(t.flashT>0){t.flashT-=dt;t.bodyMat.emissive.set(t.flashT>0?'#ffffff':'#000000');t.bodyMat.emissiveIntensity=.6;}
+      if(t.age>=t.fireAt){lose(t,100);R.deaths++;R.wait=.5;sfx.hurt();hurtFlash();}
     }
   }
   if(d==='drift'){
     for(const t of targets){t.pos.x+=t.vx*dt;t.pos.y+=t.vy*dt;
       if(t.pos.x<-5.5){t.pos.x=-5.5;t.vx=Math.abs(t.vx);} if(t.pos.x>5.5){t.pos.x=5.5;t.vx=-Math.abs(t.vx);}
-      if(t.pos.y<.6){t.pos.y=.6;t.vy=Math.abs(t.vy);} if(t.pos.y>4.6){t.pos.y=4.6;t.vy=-Math.abs(t.vy);}}
+      if(t.pos.y<.8){t.pos.y=.8;t.vy=Math.abs(t.vy);} if(t.pos.y>4.4){t.pos.y=4.4;t.vy=-Math.abs(t.vy);}}
   }
   if(d==='track'){
     const t=targets[0]; if(!t)return;
     t.switchT-=dt; if(t.switchT<=0){t.switchT=rnd(.35,1.2);const sp=rnd(2.5,5.5);t.goal=(Math.random()<.5?-1:1)*sp;}
     if(t.pos.x<-5.5)t.goal=Math.abs(t.goal); if(t.pos.x>5.5)t.goal=-Math.abs(t.goal);
     t.vx+=(t.goal-t.vx)*Math.min(1,dt*7); t.pos.x+=t.vx*dt;
-    t.ph+=dt; t.pos.y=1.9+Math.sin(t.ph*1.3)*.9+Math.sin(t.ph*3.1)*.25;
+    t.ph+=dt; t.pos.y=1.95+Math.sin(t.ph*1.3)*.85+Math.sin(t.ph*3.1)*.25;
     aimBasis(); const on=!!rayHit();
     R.trackT+=dt; if(on){R.onT+=dt;R.combo+=dt;R.bestCombo=Math.max(R.bestCombo,R.combo);}else R.combo=0;
     R.score=Math.round(R.onT*100);
@@ -518,28 +659,41 @@ function shoot(){
   aimBasis(); recoil=1; flashT=.05; sfx.shot();
   if(state!=='play')return; // shots during the countdown don't count
   R.shots++;
-  const off=aimOffset(); const hit=rayHit();
-  if(off&&Math.hypot(off.x,off.y)<3.2)R.spread.push([+off.x.toFixed(2),+off.y.toFixed(2),hit?1:0]);
-  if(hit){
-    const now=performance.now(), rt=now-hit.born; R.rts.push(rt);
-    R.hits++; R.combo++; R.bestCombo=Math.max(R.bestCombo,R.combo);
-    let pts=100;
-    if(R.drill==='grid'||R.drill==='drift')pts+=5*Math.min(R.combo,20);
-    else if(R.drill==='flick'||R.drill==='micro')pts+=Math.max(0,Math.round((900-rt)/8));
-    else if(R.drill==='reflex')pts+=Math.round(100*Math.max(0,1-hit.age/hit.life));
-    R.score+=pts;
-    burst(hit.pos.clone(),new THREE.Color(S.tColor)); sfx.hit(R.combo); hitMarker();
-    const cell=hit.cell; removeTarget(hit);
-    if(R.drill==='grid'){R.lastCell=cell;spawnGrid(cell);}
-    else if(R.drill==='reflex'){R.wait=.22;}
-    else SPAWN[R.drill]();
-    showCombo();
-  }else{
+  const h=rayHit(), hit=h&&h.t;
+  if(R.drill!=='tac'){const off=aimOffset(); if(off&&Math.hypot(off.x,off.y)<3.2)R.spread.push([+off.x.toFixed(2),+off.y.toFixed(2),hit?1:0]);}
+  if(!hit){
     R.combo=0; sfx.miss();
     R.score=Math.max(0,R.score-(R.drill==='grid'||R.drill==='drift'?50:25));
+    return;
   }
+  const now=performance.now(), rt=now-hit.born;
+  R.hits++; R.combo++; R.bestCombo=Math.max(R.bestCombo,R.combo);
+  if(hit.bot){
+    if(h.part==='head')R.headHits++;
+    hit.hp-=h.part==='head'?160:40;
+    if(hit.hp>0){hit.flashT=.06;tone(520,.05,'square',.08);hitMarker();showCombo();return;}
+    R.kills++; if(h.part==='head')R.hsKills++; R.rts.push(rt);
+    R.score+=(h.part==='head'?150:75)+Math.max(0,Math.round((1200-rt)/8));
+    _a.set(hit.pos.x,hit.pos.y+(h.part==='head'?HEAD_Y:1),hit.pos.z); burst(_a.clone(),new THREE.Color(S.tColor));
+    h.part==='head'?sfx.head():sfx.hit(R.combo); hitMarker(); removeTarget(hit); R.wait=.35; showCombo(); return;
+  }
+  R.rts.push(rt);
+  let pts=100;
+  if(R.drill==='grid'||R.drill==='drift')pts+=5*Math.min(R.combo,20);
+  else if(R.drill==='snap'||R.drill==='micro')pts+=Math.max(0,Math.round((900-rt)/8));
+  else if(R.drill==='reflex')pts+=Math.round(100*Math.max(0,1-hit.age/hit.life));
+  else if(R.drill==='peek')pts+=Math.max(0,Math.round((700-rt)/5));
+  R.score+=pts;
+  burst(hit.pos.clone(),new THREE.Color(S.tColor)); sfx.hit(R.combo); hitMarker();
+  const cell=hit.cell; removeTarget(hit);
+  if(R.drill==='grid'){R.lastCell=cell;spawnGrid(cell);}
+  else if(R.drill==='reflex'){R.wait=.22;}
+  else if(R.drill==='peek'){R.wait=rnd(.2,.6);}
+  else SPAWN[R.drill]();
+  showCombo();
 }
 let hmT=0; const hmEl=$('#hm');
+function hurtFlash(){const el=$('#dmg');el.classList.remove('on');void el.offsetWidth;el.classList.add('on');}
 function hitMarker(){hmEl.classList.add('on');hmT=.09;}
 function showCombo(){const el=$('#h_combo');if(R.combo>=5){el.textContent=R.combo+' streak';el.style.opacity=1;}else el.style.opacity=0;}
 
@@ -569,7 +723,7 @@ function startRun(){
   if(!isLocked())lockMouse();
 }
 function pause(){prevState=state;state='paused';$('#pausemsg').textContent='Your run is on hold.';show('pause');$('#count').classList.add('hidden');}
-function toMenu(){state='menu';clearTargets();R=null;if(document.pointerLockElement)document.exitPointerLock();$('#count').classList.add('hidden');renderMenu();show('menu');}
+function toMenu(){state='menu';clearTargets();coverGroup.visible=false;R=null;if(document.pointerLockElement)document.exitPointerLock();$('#count').classList.add('hidden');renderMenu();show('menu');}
 function finish(){
   state='results'; sfx.end(); clearTargets();
   if(document.pointerLockElement)document.exitPointerLock();
@@ -577,15 +731,29 @@ function finish(){
   const key=R.drill+':'+R.dur; const st=STATS[key]||(STATS[key]={best:0,runs:[]});
   const prevBest=st.best; const pb=res.score>prevBest&&res.score>0;
   if(res.score>st.best)st.best=res.score;
-  st.runs.push({s:res.score,a:+res.acc.toFixed(3),at:Date.now()}); if(st.runs.length>40)st.runs.splice(0,st.runs.length-40);
+  st.runs.push(runRecord(res)); if(st.runs.length>40)st.runs.splice(0,st.runs.length-40);
   save(LS_STATS,STATS);
   renderResults(res,st,pb,prevBest); show('results');
+}
+function runRecord(res){
+  return {s:res.score,a:+res.acc.toFixed(3),at:Date.now(),h:res.hits,m:res.misses,k:+res.kps.toFixed(2),rt:Math.round(res.avgRT),c:res.track?+res.bestCombo.toFixed(1):res.bestCombo,
+    x:res.expired,K:res.kills,hs:+res.hs.toFixed(3),d:res.deaths,o:+res.onT.toFixed(1)};
+}
+// label/value pairs describing one run, used by the results grid and the history tooltip
+function runItems(drill,r,dur){
+  const pct=v=>v==null?'–':(v*100).toFixed(1)+'%', ms=v=>v?Math.round(v)+' ms':'–', n=v=>v==null?'–':v;
+  if(drill==='track')return [['On target',pct(r.a)],['Time on target',r.o==null?'–':r.o+'s'],['Longest lock',r.c==null?'–':r.c+'s'],['Drill length',dur+'s']];
+  if(drill==='tac')return [['Kills',n(r.K)],['Headshot rate',pct(r.hs)],['Accuracy',pct(r.a)],['Avg time to kill',ms(r.rt)],['They shot first',n(r.d)],['Best streak',n(r.c)]];
+  const out=[['Accuracy',pct(r.a)],['Hits',n(r.h)],['Misses',n(r.m)],['Hits / sec',r.k==null?'–':r.k.toFixed(2)],['Avg time to hit',ms(r.rt)],['Best streak',n(r.c)]];
+  if(drill==='reflex'||drill==='peek')out.push(['Got away',n(r.x)]);
+  return out;
 }
 function summary(R){
   const track=R.drill==='track';
   const acc=track?(R.trackT?R.onT/R.trackT:0):(R.shots?R.hits/R.shots:0);
   const avgRT=R.rts.length?R.rts.reduce((a,b)=>a+b,0)/R.rts.length:0;
-  return {score:R.score,acc,hits:R.hits,shots:R.shots,misses:R.shots-R.hits,expired:R.expired,kps:R.hits/R.dur,avgRT,bestCombo:R.bestCombo,onT:R.onT,track};
+  return {score:R.score,acc,hits:R.hits,shots:R.shots,misses:R.shots-R.hits,expired:R.expired,kps:(R.drill==='tac'?R.kills:R.hits)/R.dur,avgRT,bestCombo:R.bestCombo,onT:R.onT,track,
+    kills:R.kills,hs:R.hits?R.headHits/R.hits:0,deaths:R.deaths,drill:R.drill};
 }
 
 /* ---------------- input ---------------- */
@@ -615,8 +783,9 @@ $('#startbtn').onclick=()=>startRun();
 /* ---------------- menu ---------------- */
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  for(const t of ['drills','settings','stats'])$('#tab_'+t).classList.toggle('hidden',t!==b.dataset.tab);
+  for(const t of ['drills','settings','stats','lb'])$('#tab_'+t).classList.toggle('hidden',t!==b.dataset.tab);
   if(b.dataset.tab==='stats')renderStats();
+  if(b.dataset.tab==='lb'){lbDrill=S.drill;lbDur=S.dur;renderLB();}
 });
 document.querySelectorAll('#durseg button').forEach(b=>b.onclick=()=>{S.dur=+b.dataset.d;save(LS_SET,S);renderMenu();});
 function renderMenu(){
@@ -676,7 +845,91 @@ function applySettings(k){
   syncOutputs(); resize();
   if(!k||k==='theme')applyTheme();
   if(!k||k==='gun')gun.visible=!!S.gun;
-  if(!k||k==='tColor'){gun.userData.acc.color.set(S.tColor);gun.userData.acc.emissive.set(S.tColor);for(const t of targets){t.mesh.material.color.set(S.tColor);t.mesh.material.emissive.set(S.tColor);}}
+  if(!k||k==='tColor'){gun.userData.acc.color.set(S.tColor);gun.userData.acc.emissive.set(S.tColor);for(const t of targets){if(t.bot)continue;t.mesh.material.color.set(S.tColor);t.mesh.material.emissive.set(S.tColor);}}
+}
+
+/* ---------------- online leaderboard (Firebase Firestore, same project as the Game Hub) ----------------
+   lb/{drill}_{dur}/scores/{player id} = {name, score, acc, at, st}. Each device keeps one entry per board: its best. */
+const FB_CFG={apiKey:"AIzaSyC0KmT-dE8_Yi9Qr2Z6Ux2q9XgqQ7XolSk",authDomain:"game-hub-22e2e.firebaseapp.com",projectId:"game-hub-22e2e",
+  storageBucket:"game-hub-22e2e.firebasestorage.app",messagingSenderId:"866870954989",appId:"1:866870954989:web:8349d89126cd3e5a8b35e4"};
+let PID=null; try{PID=localStorage.getItem('reflexrange_pid');}catch(e){}
+if(!PID||!/^[a-z0-9]{20}$/.test(PID)){PID=Array.from(crypto.getRandomValues(new Uint8Array(20)),b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');try{localStorage.setItem('reflexrange_pid',PID);}catch(e){}}
+let fbP=null;
+function loadScript(src){return new Promise((res,rej)=>{const el=document.createElement('script');el.src=src;el.onload=res;el.onerror=()=>rej(new Error('load'));document.head.append(el);});}
+function fdb(){
+  if(!fbP)fbP=(async()=>{
+    if(!window.firebase){await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');}
+    if(!firebase.firestore){await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');}
+    const app=firebase.apps.find(a=>a.name==='reflexrange')||firebase.initializeApp(FB_CFG,'reflexrange');
+    return app.firestore();
+  })().catch(e=>{fbP=null;throw e;});
+  return fbP;
+}
+const board=(d,u)=>d+'_'+u;
+const cleanName=v=>String(v||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,16);
+function lbError(e){
+  if(e&&e.code==='permission-denied')return 'The online leaderboard isn\'t switched on yet. Your scores are still saved on this device.';
+  if(e&&e.code==='resource-exhausted')return 'The leaderboard hit its free daily limit. Try again tomorrow.';
+  return 'Couldn\'t reach the leaderboard. Check your connection.';
+}
+async function topScores(drill,dur,n){
+  const d=await fdb(); const snap=await d.collection('lb').doc(board(drill,dur)).collection('scores').orderBy('score','desc').limit(n).get();
+  return snap.docs.map(x=>Object.assign({id:x.id},x.data()));
+}
+async function submitScore(drill,dur,res){
+  const d=await fdb(), ref=d.collection('lb').doc(board(drill,dur)).collection('scores').doc(PID);
+  const cur=await ref.get(); const old=cur.exists?cur.data():null;
+  if(!old||res.score>old.score||old.name!==S.name&&res.score>=old.score){
+    await ref.set({name:S.name,score:Math.round(res.score),acc:Math.round(res.acc*10000)/10000,at:firebase.firestore.FieldValue.serverTimestamp(),
+      st:{h:res.hits,m:res.misses,rt:Math.round(res.avgRT),k:res.kills||0,hs:Math.round(res.hs*1000)/1000}});
+  }
+  const best=old?Math.max(old.score,res.score):res.score;
+  const top=await topScores(drill,dur,100); const i=top.findIndex(x=>x.id===PID);
+  return {best,rank:i<0?null:i+1,improved:!old||res.score>old.score,count:top.length};
+}
+let lastRes=null;
+async function postResult(res){
+  lastRes={res,drill:R.drill,dur:R.dur};
+  const txt=$('#r_lbtext'), nm=$('#r_lbname');
+  if(res.score<=0){txt.textContent='Score some points to get on the leaderboard.';nm.classList.add('hidden');return;}
+  if(!S.name){txt.textContent='Pick a name to put this score on the online leaderboard:';nm.classList.remove('hidden');$('#r_name').value='';return;}
+  nm.classList.add('hidden'); txt.textContent='Posting to the leaderboard…';
+  const mine=lastRes;
+  try{
+    const r=await submitScore(mine.drill,mine.dur,mine.res); if(lastRes!==mine)return;
+    const where=DRILLS[mine.drill].name+' '+mine.dur+'s';
+    txt.replaceChildren();
+    if(r.rank){const b=document.createElement('b');b.textContent='#'+r.rank;txt.append('You\'re ',b,` on the ${where} leaderboard as ${S.name}`+(r.improved?'.':` (your best there is ${r.best.toLocaleString()}).`));}
+    else txt.append(`Posted as ${S.name}. You're outside the top 100 on ${where} for now.`);
+  }catch(e){console.warn(e);if(lastRes===mine)txt.textContent=lbError(e);}
+}
+function setName(v){S.name=cleanName(v);save(LS_SET,S);$('#lb_name').value=S.name;}
+$('#r_post').onclick=()=>{const v=cleanName($('#r_name').value);if(!v){$('#r_name').focus();return;}setName(v);if(lastRes&&state==='results')postResult(lastRes.res);};
+$('#r_name').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('#r_post').click();});
+$('#lb_name').addEventListener('change',e=>setName(e.target.value));
+$('#lb_name').addEventListener('keydown',e=>e.stopPropagation());
+
+let lbDrill='grid', lbDur=60, lbSeq=0;
+{const sel=$('#lb_drill');for(const [k,d] of Object.entries(DRILLS)){const o=document.createElement('option');o.value=k;o.textContent=d.name;sel.append(o);}
+ sel.onchange=()=>{lbDrill=sel.value;renderLB();};
+ document.querySelectorAll('#lb_dur button').forEach(b=>b.onclick=()=>{lbDur=+b.dataset.d;renderLB();});}
+async function renderLB(){
+  $('#lb_drill').value=lbDrill; $('#lb_name').value=S.name||'';
+  document.querySelectorAll('#lb_dur button').forEach(b=>b.classList.toggle('on',+b.dataset.d===lbDur));
+  const seq=++lbSeq, body=$('#lb_body'), st=$('#lb_status');
+  st.textContent='Loading…'; body.replaceChildren();
+  try{
+    const rows=await topScores(lbDrill,lbDur,100); if(seq!==lbSeq)return;
+    st.textContent=rows.length?`Top ${rows.length} on ${DRILLS[lbDrill].name}, ${lbDur}s. Each player's best run counts.`:`No scores yet on ${DRILLS[lbDrill].name}, ${lbDur}s. Be the first!`;
+    if(!S.name)st.textContent+=' Pick a name to join in.';
+    rows.forEach((r,i)=>{
+      const tr=document.createElement('tr'); if(r.id===PID)tr.className='me';
+      const when=r.at&&r.at.toDate?r.at.toDate():null;
+      const cells=[i+1,r.name,(r.score||0).toLocaleString(),lbDrill==='track'?((r.acc||0)*100).toFixed(1)+'% on target':((r.acc||0)*100).toFixed(1)+'%',when?when.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'–'];
+      cells.forEach((v,k)=>{const td=document.createElement('td');td.textContent=v;if(k===0)td.className='rk';if(k>=2)td.classList.add('num');tr.append(td);});
+      body.append(tr);
+    });
+  }catch(e){console.warn(e);if(seq===lbSeq)st.textContent=lbError(e);}
 }
 
 /* ---------------- results ---------------- */
@@ -686,16 +939,10 @@ function renderResults(res,st,pb,prevBest){
   $('#r_best').textContent=pb?(prevBest?'Previous best: '+prevBest.toLocaleString():'First run on this drill.'):'Best: '+st.best.toLocaleString();
   const rk=rankOf(R.drill,res.score,R.dur); const re=$('#r_rank'); re.textContent=rk.name; re.style.color=rk.color;
   $('#r_next').textContent=rk.next?(rk.next-res.score).toLocaleString()+' more for '+rk.nextName:'Top rank!';
-  const items=res.track?[
-    ['On target',(res.acc*100).toFixed(1)+'%'],['Time on target',res.onT.toFixed(1)+'s'],['Longest lock',res.bestCombo.toFixed(1)+'s'],['Drill length',R.dur+'s']
-  ]:[
-    ['Accuracy',(res.acc*100).toFixed(1)+'%'],['Hits',res.hits],['Misses',res.misses],
-    ['Hits / sec',res.kps.toFixed(2)],['Avg time to hit',res.avgRT?Math.round(res.avgRT)+' ms':'–'],['Best streak',res.bestCombo]
-  ];
-  if(R.drill==='reflex')items.push(['Got away',res.expired]);
+  const items=runItems(R.drill,runRecord(res),R.dur);
   const g=$('#r_stats'); g.replaceChildren();
   for(const [l,v] of items){const s=document.createElement('div');s.className='stat';s.innerHTML='<small></small><b></b>';s.firstChild.textContent=l;s.lastChild.textContent=v;g.append(s);}
-  drawSpread(res); drawHist(st);
+  drawSpread(res); drawHist(st); postResult(res);
 }
 function sizeCanvas(cv){const w=cv.clientWidth||300,h=200,dpr=Math.min(devicePixelRatio,2);cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);return {g,w,h};}
 function drawSpread(res){
@@ -709,6 +956,7 @@ function drawSpread(res){
     for(const [x,y,hit] of sp){g.fillStyle=hit?'#3dffb5':'#ff4d6d';g.globalAlpha=.75;g.beginPath();g.arc(cx+x*u,cy-y*u,2.6,0,7);g.fill();}
     g.globalAlpha=1;
     if(res.track){$('#r_spreadcap').textContent='Tracking drills don\'t fire shots.';return;}
+    if(R.drill==='tac'){$('#r_spreadcap').textContent='Headshot rate: '+(res.hs*100).toFixed(0)+'% of your hits landed on the head.';return;}
     const hits=sp.filter(s=>s[2]); let mx=0,my=0; for(const s of hits){mx+=s[0];my+=s[1];}
     let cap='Circle = target. Green hits, red misses.';
     if(hits.length>4){mx/=hits.length;my/=hits.length;const bias=[];if(Math.abs(mx)>.15)bias.push(mx>0?'right':'left');if(Math.abs(my)>.15)bias.push(my>0?'high':'low');
@@ -724,10 +972,29 @@ function drawHist(st){
     vals.forEach((v,i)=>{const bh=(h-24)*(v/mx);const last=i===vals.length-1;
       g.fillStyle=last?'#ffb03c':(v===st.best?'#ff5a3c':'rgba(255,255,255,.18)');
       g.fillRect(pad+i*bw+2,h-8-bh,Math.max(2,bw-4),bh);});
+    cv._bars={pad,bw,runs,drill:R.drill,dur:R.dur,n:st.runs.length};
     g.fillStyle='#9aa3c7';g.font='11px "Chakra Petch",sans-serif';g.fillText(mx.toLocaleString(),pad,12);
     const prev=vals.slice(0,-1); const avg=prev.length?prev.reduce((a,b)=>a+b,0)/prev.length:0;
-    $('#r_histcap').textContent=vals.length<2?'Play more runs to see your progress.':'This run (gold) vs. your last '+prev.length+' (average '+Math.round(avg).toLocaleString()+').';
+    $('#r_histcap').textContent=vals.length<2?'Play more runs to see your progress.':'This run (gold) vs. your last '+prev.length+' (average '+Math.round(avg).toLocaleString()+'). Hover a bar for its stats.';
   });
+}
+
+{
+  const cv=$('#r_hist'), tip=$('#r_tip');
+  cv.addEventListener('mousemove',e=>{
+    const b=cv._bars; if(!b){tip.classList.add('hidden');return;}
+    const rc=cv.getBoundingClientRect(), x=e.clientX-rc.left, i=Math.floor((x-b.pad)/b.bw);
+    if(i<0||i>=b.runs.length){tip.classList.add('hidden');return;}
+    const r=b.runs[i], num=b.n-b.runs.length+i+1, when=new Date(r.at);
+    tip.replaceChildren();
+    const hd=document.createElement('div');hd.className='th';hd.textContent='Run '+num+(i===b.runs.length-1?' (this one)':'')+' · '+when.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});tip.append(hd);
+    const sc=document.createElement('div');sc.className='ts';sc.textContent=r.s.toLocaleString()+' pts';tip.append(sc);
+    for(const [l,v] of runItems(b.drill,r,b.dur)){const row=document.createElement('div');row.className='tr';const a=document.createElement('span');a.textContent=l;const c=document.createElement('b');c.textContent=v;row.append(a,c);tip.append(row);}
+    tip.classList.remove('hidden');
+    const cr=cv.parentElement.getBoundingClientRect(); let lx=e.clientX-cr.left+14; if(lx+200>cr.width)lx=e.clientX-cr.left-214;
+    tip.style.left=Math.max(0,lx)+'px'; tip.style.top=Math.max(0,e.clientY-cr.top-40)+'px';
+  });
+  cv.addEventListener('mouseleave',()=>tip.classList.add('hidden'));
 }
 
 /* ---------------- loop ---------------- */
@@ -758,7 +1025,7 @@ renderer.setAnimationLoop(now=>{
     setHud('#h_acc',track?(R.trackT?(R.onT/R.trackT*100).toFixed(0)+'%':'–'):(R.shots?(R.hits/R.shots*100).toFixed(0)+'%':'–'));
   }
   // targets pop in
-  for(const t of targets){t.pop=Math.min(1,t.pop+dt*9);const s=t.r*(t.pop<1?.4+.6*t.pop:1);t.mesh.scale.setScalar(s);
+  for(const t of targets){if(t.bot)continue;t.pop=Math.min(1,t.pop+dt*9);const s=t.r*(t.pop<1?.4+.6*t.pop:1);t.mesh.scale.setScalar(s);
     if(t.life){t.mesh.material.opacity=1-.5*Math.max(0,t.age/t.life-.6);} }
   // gun
   recoil=Math.max(0,recoil-dt*9); gun.position.set(gunBase.x,gunBase.y+recoil*.01,gunBase.z+recoil*.05); gun.rotation.x=recoil*.12;
@@ -775,8 +1042,8 @@ state='menu'; $('#loading').style.display='none'; show('menu');
 window.__rrReady=true;
 // test hooks
 window.__rr={get state(){return state},get R(){return R},get targets(){return targets},S,shoot,startRun,
-  aimAt(t){tmp.subVectors(t.pos,camera.position).normalize();pitch=Math.asin(tmp.y);yaw=Math.atan2(-tmp.x,-tmp.z);applyAim();},
-  look(y,p){yaw=y;pitch=p;applyAim();}, finish(){finish();}};
+  aimAt(t,part){tmp.copy(t.pos);if(t.bot)tmp.y+=part==='body'?1:HEAD_Y;tmp.sub(camera.position).normalize();pitch=Math.asin(tmp.y);yaw=Math.atan2(-tmp.x,-tmp.z);applyAim();},
+  look(y,p){yaw=y;pitch=p;applyAim();}, finish(){finish();}, onScreen(p,r){syncRest();return onScreen(p,r);}};
 </script>
 </body>
 </html>
