@@ -60,6 +60,8 @@ input{font-family:inherit}
 #modebar button{background:none;border:0;color:#fff;font:inherit;font-size:15px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;opacity:.75}
 #modebar button.on{background:linear-gradient(#ef3b4d,#c41d30);opacity:1}
 #musbtn{position:absolute;right:14px;bottom:96px;pointer-events:auto;cursor:pointer;font-size:13px}
+#gsbar{position:absolute;left:50%;top:48px;transform:translateX(-50%);width:min(320px,70vw);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 12px 14px;font-size:14px;font-weight:600;text-align:center;overflow:hidden}
+#gsbar b{color:#9fe0ff}#gsbar i{position:absolute;left:12px;bottom:5px;height:6px;max-width:calc(100% - 24px);border-radius:3px;background:linear-gradient(90deg,#9fe0ff,#fff)}
 #racebar{position:absolute;left:50%;top:48px;transform:translateX(-50%);font-size:18px;color:#7dff9a}
 .fwwrap{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
 #fwc{width:320px;height:320px;max-width:100%;border-radius:14px;border:2px solid var(--line);touch-action:none;cursor:crosshair;background:#0b1020}
@@ -165,6 +167,7 @@ input{font-family:inherit}
   <div id="prompt" class="hidden"></div>
   <div id="hint" class="hidden"></div>
   <div id="racebar" class="pill hidden"></div>
+  <div id="gsbar" class="hidden"></div>
   <div id="modebar" class="hidden"><button data-m="walk">🚶 Walk</button><button data-m="ski">⛷️ Ski</button><button data-m="board">🏂 Snowboard</button></div>
   <div id="speedo"><b id="spd">0</b> <span>km/h</span><div id="eqname"></div></div>
   <div id="keys" class="hidden"></div>
@@ -708,7 +711,7 @@ function updateFireworks(dt){fwNext-=dt;if(fwNext<=0){fwNext=.7+Math.random()*1.
 /* ================= New village spots: pond, snowman yard, firework workshop, race + leaderboard ================= */
 const ZONES=[];
 const POND={x:52,z:1472,r:13},YARD={x:-100,z:1474,r:22},WORKSHOP={x:14,z:1414},LBPOS={x:-47,z:1374};
-const PLOTS=[{x:-109,z:1481},{x:-100,z:1484},{x:-91,z:1481}].map(p=>({...p,b:[],by:[],v:0,t:0,g:null}));
+const GIANT={x:-100,z:1490},DROP={x:-100,z:1477,r:2.6};
 const RACE={startZ:1000,finZ:1300,gates:[]};
 for(let i=0;i<8;i++){const z=1032+i*33;RACE.gates.push({z,x:mainX(z)+(i%2?7:-7)})}
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
@@ -726,10 +729,11 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
  const s=twoSided([['⛸ SNOWFLAKE POND',.5,'#bfe3ff'],['Walk onto the ice to skate',.32]],4.6,1.5,{bg:'#123a5c',border:'#bfe3ff'});const sx=POND.x-POND.r-3,sz=POND.z-6,sy=groundH(sx,sz);s.position.set(sx,sy+2.6,sz);s.rotation.y=Math.PI/2;mtn.add(s);mesh(new THREE.CylinderGeometry(.08,.08,2.6),vpostM,sx,sy+1.3,sz,mtn)}
 // ----- Snowman Yard
 {ZONES.push({x:YARD.x,z:YARD.z,r:YARD.r-4});
- const s=twoSided([['☃ SNOWMAN YARD',.5,'#ffffff'],['Press E to roll a snowball · push it to grow',.27],['Stack 3 on a plot to build a snowman together',.27]],5.4,2,{bg:'#1f5a32',border:'#ffffff'});
- const sx=YARD.x,sz=YARD.z-9,sy=groundH(sx,sz);s.position.set(sx,sy+2.9,sz);mtn.add(s);for(const d of [-2.4,2.4])mesh(new THREE.CylinderGeometry(.09,.09,3.9),vpostM,sx+d,sy+1.95,sz,mtn);addGlow(sx,sy+4.2,sz,0xffe0a0);addPool(sx,sz+2,6,0xffc080);
- for(const p of PLOTS){const y=groundH(p.x,p.z);const ring=mesh(new THREE.RingGeometry(1.25,1.5,32),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:.55}),p.x,y+.06,p.z,mtn);ring.rotation.x=-Math.PI/2;
-   p.g=new THREE.Group();p.g.position.set(p.x,y,p.z);mtn.add(p.g);addPool(p.x,p.z,3.2,0x9fd8ff)}
+ const s=twoSided([['☃ SNOWMAN YARD',.5,'#ffffff'],['Press E to roll a snowball · walk to grow it',.27],['Roll it into the glowing circle to build the giant snowman',.27]],5.4,2,{bg:'#1f5a32',border:'#ffffff'});
+ const sx=YARD.x-9,sz=YARD.z-6,sy=groundH(sx,sz);s.position.set(sx,sy+2.9,sz);s.rotation.y=.5;mtn.add(s);for(const d of [-2.4,2.4])mesh(new THREE.CylinderGeometry(.09,.09,3.9),vpostM,sx+d*Math.cos(.5),sy+1.95,sz-d*Math.sin(.5),mtn);addGlow(sx,sy+4.2,sz,0xffe0a0);addPool(sx,sz+2,6,0xffc080);
+ {const y=groundH(DROP.x,DROP.z);for(const [a,b,o] of [[DROP.r-.35,DROP.r,.8],[DROP.r*.35,DROP.r*.5,.5]]){const ring=mesh(new THREE.RingGeometry(a,b,48),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:o}),DROP.x,y+.07,DROP.z,mtn);ring.rotation.x=-Math.PI/2}
+  addPool(DROP.x,DROP.z,DROP.r*1.6,0x6fc8ff);for(let i=0;i<16;i++){const a=i/16*Math.PI*2;addBulb(DROP.x+Math.cos(a)*(DROP.r+.3),y+.25,DROP.z+Math.sin(a)*(DROP.r+.3),i%2?0x9fe0ff:0xffffff)}}
+ addPool(GIANT.x,GIANT.z,9,0xffc890);COLLIDERS.push({x0:GIANT.x-4,x1:GIANT.x+4,z0:GIANT.z-4,z1:GIANT.z+4});
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,x=YARD.x+Math.cos(a)*14,z=YARD.z+Math.sin(a)*14,y=groundH(x,z);const m=mesh(new THREE.SphereGeometry(.9,10,8),M({color:0xf8fbff}),x,y-.25,z,mtn);m.scale.set(1.4,.5,1.1)}}
 // ----- Firework Workshop
 {const W=WORKSHOP,gy=groundH(W.x,W.z),g=new THREE.Group();g.position.set(W.x,gy,W.z);g.rotation.y=Math.PI;mtn.add(g);ZONES.push({x:W.x,z:W.z,r:6});
@@ -1491,36 +1495,53 @@ function applyLook(){setLook(me,{sport:SAVE.sport,eq:curEquip().id,hat:SAVE.eq.h
 /* ================= Village features: snowmen, race, skating, trails, pets, drawn fireworks ================= */
 const rnd2=v=>Math.round(v*100)/100;
 // ---------- snowballs & shared snowmen
-const snowBallM=M({map:canvasTex(128,128,(g,W,H)=>{g.fillStyle='#f4f8ff';g.fillRect(0,0,W,H);for(let i=0;i<300;i++){g.fillStyle=`rgba(${160+Math.random()*50|0},${180+Math.random()*50|0},225,.4)`;g.beginPath();g.arc(Math.random()*W,Math.random()*H,1+Math.random()*3.5,0,7);g.fill()}}),roughness:.9});
+const snowBallM=M({map:canvasTex(128,128,(g,W,H)=>{g.fillStyle='#f4f8ff';g.fillRect(0,0,W,H);for(let i=0;i<300;i++){g.fillStyle=`rgba(${205+Math.random()*35|0},${220+Math.random()*30|0},250,.35)`;g.beginPath();g.arc(Math.random()*W,Math.random()*H,1+Math.random()*3.5,0,7);g.fill()}}),roughness:.9});
 const BALL_GEO=new THREE.SphereGeometry(1,22,16);
 let myBall=null;const OBALLS=new Map();
 function ballAt(pos,yaw,r,out){out.set(pos.x+Math.sin(yaw)*(r+.45),0,pos.z+Math.cos(yaw)*(r+.45));out.y=groundH(out.x,out.z)+r*.92;return out}
 function startRoll(){P.roll={r:.22};if(!myBall){myBall=new THREE.Mesh(BALL_GEO,snowBallM);myBall.castShadow=true}mtn.add(myBall);ballAt(P.pos,P.yaw,.22,myBall.position);
-  hint('Walk around to roll your snowball bigger. Push it onto a blue circle and press <span class="kbd">E</span> to stack it.',6)}
+  hint('Walk around to roll your snowball bigger, then push it into the glowing circle to add it to the giant snowman.',6)}
 function dropRoll(){P.roll=null;if(myBall&&myBall.parent)myBall.parent.remove(myBall)}
 const _ax=V3(),_bp=V3();
 function updateRoll(dt){if(!P.roll)return;if(state!=='play'||P.loc!=='mtn'||P.mode!=='walk'){dropRoll();return}
   const R=P.roll,sp=Math.hypot(P.vel.x,P.vel.z);ballAt(P.pos,P.yaw,R.r,myBall.position);myBall.scale.setScalar(R.r);
+  if(Math.hypot(myBall.position.x-DROP.x,myBall.position.z-DROP.z)<DROP.r){depositBall();return}
   if(sp>.2){const d=sp*dt;if(!P.skate&&!onIce(myBall.position.x,myBall.position.z))R.r=Math.min(1.15,R.r+d*.007/R.r);_ax.set(Math.cos(P.yaw),0,-Math.sin(P.yaw));myBall.rotateOnWorldAxis(_ax,d/R.r)}}
-function snowmanParts(g,b,seed){const coal=M({color:0x151515,roughness:.6});let y=0;const ys=[];b.forEach((r,i)=>{y=i?y+b[i-1]*.8+r*.8:r*.9;ys.push(y);const m=new THREE.Mesh(BALL_GEO,snowBallM);m.scale.setScalar(r);m.position.y=y;m.castShadow=true;g.add(m)});
-  if(b.length<3)return ys;const [r0,r1,r2]=b,hy=ys[2],my=ys[1];
-  for(const s of [-1,1])mesh(new THREE.SphereGeometry(r2*.09,8,6),coal,s*r2*.33,hy+r2*.25,r2*.88,g);
-  const n=mesh(new THREE.ConeGeometry(r2*.12,r2*.7,10),M({color:0xff7a1a}),0,hy,r2*1.2,g);n.rotation.x=Math.PI/2;
-  for(let i=0;i<5;i++){const a=(i-2)*.3;mesh(new THREE.SphereGeometry(r2*.05,6,4),coal,Math.sin(a)*r2*.5,hy-r2*.38+Math.abs(i-2)*r2*.06,Math.cos(a)*r2*.86,g)}
-  for(let i=0;i<3;i++)mesh(new THREE.SphereGeometry(r1*.08,8,6),coal,0,my+r1*(.45-i*.4),r1*.95-Math.abs(i-1)*r1*.06,g);
-  const sc=mesh(new THREE.TorusGeometry(r2*.85,r2*.16,8,18),M({color:[0xd62839,0x1f9d55,0x2f7bff][seed%3]}),0,hy-r2*.8,0,g);sc.rotation.x=Math.PI/2;
-  const tw=M({color:0x5b3a1e});for(const s of [-1,1]){const a=mesh(new THREE.CylinderGeometry(.03,.04,r1*2.2,5),tw,s*r1*1.5,my+r1*.35,0,g);a.rotation.z=s*-1.0}
-  if(seed%2){const h=mesh(new THREE.CylinderGeometry(r2*.55,r2*.55,r2*.8,14),coal,0,hy+r2*1.2,0,g);mesh(new THREE.CylinderGeometry(r2*.85,r2*.85,r2*.08,16),coal,0,hy+r2*.82,0,g)}
-  else{const c=mesh(new THREE.ConeGeometry(r2*.7,r2*1.3,14),M({color:0xd62839}),0,hy+r2*1.35,-r2*.1,g);c.rotation.x=-.3;mesh(new THREE.TorusGeometry(r2*.62,r2*.14,8,18),M({color:0xffffff}),0,hy+r2*.78,0,g).rotation.x=Math.PI/2}
-  return ys}
-function renderPlot(p){const g=p.g;while(g.children.length){const c=g.children.pop();if(c.material&&c.material.map&&c.isSprite)c.material.map.dispose()}g.rotation.y=Math.PI;
-  const ys=snowmanParts(g,p.b,p.v);if(p.b.length===3){const names=[...new Set(p.by)].slice(0,3).join(', ');const s=textSprite('☃ Built by '+names,{scale:.006});s.position.y=ys[2]+p.b[2]*2.3;g.add(s)}}
-function placeBall(p){const r=rnd2(P.roll.r);p.b.push(r);p.by.push(SAVE.name);p.v++;p.t=Date.now();renderPlot(p);dropRoll();
-  world.send({k:'sm',p:PLOTS.indexOf(p),b:p.b,by:p.by,v:p.v,t:p.t});
-  if(p.b.length===3){addPoints(100);toast('☃ Snowman finished! +100 points');chatSys('☃ A new snowman was finished in the Snowman Yard')}else{addPoints(25);toast(['','Bottom','Middle'][p.b.length]+' snowball placed! +25 points. Roll the next one smaller.')}}
-function acceptPlot(i,b,by,v,t){const p=PLOTS[i];if(!p||!Array.isArray(b)||b.length>3||!Array.isArray(by))return;v=num(v)|0;t=num(t);if(!(v>p.v||(v===p.v&&t>p.t)))return;
-  const bb=b.map(r=>clamp(num(r,.3),.25,1.2));for(let k=1;k<bb.length;k++)if(bb[k]>bb[k-1])return;p.b=bb;p.by=by.slice(0,3).map(n=>cleanName(String(n))||'Elf');p.v=v;p.t=t;renderPlot(p)}
-let plotT=5;function updatePlots(dt){plotT-=dt;if(plotT>0)return;plotT=5;const now=Date.now();for(const p of PLOTS)if(p.b.length&&now-p.t>(p.b.length===3?20:12)*60000){p.b=[];p.by=[];p.v++;p.t=now;renderPlot(p)}}
+// one giant shared snowman: every snowball rolled into the circle adds to it
+const GS_GOAL=300,GS_STAY=15*60000,GSR=[3.6,2.7,1.9];let GS={c:0,list:[]},gsSeq=0,gsShown=0,gsKey='';
+try{const s=JSON.parse(localStorage.getItem('frostypeaks_gs')||'null');if(s&&Array.isArray(s.list)&&typeof s.c==='number')GS=s}catch{}
+const gsTotal=()=>GS.list.reduce((s,x)=>s+x[1],0);
+function gsDoneAt(){const l=[...GS.list].sort((a,b)=>a[2]-b[2]);let s=0;for(const x of l){s+=x[1];if(s>=GS_GOAL)return x[2]}return 0}
+function gsMerge(c,rows){c=num(c);if(c<GS.c||!Array.isArray(rows))return 0;let added=0;if(c>GS.c){GS={c,list:[]};added=1}
+  for(const r of rows){if(!Array.isArray(r)||typeof r[0]!=='string'||r[0].length>24)continue;const a=clamp(num(r[1])|0,1,60),t=num(r[2]);if(GS.list.length>=120||GS.list.some(x=>x[0]===r[0]))continue;GS.list.push([r[0],a,t]);added+=a}
+  if(added)try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}return added}
+const giant=new THREE.Group(),giantBalls=[0,1,2].map(()=>{const m=new THREE.Mesh(BALL_GEO,snowBallM);m.castShadow=true;m.visible=false;giant.add(m);return m}),giantDeco=new THREE.Group();
+giant.add(giantDeco);giant.position.set(GIANT.x,groundH(GIANT.x,GIANT.z),GIANT.z);giant.rotation.y=Math.PI;mtn.add(giant);
+{const coal=M({color:0x151515,roughness:.6}),[r0,r1,r2]=GSR,my=r0*.9+r0*.8+r1*.8,hy=my+r1*.8+r2*.8;
+  for(const s of [-1,1])mesh(new THREE.SphereGeometry(r2*.09,10,8),coal,s*r2*.33,hy+r2*.25,r2*.88,giantDeco);
+  const n=mesh(new THREE.ConeGeometry(r2*.12,r2*.8,12),M({color:0xff7a1a}),0,hy,r2*1.25,giantDeco);n.rotation.x=Math.PI/2;
+  for(let i=0;i<5;i++){const a=(i-2)*.3;mesh(new THREE.SphereGeometry(r2*.05,6,4),coal,Math.sin(a)*r2*.5,hy-r2*.38+Math.abs(i-2)*r2*.06,Math.cos(a)*r2*.86,giantDeco)}
+  for(let i=0;i<3;i++)mesh(new THREE.SphereGeometry(r1*.08,8,6),coal,0,my+r1*(.45-i*.4),r1*.95-Math.abs(i-1)*r1*.06,giantDeco);
+  const sc=mesh(new THREE.TorusGeometry(r2*.85,r2*.16,8,24),M({color:0xd62839}),0,hy-r2*.8,0,giantDeco);sc.rotation.x=Math.PI/2;
+  const tw=M({color:0x5b3a1e});for(const s of [-1,1]){const a=mesh(new THREE.CylinderGeometry(.12,.16,r1*2.4,6),tw,s*r1*1.6,my+r1*.4,0,giantDeco);a.rotation.z=s*-1.0}
+  mesh(new THREE.CylinderGeometry(r2*.55,r2*.55,r2*.85,16),coal,0,hy+r2*1.22,0,giantDeco);mesh(new THREE.CylinderGeometry(r2*.88,r2*.88,r2*.08,18),coal,0,hy+r2*.82,0,giantDeco);
+  mesh(new THREE.CylinderGeometry(r2*.56,r2*.56,r2*.14,16),M({color:0xd62839}),0,hy+r2*.95,0,giantDeco);giantDeco.visible=false}
+const gsCv=document.createElement('canvas');gsCv.width=512;gsCv.height=110;const gsTex=new THREE.CanvasTexture(gsCv);gsTex.colorSpace=THREE.SRGBColorSpace;
+const gsSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:gsTex,depthWrite:false}));gsSprite.scale.set(12,2.58,1);gsSprite.position.set(GIANT.x,groundH(GIANT.x,GIANT.z)+16.5,GIANT.z);mtn.add(gsSprite);
+function drawGsBar(p,done){const g=gsCv.getContext('2d'),W=512,H=110;g.clearRect(0,0,W,H);g.fillStyle='rgba(14,26,46,.85)';g.beginPath();g.roundRect(4,4,W-8,H-8,22);g.fill();
+  g.fillStyle='#fff';g.font='700 32px Fredoka, sans-serif';g.textAlign='center';g.fillText(done?'☃ Giant Snowman complete!':'☃ Giant Snowman · '+Math.floor(p*100)+'%',W/2,44);
+  g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.roundRect(30,62,W-60,28,14);g.fill();const gr=g.createLinearGradient(30,0,W-30,0);gr.addColorStop(0,'#9fe0ff');gr.addColorStop(1,'#ffffff');g.fillStyle=gr;g.beginPath();g.roundRect(30,62,Math.max(28,(W-60)*p),28,14);g.fill();gsTex.needsUpdate=true}
+function renderGiant(dt){const target=Math.min(1,gsTotal()/GS_GOAL);gsShown+=(target-gsShown)*(1-Math.exp(-2*dt));if(Math.abs(target-gsShown)<.002)gsShown=target;const p=gsShown;
+  const st=[clamp(p/.45,0,1),clamp((p-.45)/.35,0,1),clamp((p-.8)/.2,0,1)];let y=0;
+  st.forEach((s,i)=>{const b=giantBalls[i];b.visible=s>0;if(!s)return;const r=GSR[i]*(.3+.7*s);b.scale.setScalar(r);y=i?y+giantBalls[i-1].scale.x*.8+r*.8:r*.9;b.position.y=y});
+  giantDeco.visible=p>=.999;const key=Math.floor(p*100)+'|'+giantDeco.visible;if(key!==gsKey){gsKey=key;drawGsBar(p,giantDeco.visible)}
+  const near=state==='play'&&P.loc==='mtn'&&(P.roll||Math.hypot(P.pos.x-YARD.x,P.pos.z-YARD.z)<40),bar=$('gsbar');bar.classList.toggle('hidden',!near);
+  if(near){const pc=Math.floor(target*100);bar.innerHTML=`☃ Giant Snowman <b>${pc}%</b><i style="width:${pc}%"></i>`}}
+let gsT=0;function updateGiant(dt){renderGiant(dt);gsT-=dt;if(gsT>0)return;gsT=3;const d=gsDoneAt();if(d&&Date.now()>d+GS_STAY){GS={c:d+GS_STAY,list:[]};try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}}}
+function depositBall(){const R=P.roll,a=clamp(Math.round(R.r*R.r*45),1,60),wasDone=gsTotal()>=GS_GOAL;const bp=myBall.position;trailEmit(bp.x,bp.y-R.r*.5,bp.z,[0xffffff,0xdff3ff,0x9fe0ff],60);dropRoll();
+  if(wasDone){toast('The giant snowman is already finished! It melts soon and a new one starts.');return}
+  const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});addPoints(a);
+  const pc=Math.min(100,Math.floor(gsTotal()/GS_GOAL*100));if(gsTotal()>=GS_GOAL){toast('☃ You finished the giant snowman! +'+a+' points');chatSys('☃ The giant snowman in the Snowman Yard is finished!')}else toast(`❄ +${a} snow added. The giant snowman is ${pc}% built. +${a} points`)}
 // ---------- Jingle Race + leaderboard
 let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
 function mergeLB(rows){let ch=false;for(const r of rows){if(!Array.isArray(r))continue;const n=cleanName(String(r[0]||'')),t=num(r[1]),d=num(r[2]);if(!n||t<12||t>400)continue;
@@ -1544,7 +1565,7 @@ EXTRA_PANELS.race=c=>{c.innerHTML=`<div class="chead"><div><h2>🏁 Jingle Race<
    <div class="sub" style="margin-top:10px">Your best: <b>${SAVE.raceBest?SAVE.raceBest.toFixed(2)+'s':'none yet'}</b>. Finishing earns 100 points, and a new personal best earns 150 more.</div><div class="foot"><button class="btn" data-close>Got it</button></div>`};
 // ---------- sync snowmen + leaderboard with everyone
 let syncT=4,syncSoon=0,lastOthers=0;
-function sendSync(){const sm=PLOTS.map(p=>[p.b,p.by,p.v,p.t]);if(PLOTS.some(p=>p.v>0)||LB.length)world.send({k:'sync',sm,lb:LB.slice(0,10)})}
+function sendSync(){if(GS.list.length||GS.c)world.send({k:'gss',c:GS.c,r:GS.list});if(LB.length)world.send({k:'sync',lb:LB.slice(0,10)})}
 function updateSync(dt){if(others.size>lastOthers)syncSoon=1+Math.random()*2;lastOthers=others.size;if(syncSoon>0){syncSoon-=dt;if(syncSoon<=0)sendSync()}
   syncT-=dt;if(syncT<=0){syncT=14+Math.random()*6;if(world.connected&&others.size)sendSync()}}
 // ---------- ice skating
@@ -1625,15 +1646,15 @@ $('panelcard').addEventListener('click',e=>{if(panelKind!=='fwdraw')return;const
 function netExtra(){const o={};if(SAVE.eq.trail&&SAVE.eq.trail!=='trail0')o.tr=SAVE.eq.trail;if(SAVE.eq.pet&&SAVE.eq.pet!=='pet0')o.pt=SAVE.eq.pet;if(P.roll)o.rb=rnd2(P.roll.r);return o}
 const fdLastFrom=new Map();
 {const base=world.onmsg;world.onmsg=m=>{
-  if(m.k==='sm'){acceptPlot(num(m.p)|0,m.b,m.by,m.v,m.t);return}
-  if(m.k==='sync'){if(Array.isArray(m.sm))m.sm.slice(0,PLOTS.length).forEach((q,i)=>Array.isArray(q)&&acceptPlot(i,q[0],q[1],q[2],q[3]));if(Array.isArray(m.lb))mergeLB(m.lb.slice(0,10));return}
+  if(m.k==='gs'||m.k==='gss'){const before=gsTotal();gsMerge(m.c,m.r);if(m.k==='gs'&&before<GS_GOAL&&gsTotal()>=GS_GOAL)chatSys('☃ The giant snowman in the Snowman Yard is finished!');return}
+  if(m.k==='sync'){if(Array.isArray(m.lb))mergeLB(m.lb.slice(0,10));return}
   if(m.k==='lb'){if(Array.isArray(m.r)&&mergeLB([m.r]))chatSys(`🏁 ${cleanName(String(m.r[0]))} finished the Jingle Race in ${num(m.r[1]).toFixed(2)}s`);return}
   if(m.k==='fd'){if(!Array.isArray(m.d)||m.d.length>900||m.d.length%3)return;const last=fdLastFrom.get(m.i)||-99;if(T-last<6)return;fdLastFrom.set(m.i,T);
     const d=m.d.map((v,k)=>k%3===2?clamp(num(v)|0,0,FWC.length-1):clamp(num(v),-110,110));launchDrawn(d);chatSys(`🎆 ${cleanName(String(m.n||''))||'Someone'} launched a firework from the workshop`);return}
   base(m);
   if(m.k==='s'){const o=others.get(m.i);if(o){o.tr=ITEM[m.tr]&&ITEM[m.tr].cat==='trail'?m.tr:null;o.pt=ITEM[m.pt]&&ITEM[m.pt].cat==='pet'?m.pt:null;o.rb=clamp(num(m.rb),0,1.2)}}}}
 // ---------- per-frame update
-function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updatePlots(dt);
+function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updateGiant(dt);
   if(state!=='play'&&state!=='menu')return;
   updateRoll(dt);updateRace(dt);updateSync(dt);
   if(state==='play'){const sp=Math.hypot(P.vel.x,P.vel.z);updatePet('me',SAVE.eq.pet,P.pos,P.yaw,me.root.parent,sp,dt);
@@ -1646,17 +1667,12 @@ function updateExtras(dt){updateDrawn(dt);updateTrails(dt);updatePlots(dt);
   for(const k of OBALLS.keys())if(!others.has(k)){mtn.remove(OBALLS.get(k));OBALLS.delete(k)}}
 // ---------- interactions in the village
 EXTRA_INTERACT.push(sp=>{if(P.mode!=='walk')return null;
-  if(P.roll){const R=P.roll;let best=null,bd=1e9;for(const p of PLOTS){const d=Math.hypot(P.pos.x-p.x,P.pos.z-p.z);if(d<R.r+2.8&&d<bd){bd=d;best=p}}
-    if(best){if(best.b.length>=3)return{label:'This snowman is done. Try an empty circle',act:()=>{}};const below=best.b[best.b.length-1],part=['bottom','middle','head'][best.b.length];
-      if(R.r<.3)return{label:'Roll your snowball a little bigger first',act:()=>toast('Keep walking to roll it bigger')};
-      if(below&&R.r>below-.04)return{label:'Too big for the '+part+'. It must be smaller than the one below',act:()=>toast('Drop this one (E away from the circle) and roll a smaller snowball')};
-      return{label:'Stack your snowball as the '+part,act:()=>placeBall(best)}}
-    return{label:'Drop your snowball',act:dropRoll}}
+  if(P.roll){    return{label:'Drop your snowball (roll it into the glowing circle to add it to the giant snowman)',act:dropRoll}}
   if(Math.hypot(P.pos.x-WORKSHOP.x,P.pos.z-WORKSHOP.z)<4.2)return{label:'Design your own firework',act:()=>openPanel('fwdraw')};
   if(Math.hypot(P.pos.x-LBPOS.x,P.pos.z-LBPOS.z)<4.5)return{label:'See the Jingle Race leaderboard',act:()=>openPanel('race')};
   if(Math.hypot(P.pos.x-YARD.x,P.pos.z-YARD.z)<YARD.r)return{label:'Start rolling a snowball',act:startRoll};
   return null});
-window.__fx={PLOTS,RACE,LB:()=>LB,startRoll,placeBall,updateRace,launchDrawn,sampleFw,PETS,onIce,POND,YARD,WORKSHOP,LBPOS,get race(){return race},get fwStrokes(){return fwStrokes},set fwStrokes(v){fwStrokes=v},updateExtras,nearestInteract,camera,equip,enterRoom};
+window.__fx={giantBalls,giantDeco,GS:()=>GS,gsTotal,DROP,GIANT,RACE,LB:()=>LB,startRoll,updateRace,launchDrawn,sampleFw,PETS,onIce,POND,YARD,WORKSHOP,LBPOS,get race(){return race},get fwStrokes(){return fwStrokes},set fwStrokes(v){fwStrokes=v},updateExtras,nearestInteract,camera,equip,enterRoom};
 
 /* ================= Camera ================= */
 let curCrouch=0;
