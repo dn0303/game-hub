@@ -730,7 +730,7 @@ function finish(){
   const res=summary(R);
   const key=R.drill+':'+R.dur; const st=STATS[key]||(STATS[key]={best:0,runs:[]});
   const prevBest=st.best; const pb=res.score>prevBest&&res.score>0;
-  if(res.score>st.best)st.best=res.score;
+  if(res.score>st.best){st.best=res.score;st.bestRun=runRecord(res);}
   st.runs.push(runRecord(res)); if(st.runs.length>40)st.runs.splice(0,st.runs.length-40);
   save(LS_STATS,STATS);
   renderResults(res,st,pb,prevBest); show('results');
@@ -848,88 +848,159 @@ function applySettings(k){
   if(!k||k==='tColor'){gun.userData.acc.color.set(S.tColor);gun.userData.acc.emissive.set(S.tColor);for(const t of targets){if(t.bot)continue;t.mesh.material.color.set(S.tColor);t.mesh.material.emissive.set(S.tColor);}}
 }
 
-/* ---------------- online leaderboard (Firebase Firestore, same project as the Game Hub) ----------------
-   lb/{drill}_{dur}/scores/{player id} = {name, score, acc, at, st}. Each device keeps one entry per board: its best. */
-const FB_CFG={apiKey:"AIzaSyC0KmT-dE8_Yi9Qr2Z6Ux2q9XgqQ7XolSk",authDomain:"game-hub-22e2e.firebaseapp.com",projectId:"game-hub-22e2e",
-  storageBucket:"game-hub-22e2e.firebasestorage.app",messagingSenderId:"866870954989",appId:"1:866870954989:web:8349d89126cd3e5a8b35e4"};
+/* ---------------- online leaderboard: no backend ----------------
+   Uses the same free public MQTT brokers as the other hub games. Each player's best score per board is a *retained*
+   message on reflexrange/lb1/{drill}_{dur}/{player id}; brokers keep the last retained message per topic and hand
+   all of them to anyone who subscribes to reflexrange/lb1/{board}/+. Every client also copies entries to any broker
+   that is missing them, so the board survives one broker being wiped. */
+const LB_BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
+const LB_ROOT='reflexrange/lb1/';
+const TE=new TextEncoder(), TD=new TextDecoder();
+class MQ{
+  constructor(url,onmsg){this.url=url;this.onmsg=onmsg;this.buf=new Uint8Array(0);this.pid=1;this.ok=false;this.closed=false;this.waits=new Map();this.subbed=new Set();}
+  connect(){return new Promise((res,rej)=>{
+    let ws; try{ws=new WebSocket(this.url,['mqtt']);}catch(e){return rej(e);}
+    this.ws=ws; ws.binaryType='arraybuffer';
+    const to=setTimeout(()=>{rej(new Error('timeout'));try{ws.close();}catch(e){}},7000);
+    this._ack=()=>{clearTimeout(to);this.ok=true;this.ping=setInterval(()=>this.send(new Uint8Array([192,0])),25000);res(this);};
+    ws.onopen=()=>this.send(this.pkt(16,[...this.str('MQTT'),4,2,0,60],this.str('rr'+Math.random().toString(36).slice(2,12))));
+    ws.onmessage=e=>this.feed(new Uint8Array(e.data));
+    const end=()=>{clearTimeout(to);clearInterval(this.ping);this.closed=true;if(!this.ok)rej(new Error('closed'));};
+    ws.onclose=end; ws.onerror=end;
+  });}
+  str(s){const b=TE.encode(s);return [b.length>>8,b.length&255,...b];}
+  pkt(type,head,body){
+    const p=new Uint8Array(head.length+body.length);p.set(head,0);p.set(body,head.length);
+    let n=p.length;const len=[];do{let d=n%128;n=Math.floor(n/128);if(n>0)d|=128;len.push(d);}while(n>0);
+    const o=new Uint8Array(1+len.length+p.length);o[0]=type;o.set(len,1);o.set(p,1+len.length);return o;
+  }
+  send(b){if(this.ws&&this.ws.readyState===1)this.ws.send(b);}
+  sub(filter){const id=this.pid++;this.send(this.pkt(130,[id>>8,id&255],[...this.str(filter),0]));
+    return new Promise(r=>{this.waits.set(id,r);setTimeout(()=>{if(this.waits.delete(id))r();},4000);});}
+  pub(topic,s,retain){this.send(this.pkt(retain?49:48,this.str(topic),TE.encode(s)));}
+  feed(chunk){
+    const t=new Uint8Array(this.buf.length+chunk.length);t.set(this.buf,0);t.set(chunk,this.buf.length);let b=t;
+    while(b.length>=2){
+      let len=0,mul=1,i=1,okl=false;for(;i<5&&i<b.length;i++){len+=(b[i]&127)*mul;mul*=128;if(!(b[i]&128)){okl=true;i++;break;}}
+      if(!okl)break; const end=i+len; if(b.length<end)break;
+      const type=b[0]>>4, body=b.subarray(i,end);
+      if(type===2){if(body[1]===0&&this._ack)this._ack();}
+      else if(type===9){const id=body[0]<<8|body[1];const w=this.waits.get(id);if(w){this.waits.delete(id);w();}}
+      else if(type===3){const tl=body[0]<<8|body[1],topic=TD.decode(body.subarray(2,2+tl));let off=2+tl;if((b[0]>>1)&3)off+=2;
+        try{this.onmsg(topic,TD.decode(body.subarray(off)));}catch(e){console.error(e);}}
+      b=b.subarray(end);
+    }
+    this.buf=b.slice();
+  }
+}
 let PID=null; try{PID=localStorage.getItem('reflexrange_pid');}catch(e){}
 if(!PID||!/^[a-z0-9]{20}$/.test(PID)){PID=Array.from(crypto.getRandomValues(new Uint8Array(20)),b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');try{localStorage.setItem('reflexrange_pid',PID);}catch(e){}}
-let fbP=null;
-function loadScript(src){return new Promise((res,rej)=>{const el=document.createElement('script');el.src=src;el.onload=res;el.onerror=()=>rej(new Error('load'));document.head.append(el);});}
-function fdb(){
-  if(!fbP)fbP=(async()=>{
-    if(!window.firebase){await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');}
-    if(!firebase.firestore){await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');}
-    const app=firebase.apps.find(a=>a.name==='reflexrange')||firebase.initializeApp(FB_CFG,'reflexrange');
-    return app.firestore();
-  })().catch(e=>{fbP=null;throw e;});
-  return fbP;
-}
+const cleanName=v=>String(v||'').replace(/[\u0000-\u001f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,16);
 const board=(d,u)=>d+'_'+u;
-const cleanName=v=>String(v||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,16);
-function lbError(e){
-  if(e&&e.code==='permission-denied')return 'The online leaderboard isn\'t switched on yet. Your scores are still saved on this device.';
-  if(e&&e.code==='resource-exhausted')return 'The leaderboard hit its free daily limit. Try again tomorrow.';
-  return 'Couldn\'t reach the leaderboard. Check your connection.';
+const LBC=new Map();      // board -> Map(pid -> {e, raw, from:Set(url)})
+const conns=new Map();    // url -> MQ
+let lbShown=null, lbRedraw=0;
+function validEntry(bd,e){
+  const m=/^([a-z]+)_(30|60|90)$/.exec(bd); if(!m||!DRILLS[m[1]]||!e||typeof e!=='object')return null;
+  const cap=DRILLS[m[1]].ranks[5]*(+m[2])/60*3, n=cleanName(e.n);
+  if(!n||!Number.isInteger(e.s)||e.s<=0||e.s>cap||typeof e.a!=='number'||!(e.a>=0&&e.a<=1)||typeof e.t!=='number')return null;
+  return {n,s:e.s,a:e.a,t:e.t};
 }
-async function topScores(drill,dur,n){
-  const d=await fdb(); const snap=await d.collection('lb').doc(board(drill,dur)).collection('scores').orderBy('score','desc').limit(n).get();
-  return snap.docs.map(x=>Object.assign({id:x.id},x.data()));
+function onLbMsg(url,topic,payload){
+  if(!topic.startsWith(LB_ROOT))return;
+  const [bd,pid]=topic.slice(LB_ROOT.length).split('/');
+  if(!pid||!/^[a-z0-9]{20}$/.test(pid)||payload.length>600)return;
+  let e; try{e=validEntry(bd,JSON.parse(payload));}catch(err){return;} if(!e)return;
+  const map=LBC.get(bd)||(LBC.set(bd,new Map()),LBC.get(bd)), cur=map.get(pid);
+  if(!cur||e.s>cur.e.s||(e.s===cur.e.s&&e.t>cur.e.t))map.set(pid,{e,raw:payload,from:new Set([url])});
+  else if(e.s===cur.e.s&&e.t===cur.e.t)cur.from.add(url);
+  if(lbShown===bd&&!lbRedraw)lbRedraw=setTimeout(()=>{lbRedraw=0;if(lbShown===bd)drawLB();},300);
 }
-async function submitScore(drill,dur,res){
-  const d=await fdb(), ref=d.collection('lb').doc(board(drill,dur)).collection('scores').doc(PID);
-  const cur=await ref.get(); const old=cur.exists?cur.data():null;
-  if(!old||res.score>old.score||old.name!==S.name&&res.score>=old.score){
-    await ref.set({name:S.name,score:Math.round(res.score),acc:Math.round(res.acc*10000)/10000,at:firebase.firestore.FieldValue.serverTimestamp(),
-      st:{h:res.hits,m:res.misses,rt:Math.round(res.avgRT),k:res.kills||0,hs:Math.round(res.hs*1000)/1000}});
-  }
-  const best=old?Math.max(old.score,res.score):res.score;
-  const top=await topScores(drill,dur,100); const i=top.findIndex(x=>x.id===PID);
-  return {best,rank:i<0?null:i+1,improved:!old||res.score>old.score,count:top.length};
+async function conn(url){
+  let c=conns.get(url);
+  if(c&&!c.closed){if(c.ok)return c;return c.wait;}
+  c=new MQ(url,(t,p)=>onLbMsg(url,t,p)); c.wait=c.connect(); conns.set(url,c);
+  try{return await c.wait;}catch(e){conns.delete(url);throw e;}
 }
+// connects to every broker, subscribes to the board and waits for the retained entries to arrive
+async function loadBoard(bd){
+  if(!LBC.has(bd))LBC.set(bd,new Map());
+  const got=await Promise.allSettled(LB_BROKERS.map(async u=>{
+    const c=await conn(u);
+    if(!c.subbed.has(bd)){c.subbed.add(bd);await c.sub(LB_ROOT+bd+'/+');await new Promise(r=>setTimeout(r,900));}
+    return c;
+  }));
+  const ok=got.filter(g=>g.status==='fulfilled').map(g=>g.value);
+  if(!ok.length)throw new Error('offline');
+  // copy entries to brokers that don't have them yet
+  for(const [pid,x] of LBC.get(bd))for(const c of ok)if(!x.from.has(c.url)){c.pub(LB_ROOT+bd+'/'+pid,x.raw,true);x.from.add(c.url);}
+  return ok;
+}
+function sortedBoard(bd){return [...(LBC.get(bd)||new Map()).entries()].map(([id,x])=>Object.assign({id},x.e)).sort((a,b)=>b.s-a.s||a.t-b.t);}
+function localBest(drill,dur){
+  const st=STATS[drill+':'+dur]; if(!st||!st.best)return null;
+  return st.bestRun||st.runs.reduce((a,r)=>!a||r.s>a.s?r:a,null);
+}
+// publishes this device's best run for a board if the board doesn't already show it
+function publishBest(drill,dur,ok){
+  const bd=board(drill,dur), r=localBest(drill,dur); if(!S.name||!r||!r.s)return false;
+  const cur=(LBC.get(bd)||new Map()).get(PID);
+  if(cur&&cur.e.s>=r.s&&cur.e.n===S.name)return false;
+  const raw=JSON.stringify({n:S.name,s:Math.round(r.s),a:Math.round((r.a||0)*10000)/10000,t:r.at||Date.now(),st:{h:r.h,m:r.m,rt:r.rt,K:r.K,hs:r.hs}});
+  for(const c of ok)c.pub(LB_ROOT+bd+'/'+PID,raw,true);
+  onLbMsg('self',LB_ROOT+bd+'/'+PID,raw); const me=LBC.get(bd).get(PID); if(me)me.from=new Set(ok.map(c=>c.url)); return true;
+}
+const LB_DOWN='Couldn\'t reach the leaderboard servers. Your scores are still saved on this device.';
 let lastRes=null;
 async function postResult(res){
   lastRes={res,drill:R.drill,dur:R.dur};
   const txt=$('#r_lbtext'), nm=$('#r_lbname');
   if(res.score<=0){txt.textContent='Score some points to get on the leaderboard.';nm.classList.add('hidden');return;}
-  if(!S.name){txt.textContent='Pick a name to put this score on the online leaderboard:';nm.classList.remove('hidden');$('#r_name').value='';return;}
+  if(!S.name){txt.textContent='Pick a name to put your best score on the online leaderboard:';nm.classList.remove('hidden');$('#r_name').value='';return;}
   nm.classList.add('hidden'); txt.textContent='Posting to the leaderboard…';
-  const mine=lastRes;
+  const mine=lastRes, bd=board(mine.drill,mine.dur);
   try{
-    const r=await submitScore(mine.drill,mine.dur,mine.res); if(lastRes!==mine)return;
-    const where=DRILLS[mine.drill].name+' '+mine.dur+'s';
+    const ok=await loadBoard(bd); publishBest(mine.drill,mine.dur,ok);
+    if(lastRes!==mine)return;
+    const rows=sortedBoard(bd), i=rows.findIndex(x=>x.id===PID), where=DRILLS[mine.drill].name+' '+mine.dur+'s';
     txt.replaceChildren();
-    if(r.rank){const b=document.createElement('b');b.textContent='#'+r.rank;txt.append('You\'re ',b,` on the ${where} leaderboard as ${S.name}`+(r.improved?'.':` (your best there is ${r.best.toLocaleString()}).`));}
-    else txt.append(`Posted as ${S.name}. You're outside the top 100 on ${where} for now.`);
-  }catch(e){console.warn(e);if(lastRes===mine)txt.textContent=lbError(e);}
+    if(i>=0){const b=document.createElement('b');b.textContent='#'+(i+1)+' of '+rows.length;
+      txt.append('You\'re ',b,` on the ${where} leaderboard as ${S.name}`+(rows[i].s>mine.res.score?` (your best there is ${rows[i].s.toLocaleString()}).`:'.'));}
+    else txt.textContent=LB_DOWN;
+  }catch(e){console.warn(e);if(lastRes===mine)txt.textContent=LB_DOWN;}
 }
 function setName(v){S.name=cleanName(v);save(LS_SET,S);$('#lb_name').value=S.name;}
 $('#r_post').onclick=()=>{const v=cleanName($('#r_name').value);if(!v){$('#r_name').focus();return;}setName(v);if(lastRes&&state==='results')postResult(lastRes.res);};
 $('#r_name').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('#r_post').click();});
-$('#lb_name').addEventListener('change',e=>setName(e.target.value));
+$('#lb_name').addEventListener('change',e=>{setName(e.target.value);renderLB();});
 $('#lb_name').addEventListener('keydown',e=>e.stopPropagation());
 
 let lbDrill='grid', lbDur=60, lbSeq=0;
 {const sel=$('#lb_drill');for(const [k,d] of Object.entries(DRILLS)){const o=document.createElement('option');o.value=k;o.textContent=d.name;sel.append(o);}
  sel.onchange=()=>{lbDrill=sel.value;renderLB();};
  document.querySelectorAll('#lb_dur button').forEach(b=>b.onclick=()=>{lbDur=+b.dataset.d;renderLB();});}
+let lbStatus='';
+function drawLB(){
+  const bd=board(lbDrill,lbDur), rows=sortedBoard(bd).slice(0,100), body=$('#lb_body'), st=$('#lb_status');
+  body.replaceChildren();
+  let msg=lbStatus||(rows.length?`Top ${rows.length} on ${DRILLS[lbDrill].name}, ${lbDur}s. Each player's best run counts, and it updates live.`:`No scores yet on ${DRILLS[lbDrill].name}, ${lbDur}s. Be the first!`);
+  if(!S.name&&!lbStatus)msg+=' Pick a name to join in.';
+  st.textContent=msg;
+  rows.forEach((r,i)=>{
+    const tr=document.createElement('tr'); if(r.id===PID)tr.className='me';
+    const cells=[i+1,r.n,r.s.toLocaleString(),(r.a*100).toFixed(1)+'%'+(lbDrill==='track'?' on target':''),new Date(r.t).toLocaleDateString(undefined,{month:'short',day:'numeric'})];
+    cells.forEach((v,k)=>{const td=document.createElement('td');td.textContent=v;if(k===0)td.className='rk';if(k>=2)td.classList.add('num');tr.append(td);});
+    body.append(tr);
+  });
+}
 async function renderLB(){
   $('#lb_drill').value=lbDrill; $('#lb_name').value=S.name||'';
   document.querySelectorAll('#lb_dur button').forEach(b=>b.classList.toggle('on',+b.dataset.d===lbDur));
-  const seq=++lbSeq, body=$('#lb_body'), st=$('#lb_status');
-  st.textContent='Loading…'; body.replaceChildren();
-  try{
-    const rows=await topScores(lbDrill,lbDur,100); if(seq!==lbSeq)return;
-    st.textContent=rows.length?`Top ${rows.length} on ${DRILLS[lbDrill].name}, ${lbDur}s. Each player's best run counts.`:`No scores yet on ${DRILLS[lbDrill].name}, ${lbDur}s. Be the first!`;
-    if(!S.name)st.textContent+=' Pick a name to join in.';
-    rows.forEach((r,i)=>{
-      const tr=document.createElement('tr'); if(r.id===PID)tr.className='me';
-      const when=r.at&&r.at.toDate?r.at.toDate():null;
-      const cells=[i+1,r.name,(r.score||0).toLocaleString(),lbDrill==='track'?((r.acc||0)*100).toFixed(1)+'% on target':((r.acc||0)*100).toFixed(1)+'%',when?when.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'–'];
-      cells.forEach((v,k)=>{const td=document.createElement('td');td.textContent=v;if(k===0)td.className='rk';if(k>=2)td.classList.add('num');tr.append(td);});
-      body.append(tr);
-    });
-  }catch(e){console.warn(e);if(seq===lbSeq)st.textContent=lbError(e);}
+  const seq=++lbSeq, bd=board(lbDrill,lbDur); lbShown=bd;
+  lbStatus=LBC.has(bd)?'':'Loading…'; drawLB();
+  try{const ok=await loadBoard(bd); if(seq!==lbSeq)return; publishBest(lbDrill,lbDur,ok); lbStatus='';}
+  catch(e){console.warn(e); if(seq===lbSeq)lbStatus=LB_DOWN;}
+  if(seq===lbSeq)drawLB();
 }
 
 /* ---------------- results ---------------- */
