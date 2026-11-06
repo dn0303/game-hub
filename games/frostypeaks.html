@@ -1298,7 +1298,7 @@ function stepRide(dt){
   const steer=steerInput();P.tuck=held('KeyW','ArrowUp');P.brake=held('KeyS','ArrowDown');
   _f.set(Math.sin(P.yaw),0,Math.cos(P.yaw));_f.addScaledVector(n,-_f.dot(n)).normalize();
   let vf=P.vel.dot(_f);const dir=vf>=-.3?1:-1;const sp=P.vel.length();
-  P.yaw+=steer*eq.turn*(2.3-Math.min(1.1,sp/22))*dt*dir;
+  P.yaw+=steer*eq.turn*(2.3-Math.min(1.1,sp/22))*dt;
   _f.set(Math.sin(P.yaw),0,Math.cos(P.yaw));_f.addScaledVector(n,-_f.dot(n)).normalize();_s.crossVectors(n,_f);
   vf=P.vel.dot(_f);let vs=P.vel.dot(_s);
   const sp0=Math.hypot(vf,vs),grip=(P.brake?3.5:7.5)*eq.turn;const dec=vs*(1-Math.exp(-grip*dt));vs-=dec;vf+=(vf>=0?1:-1)*Math.abs(dec)*.5;{const s1=Math.hypot(vf,vs);if(s1>sp0&&s1>0){vf*=sp0/s1;vs*=sp0/s1}}
@@ -1340,7 +1340,7 @@ function land(gh){
   if(a.t<.35&&Math.abs(a.spin)<1&&Math.abs(a.flip)<1){P.mode='ride';P.air=null;return}
   if(flipRes>1.3||yawRes>1.3){P.air=null;P.mode='ride';crash(flipRes>1.3?'Wipeout! Land on your feet':'Wipeout! Land straight');return}
   if(vn<-32){P.air=null;P.mode='ride';crash('Too big! Hard landing');return}
-  if(hv>3){const vy=Math.atan2(P.vel.x,P.vel.z),ny=Math.abs(wrapA(P.yaw-vy))>Math.PI/2?vy+Math.PI:vy;P.visYaw=wrapA((P.visYaw||0)+P.yaw-ny);P.yaw=ny}
+  if(hv>1){const ny=Math.atan2(P.vel.x,P.vel.z);P.visYaw=wrapA((P.visYaw||0)+P.yaw-ny);P.yaw=ny}
   const q=Math.max(flipRes/1.3,yawRes/1.3);P.mode='ride';
   sfx.thud(.35+Math.min(.6,-vn*.03));sfx.land(Math.min(1,-vn*.04));scoreAir(a,q);P.air=null}
 function checkRails(){
