@@ -443,7 +443,7 @@ function groomMask(x,z){
   return g}
 function baseH(x,z){
   let h=prof(z);const ax=Math.abs(x);const vill=smooth(ZB-60,ZB,z);const ac=Math.min(ax,250);
-  {const pw=1-smooth(42,56,Math.hypot(x-160,z-1466));h+=ac*ac*.00025*(1-.9*vill)*(1-pw)+160*160*.000025*pw}
+  {const pw=1-smooth(38,52,Math.hypot(x-72,z-1478));h+=ac*ac*.00025*(1-.9*vill)*(1-pw)+72*72*.000025*pw}
   // open country beyond the resort: rolling forested hills instead of walls
   const out=Math.max(ax-238,0)+Math.max(z-1600,0)+Math.max(-70-z,0)*1.4;
   if(out>0){h+=out*.03*(ax>250?1:.5)*(1-vill*.3)+16*(1-Math.exp(-out/35))+70*(1-Math.exp(-out/260))+(10*Math.sin(x*.009+z*.004)*Math.cos(z*.007-x*.003)+5*Math.sin(x*.023+z*.019))*smooth(0,80,out)+(ax>250?(ax-250)*(ac*.0005*(1-.9*vill)):0)}
@@ -618,7 +618,8 @@ function treeNear(x,z,r){const cx=Math.floor(x/TCELL),cz=Math.floor(z/TCELL);for
 // open country: forests on the rolling hills beyond the rope line (scenery only)
 {const list=[];const r=()=>srand();for(let i=0;i<9000;i++){const x=(r()*2-1)*1450,z=Z0-1000+r()*(Z1-Z0+2200);const ax=Math.abs(x);
    if(ax<262&&z>-85&&z<1620)continue;const dens=.55+.35*Math.sin(x*.004+z*.003)*Math.cos(z*.005-x*.002);if(r()>dens)continue;list.push([x,z,.9+r()*1.1])}
- const im=new THREE.InstancedMesh(treeGeo,M({vertexColors:true,roughness:.9}),list.length);list.forEach(([x,z,s],i)=>im.setMatrixAt(i,mtx(x,baseH(x,z)-.3,z,r()*6,s*1.5)));im.castShadow=false;mtn.add(im)}
+ const lo=mergeColored([[new THREE.ConeGeometry(2.3,3.2,6,1,true),0x1d4d32,mtx(0,2,0)],[new THREE.ConeGeometry(1.6,2.6,6,1,true),0x1d4d32,mtx(0,3.5,0)],[new THREE.ConeGeometry(.95,1.9,6,1,true),0xf4f8ff,mtx(0,4.6,0)]]);
+ const im=new THREE.InstancedMesh(lo,M({vertexColors:true,roughness:.9,side:THREE.DoubleSide}),list.length);list.forEach(([x,z,s],i)=>im.setMatrixAt(i,mtx(x,baseH(x,z)-.3,z,r()*6,s*1.5)));im.castShadow=false;mtn.add(im)}
 
 /* ---------- park: kickers, rails, halfpipe deck flags ---------- */
 {const snowM=M({color:0xf8fbff,roughness:.75}),lipM=M({color:0x2f7bff,roughness:.6}),bumpLipM=new THREE.MeshStandardMaterial({color:0xff3344,emissive:0xff2030,emissiveIntensity:.6});
@@ -699,10 +700,12 @@ const netTime=()=>Date.now()/1000%100000;
 
 /* ---------- base village ---------- */
 const COLLIDERS=[]; // axis-aligned boxes on the mountain {x0,x1,z0,z1}
-const LODGE={x:-22,z:1448,w:40,d:20},SHOP=null,XTREE={x:105,z:1420};
+const LODGE={x:-100,z:1462,w:40,d:20,ry:-Math.PI/4},SHOP=null,XTREE={x:-22,z:1502};
+// lodge-local (x,z) to world, for the rotated lodge
+const lodgeW=(lx,lz,B=LODGE)=>{const c=Math.cos(B.ry||0),s=Math.sin(B.ry||0);return[B.x+lx*c+lz*s,B.z-lx*s+lz*c]};
 const logTex=canvasTex(128,128,(g,W,H)=>{for(let i=0;i<8;i++){const y=i*16;const gr=g.createLinearGradient(0,y,0,y+16);gr.addColorStop(0,'#8a5530');gr.addColorStop(.5,'#a8693c');gr.addColorStop(1,'#5e3518');g.fillStyle=gr;g.fillRect(0,y,W,16)}},[3,1]);
 function building(B,label,col){
-  const gy=groundH(B.x,B.z),grp=new THREE.Group();grp.position.set(B.x,gy,B.z);mtn.add(grp);
+  const gy=groundH(B.x,B.z),grp=new THREE.Group();grp.position.set(B.x,gy,B.z);grp.rotation.y=B.ry||0;mtn.add(grp);const W2=(lx,lz)=>lodgeW(lx,lz,B);
   const wall=mesh(new THREE.BoxGeometry(B.w,8,B.d),M({map:logTex.clone()}),0,4,0,grp);wall.material.map.repeat.set(B.w/8,2);wall.material.map.needsUpdate=true;wall.castShadow=wall.receiveShadow=true;
   const rg=new THREE.BufferGeometry();const hw=B.w/2+1,hd=B.d/2+1.2,rh=5;
   rg.setAttribute('position',new THREE.Float32BufferAttribute([-hw,0,-hd,hw,0,-hd,hw,rh,0,-hw,0,-hd,hw,rh,0,-hw,rh,0, -hw,rh,0,hw,rh,0,hw,0,hd,-hw,rh,0,hw,0,hd,-hw,0,hd, -hw,0,-hd,-hw,rh,0,-hw,0,hd, hw,0,-hd,hw,0,hd,hw,rh,0],3));rg.computeVertexNormals();
@@ -717,18 +720,19 @@ function building(B,label,col){
   const sg=signPlane([[label,.6,'#ffe6a8']],B.w*.55,1.6,{bg:'#5e1f12'});sg.position.set(0,6.9,-B.d/2-.3);sg.rotation.y=Math.PI;grp.add(sg);
   // string lights along front eave
   const n=Math.round(B.w*1.6),lg=new THREE.SphereGeometry(.11,6,4),cols=[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0];
-  const im=new THREE.InstancedMesh(lg,new THREE.MeshBasicMaterial(),n);for(let i=0;i<n;i++){const t=i/(n-1);im.setMatrixAt(i,mtx(-B.w/2-1+t*(B.w+2),7.75-Math.abs(Math.sin(t*Math.PI*6))*.35,-B.d/2-1.25));im.setColorAt(i,_c.set(cols[i%5]));if(i%2===0)addBulb(B.x-B.w/2-1+t*(B.w+2),gy+7.75-Math.abs(Math.sin(t*Math.PI*6))*.35,B.z-B.d/2-1.25,cols[i%5])}grp.add(im);addPool(B.x,B.z-B.d/2-4,11,0xffa050);for(let i=-2;i<=2;i++)if(i)addGlow(B.x+i*B.w/5.5,gy+3.8,B.z-B.d/2-.4,0xffb050);
-  COLLIDERS.push({x0:B.x-B.w/2-.6,x1:B.x+B.w/2+.6,z0:B.z-B.d/2-.6,z1:B.z+B.d/2+.6});
+  const im=new THREE.InstancedMesh(lg,new THREE.MeshBasicMaterial(),n);for(let i=0;i<n;i++){const t=i/(n-1);im.setMatrixAt(i,mtx(-B.w/2-1+t*(B.w+2),7.75-Math.abs(Math.sin(t*Math.PI*6))*.35,-B.d/2-1.25));im.setColorAt(i,_c.set(cols[i%5]));if(i%2===0){const [wx,wz]=W2(-B.w/2-1+t*(B.w+2),-B.d/2-1.25);addBulb(wx,gy+7.75-Math.abs(Math.sin(t*Math.PI*6))*.35,wz,cols[i%5])}}grp.add(im);addPool(...W2(0,-B.d/2-4),11,0xffa050);for(let i=-2;i<=2;i++)if(i){const [wx,wz]=W2(i*B.w/5.5,-B.d/2-.4);addGlow(wx,gy+3.8,wz,0xffb050)}
+  COLLIDERS.push(B.ry?oBox(B.x,B.z,B.w/2+.6,B.d/2+.6,B.ry):{x0:B.x-B.w/2-.6,x1:B.x+B.w/2+.6,z0:B.z-B.d/2-.6,z1:B.z+B.d/2+.6});
   const lamp=new THREE.PointLight(0xffb066,25,16,1.6);lamp.position.set(0,3.5,-B.d/2-2.5);grp.add(lamp);
   return grp}
 building(LODGE,"COCOA LODGE & RUDOLPH'S GEAR",0x7a1f1f);
 // grand candy-cane entrance
-{const gy=groundH(LODGE.x,LODGE.z),fz=LODGE.z-LODGE.d/2;for(const sx of [-1,1]){const p=mesh(new THREE.CylinderGeometry(.32,.32,6.6,14),M({map:caneTex,roughness:.4}),LODGE.x+sx*2.6,gy+3.3,fz-2.2,mtn);p.castShadow=true;
-  const w=mesh(new THREE.TorusGeometry(.8,.24,8,22),M({color:0x1d5a32}),LODGE.x+sx*2.6,gy+6.7,fz-2.2,mtn);mesh(new THREE.SphereGeometry(.22,8,6),M({color:0xd62839}),LODGE.x+sx*2.6,gy+6.1,fz-2.45,mtn)}
- const arch=mesh(new THREE.TorusGeometry(2.6,.18,8,30,Math.PI),M({color:0x1d5a32}),LODGE.x,gy+6.6,fz-2.2,mtn);
- for(let i=0;i<=14;i++){const a=i/14*Math.PI;addBulb(LODGE.x+Math.cos(a)*2.6,gy+6.6+Math.sin(a)*2.6,fz-2.4,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
- for(const sx of [-1,1])for(let k=0;k<3;k++){const b=mesh(new THREE.BoxGeometry(.7-k*.15,.6-k*.12,.7-k*.15),M({color:[0xd62839,0x1f9d55,0xffc934][k]}),LODGE.x+sx*(4+k*.8),gy+.3,fz-1.4-k*.3,mtn);b.rotation.y=k}}
-LODGE.door=V3(LODGE.x,groundH(LODGE.x,LODGE.z-LODGE.d/2-2),LODGE.z-LODGE.d/2-2);
+{const gy=groundH(LODGE.x,LODGE.z),fz=-LODGE.d/2,E=new THREE.Group();E.position.set(LODGE.x,gy,LODGE.z);E.rotation.y=LODGE.ry;mtn.add(E);
+ for(const sx of [-1,1]){const p=mesh(new THREE.CylinderGeometry(.32,.32,6.6,14),M({map:caneTex,roughness:.4}),sx*2.6,3.3,fz-2.2,E);p.castShadow=true;
+  mesh(new THREE.TorusGeometry(.8,.24,8,22),M({color:0x1d5a32}),sx*2.6,6.7,fz-2.2,E);mesh(new THREE.SphereGeometry(.22,8,6),M({color:0xd62839}),sx*2.6,6.1,fz-2.45,E)}
+ mesh(new THREE.TorusGeometry(2.6,.18,8,30,Math.PI),M({color:0x1d5a32}),0,6.6,fz-2.2,E);
+ for(let i=0;i<=14;i++){const a=i/14*Math.PI,[wx,wz]=lodgeW(Math.cos(a)*2.6,fz-2.4);addBulb(wx,gy+6.6+Math.sin(a)*2.6,wz,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
+ for(const sx of [-1,1])for(let k=0;k<3;k++){const b=mesh(new THREE.BoxGeometry(.7-k*.15,.6-k*.12,.7-k*.15),M({color:[0xd62839,0x1f9d55,0xffc934][k]}),sx*(4+k*.8),.3,fz-1.4-k*.3,E);b.rotation.y=k}}
+{const [dx,dz]=lodgeW(0,-LODGE.d/2-2);LODGE.door=V3(dx,groundH(dx,dz),dz);LODGE.out=V3(-Math.sin(LODGE.ry),0,-Math.cos(LODGE.ry))}
 // giant Christmas tree: a full, natural fir hung with glowing stars, hearts, moons, snowflakes and gifts
 const XLIGHTS=[];
 {const gy=groundH(XTREE.x,XTREE.z),g=new THREE.Group(),XS=2.1;g.position.set(XTREE.x,gy,XTREE.z);g.scale.setScalar(XS);mtn.add(g);
@@ -851,14 +855,14 @@ function updateFireworks(dt){fwNext-=dt;if(fwNext<=0){fwNext=.7+Math.random()*1.
 
 /* ================= New village spots: pond, snowman yard, firework workshop, race + leaderboard ================= */
 const ZONES=[];
-const POND={x:160,z:1466,r:40},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
+const POND={x:72,z:1478,r:36},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
 const GIANT={x:-70,z:1400},DROP={x:-70,z:1400,r:7.2};
-const RACE={startZ:420,finZ:1300,gates:[]};
-for(let i=0;i<16;i++){const z=470+i*52;RACE.gates.push({z,x:mainX(z)+(i%2?7:-7)})}
+const RACE={startZ:72,finZ:1300,gates:[],R:3.3};
+for(let i=0;i<20;i++){const z=128+i*58;RACE.gates.push({z,x:mainX(z)+(i%2?5.5:-5.5)})}
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
 // Roblox-style floating name tags over each attraction (no physical signboards)
 const FLOAT_LABELS=[];
-function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null}={}){const gy=y??groundH(x,z);
+function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null,near=48}={}){const gy=y??groundH(x,z);sub=null;
   const sp=txt.indexOf(' '),icon=sp>0&&/[^\x00-\x7F]/.test(txt.slice(0,sp))?txt.slice(0,sp):'',name=icon?txt.slice(sp+1):txt;
   const title=name.toLowerCase().replace(/(^|[\s&·'-])([a-z])/g,(m,a,b)=>a+b.toUpperCase()).replace(/'S\b/g,"'s");
   const W=1024,H=sub?280:190,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
@@ -867,10 +871,10 @@ function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null}={}){const gy=y??gr
   if(sub){let ss=50;g.font=`700 ${ss}px Fredoka, sans-serif`;while(g.measureText(sub).width>W-60&&ss>24){ss-=2;g.font=`700 ${ss}px Fredoka, sans-serif`}g.lineWidth=12;g.strokeStyle='rgba(8,12,28,.9)';g.strokeText(sub,W/2,218);g.fillStyle=col;g.fillText(sub,W/2,218)}
   const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,toneMapped:false,fog:false}));const base=Math.max(6,Math.min(11,w*.8));
-  s.userData={base,asp:H/W,y0:gy+h+.6,ph:FLOAT_LABELS.length*1.3};s.position.set(x,s.userData.y0,z);s.scale.set(base,base*H/W,1);s.renderOrder=5;mtn.add(s);FLOAT_LABELS.push(s);return s}
+  s.userData={base,asp:H/W,y0:gy+h+.6,ph:FLOAT_LABELS.length*1.3,near};s.position.set(x,s.userData.y0,z);s.scale.set(base,base*H/W,1);s.renderOrder=5;mtn.add(s);FLOAT_LABELS.push(s);return s}
 const _lv=new THREE.Vector3();
-function updateLabels(){for(const s of FLOAT_LABELS){const u=s.userData;s.getWorldPosition(_lv);const d=_lv.distanceTo(camera.position),k=Math.max(.8,Math.min(4.2,d/19));
-  s.scale.set(u.base*k,u.base*k*u.asp,1);s.position.y=u.y0+Math.sin(T*1.4+u.ph)*.18;s.material.opacity=d>260?0:d>200?(260-d)/60:1;s.visible=d<260}}
+function updateLabels(){for(const s of FLOAT_LABELS){const u=s.userData;s.getWorldPosition(_lv);const d=_lv.distanceTo(camera.position),k=Math.max(.8,Math.min(2.6,d/19)),n=u.near,far=n*1.45;
+  s.scale.set(u.base*k,u.base*k*u.asp,1);s.position.y=u.y0+Math.sin(T*1.4+u.ph)*.18;s.material.opacity=d>far?0:d>n?(far-d)/(far-n):1;s.visible=d<far}}
 function onIce(x,z,pad=0){return Math.hypot(x-POND.x,z-POND.z)<POND.r-pad}
 const vpostM=M({color:0x4a2a12,roughness:.85});
 // ----- Snowflake Pond (ice skating)
@@ -889,7 +893,7 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
  const sx=YARD.x-13,sz=YARD.z-4,sy=groundH(sx,sz);s.position.set(sx,sy+2.9,sz);s.rotation.y=.5;mtn.add(s);for(const d of [-2.4,2.4])mesh(new THREE.CylinderGeometry(.09,.09,3.9),vpostM,sx+d*Math.cos(.5),sy+1.95,sz-d*Math.sin(.5),mtn);addGlow(sx,sy+4.2,sz,0xffe0a0);addPool(sx,sz+2,6,0xffc080);
  {const y=groundH(DROP.x,DROP.z);for(const [a,b,o] of [[DROP.r-.35,DROP.r,.8],[4.6,5,.5]]){const ring=mesh(new THREE.RingGeometry(a,b,48),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:o}),DROP.x,y+.07,DROP.z,mtn);ring.rotation.x=-Math.PI/2}
   addPool(DROP.x,DROP.z,DROP.r*1.6,0x6fc8ff);for(let i=0;i<16;i++){const a=i/16*Math.PI*2;addBulb(DROP.x+Math.cos(a)*(DROP.r+.3),y+.25,DROP.z+Math.sin(a)*(DROP.r+.3),i%2?0x9fe0ff:0xffffff)}}
- addPool(GIANT.x,GIANT.z,9,0xffc890);glowTitle('☃ SNOWMAN YARD','Roll snowballs · build the giant',YARD.x-6,YARD.z-17,{h:7.5,ry:0,col:'#ffffff',w:11});COLLIDERS.push({x0:GIANT.x-4,x1:GIANT.x+4,z0:GIANT.z-4,z1:GIANT.z+4});
+ addPool(GIANT.x,GIANT.z,9,0xffc890);glowTitle('☃ SNOWMAN YARD',null,GIANT.x,GIANT.z+DROP.r+1.5,{h:4.5,ry:0,col:'#ffffff',w:11});COLLIDERS.push({x0:GIANT.x-4,x1:GIANT.x+4,z0:GIANT.z-4,z1:GIANT.z+4});
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2+.3,x=YARD.x+Math.cos(a)*17,z=YARD.z+Math.sin(a)*17,y=groundH(x,z);const m=mesh(new THREE.SphereGeometry(.9,10,8),M({color:0xf8fbff}),x,y-.25,z,mtn);m.scale.set(1.4,.5,1.1)}}
 // ----- Firework Workshop
 {const W=WORKSHOP,gy=groundH(W.x,W.z),g=new THREE.Group(),S=1.6;g.position.set(W.x,gy,W.z);g.rotation.y=Math.PI;g.scale.setScalar(S);mtn.add(g);ZONES.push({x:W.x,z:W.z,r:9});
@@ -919,22 +923,27 @@ function drawLeaderboard(rows){const g=LB_CV.getContext('2d'),W=512,H=640;g.fill
    const y=Math.max(groundH(cx-15,z),groundH(cx+15,z));const s=twoSided([[txt,.62,'#fff']],30,2.6,{bg:col===0x7dff9a?'#14532d':'#7a1520',border:'#ffd27a'});s.position.set(cx,y+7.2,z);mtn.add(s);
    for(let i=0;i<24;i++){const t=i/23;addBulb(cx-15+t*30,y+8.6,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}};
  arch(RACE.startZ,'🏁 START · JINGLE RACE',0x7dff9a);arch(RACE.finZ,'🏁 FINISH',0xff5d73);
- RACE.gates.forEach((G,i)=>{const col=i%2?0x2f7bff:0xe2283a;for(const d of [-3.5,3.5]){const x=G.x+d,y=groundH(x,G.z);mesh(new THREE.CylinderGeometry(.08,.08,2.6,8),M({color:col}),x,y+1.3,G.z,mtn);
-     const f=mesh(new THREE.PlaneGeometry(1,.7),new THREE.MeshStandardMaterial({color:col,side:THREE.DoubleSide,emissive:col,emissiveIntensity:.4}),x+(d<0?-.5:.5),y+2.2,G.z,mtn);addBulb(x,y+2.7,G.z,col)}addPool(G.x,G.z,4.5,col)})}
+ // glowing yellow loops to ride through
+ const ringG=new THREE.TorusGeometry(RACE.R,.2,10,48),ringM=new THREE.MeshBasicMaterial({color:0xffd84a,toneMapped:false}),haloM=new THREE.MeshBasicMaterial({color:0xffc020,transparent:true,opacity:.28,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}),haloG=new THREE.TorusGeometry(RACE.R,.6,8,48);
+ RACE.gates.forEach(G=>{const y=groundH(G.x,G.z)+RACE.R+.15,g=new THREE.Group();g.position.set(G.x,y,G.z);mtn.add(g);mesh(ringG,ringM.clone(),0,0,0,g);mesh(haloG,haloM.clone(),0,0,0,g);G.m=g;
+   for(let k=0;k<10;k++){const a=k/10*Math.PI*2;addBulb(G.x+Math.cos(a)*RACE.R,y+Math.sin(a)*RACE.R,G.z,0xffd84a)}addPool(G.x,G.z,4.5,0xffc040)})}
 // ----- village signpost
-{const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎁 Pet Gacha → right here',.3],['⛸ Pond, hockey & fishing → past the Great Tree',.27],['☃ Snowman Yard → west, by the race board',.27],['🏡 Holly Court cottages → behind the lodge',.27],['🏁 Jingle Race → Candy Cane Lane (middle hill)',.27]],4.6,3.4,{bg:'#3b1d0e'});
+{const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎁 Pet Gacha → right here',.3],['🏠 Cocoa Lodge & Gear → west, by the Snowman Yard',.27],['⛸ Pond, hockey & fishing → east along Main Street',.27],['🎄 Great Tree & Holly Court cottages → south',.27],['🏁 Jingle Race → summit of the middle hill',.27]],4.6,3.4,{bg:'#3b1d0e'});
  s.position.set(x,y+2.7,z);s.rotation.y=Math.PI;mtn.add(s);mesh(new THREE.CylinderGeometry(.09,.09,2.6),vpostM,x,y+1.3,z,mtn);COLLIDERS.push({x0:x-.3,x1:x+.3,z0:z-.3,z1:z+.3})}
 
 // ----- glowing titles over the main places
-glowTitle("🏠 COCOA LODGE & RUDOLPH'S GEAR",'Hot cocoa · gear · the 50,000 pt sleigh',LODGE.x,LODGE.z-LODGE.d/2-.4,{h:15.2,col:'#ffd54d',w:16,posts:false,y:groundH(LODGE.x,LODGE.z)});
-glowTitle('🎄 THE GREAT TREE',null,XTREE.x,XTREE.z-15,{h:7,col:'#7dff9a',w:9});
+glowTitle("🏠 COCOA LODGE & RUDOLPH'S GEAR",null,...lodgeW(0,-LODGE.d/2-.4),{h:15.2,col:'#ffd54d',w:16,posts:false,y:groundH(LODGE.x,LODGE.z)});
+glowTitle('🎄 THE GREAT TREE',null,XTREE.x,XTREE.z-21,{h:5,col:'#7dff9a',w:9});
 for(const L of LIFTS){const x=L.x+2.5,z=L.zb+9;glowTitle('🚡 '+L.name.toUpperCase(),'Quad chair · up to 4 riders',x,z,{h:8.5,col:L.col===0xd62839?'#ff6b7a':'#7dff9a',w:11})}
-// ----- rope boundary: candy-cane poles with flags, so the open country reads as scenery
-{const pts=[];const add=(x,z)=>pts.push([x,z]);for(let z=-55;z<=1610;z+=14){add(-246,z);add(246,z)}for(let x=-232;x<246;x+=14){add(x,-55);add(x,1610)}
+// ----- rope boundary: candy-cane poles with flags, so the open country reads as scenery (it pinches in round the village)
+const ROPE_ZV=[1340,1385],ROPE_XV=150,ROPE_ZE=1574,ROPE_POLY=[[-246,-55],[-246,ROPE_ZV[0]],[-ROPE_XV,ROPE_ZV[1]],[-ROPE_XV,ROPE_ZE],[ROPE_XV,ROPE_ZE],[ROPE_XV,ROPE_ZV[1]],[246,ROPE_ZV[0]],[246,-55]];
+const ropeX=z=>z<=ROPE_ZV[0]?246:z>=ROPE_ZV[1]?ROPE_XV:246-(z-ROPE_ZV[0])/(ROPE_ZV[1]-ROPE_ZV[0])*(246-ROPE_XV);
+{const poly=ROPE_POLY,pts=[],segs=[];
+ for(let k=0;k<poly.length;k++){const a=poly[k],b=poly[(k+1)%poly.length],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.round(L/14));
+   for(let j=0;j<n;j++){const t0=j/n,t1=(j+1)/n,p0=[a[0]+(b[0]-a[0])*t0,a[1]+(b[1]-a[1])*t0],p1=[a[0]+(b[0]-a[0])*t1,a[1]+(b[1]-a[1])*t1];pts.push(p0);
+     const ya=groundH(p0[0],p0[1])+1.25,yb=groundH(p1[0],p1[1])+1.25;for(let q=0;q<4;q++){const u0=q/4,u1=(q+1)/4,sag=t=>Math.sin(t*Math.PI)*.35;segs.push(p0[0]+(p1[0]-p0[0])*u0,ya+(yb-ya)*u0-sag(u0),p0[1]+(p1[1]-p0[1])*u0,p0[0]+(p1[0]-p0[0])*u1,ya+(yb-ya)*u1-sag(u1),p0[1]+(p1[1]-p0[1])*u1)}}}
  const pole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.07,.09,1.6,6),M({map:caneTex,roughness:.5}),pts.length),flag=new THREE.InstancedMesh(new THREE.PlaneGeometry(.5,.32),new THREE.MeshStandardMaterial({color:0xffffff,side:THREE.DoubleSide,emissive:0x331111}),pts.length);
  pts.forEach(([x,z],i)=>{const y=groundH(x,z);pole.setMatrixAt(i,mtx(x,y+.8,z));flag.setMatrixAt(i,mtx(x+.25,y+1.42,z,i%2?0:Math.PI/2));flag.setColorAt(i,_c.set(i%2?0xd62839:0x1f9d55))});mtn.add(pole,flag);
- const segs=[];const line=(a,b)=>{const ya=groundH(a[0],a[1])+1.25,yb=groundH(b[0],b[1])+1.25;for(let k=0;k<4;k++){const t0=k/4,t1=(k+1)/4,sag=t=>Math.sin(t*Math.PI)*.35;segs.push(a[0]+(b[0]-a[0])*t0,ya+(yb-ya)*t0-sag(t0),a[1]+(b[1]-a[1])*t0,a[0]+(b[0]-a[0])*t1,ya+(yb-ya)*t1-sag(t1),a[1]+(b[1]-a[1])*t1)}};
- for(const sx of [-246,246])for(let z=-55;z+14<=1610;z+=14)line([sx,z],[sx,z+14]);for(const sz of [-55,1611])for(let x=-246;x+14<=246;x+=14)line([x,sz],[x+14,sz]);
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(segs,3));mtn.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xff4a5a})))}
 /* ================= Winding Christmas walkways, the Great Tree circle and Holly Court ================= */
 const GACHA_AT={x:-9,z:1401,ry:0},COURT={x:-22,z:1502,R:31,HR:46},TRING=24.5;
@@ -952,21 +961,20 @@ function segDist(x,z,[ax,az,bx,bz]){const dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1e-6
 function onPath(x,z,r=0){for(const s of PATH_SEGS)if(segDist(x,z,s)<s[4]+r)return true;return false}
 const ringPts=(cx,cz,R,n,j=0)=>{const a=[];for(let i=0;i<n;i++){const t=i/n*Math.PI*2;a.push([cx+Math.cos(t)*(R+Math.sin(i*2.3)*j),cz+Math.sin(t)*(R+Math.sin(i*2.3)*j)])}return a};
 // Main Street meanders east-west in front of the lodge and ends at the Great Tree circle
-const MAIN=addRoute([[-123,1427],[-96,1430.5],[-67,1426.5],[-39,1429.5],[-11,1427],[16,1430],[44,1426.6],[66,1427.6],[81.2,1422.6]],4.2);
+const MAIN=addRoute([[-123,1427],[-96,1430.5],[-67,1426.5],[-39,1429.5],[-11,1427],[16,1430],[44,1426.6],[70,1428.4],[96,1426.5]],4.2);
 const msZ=x=>{let b=MAIN.pts[0];for(const p of MAIN.pts)if(Math.abs(p[0]-x)<Math.abs(b[0]-x))b=p;return b[1]};
 const spur=(x,rest,w=3.1,o)=>addRoute([[x,msZ(x)],...rest],w,o);
 spur(-114,[[-116,1410],[-121,1396]]);                 // Snow Launcher
 spur(-98,[[-97,1403],[-101,1384]]);                   // North Pole Express
 spur(-64,[[-63.6,1422],[-65,1416.5]],3,{deco:false}); // Snowman Yard
 spur(-40,[[-38,1405],[-41,1390],[-45,1381]]);          // race board
-spur(-22,[[-22,1435.6]],3.2,{deco:false});             // lodge door
+{const [dx,dz]=lodgeW(0,-LODGE.d/2-1.6),[mx,mz]=lodgeW(0,-LODGE.d/2-9);spur(mx-3,[[mx,mz],[dx,dz]],3.4,{deco:false})}   // lodge door
+spur(-22,[[-22,1452],[-22,COURT.z-COURT.R]],3.4);          // straight into Holly Court
 spur(-12,[[-10.6,1414],[-9,1406.4]],3,{deco:false});   // Pet Gacha + What To Do
 spur(12,[[12.4,1421]],3,{deco:false});                 // Firework Workshop
 spur(38,[[40.4,1416]],3,{deco:false});                 // Plaza
 spur(58,[[60,1404],[54,1388],[46,1379]]);              // Elf Quad
-addRoute(ringPts(XTREE.x,XTREE.z,TRING,18,.5),3.6,{loop:true,deco:false});   // circle round the Great Tree
-{const a=Math.atan2(POND.z-XTREE.z,POND.x-XTREE.x),d=Math.hypot(POND.x-XTREE.x,POND.z-XTREE.z);const P=t=>[XTREE.x+Math.cos(a)*t,XTREE.z+Math.sin(a)*t];
- addRoute([P(TRING),P((TRING+d-POND.r)/2+.5),P(d-POND.r-1.2)],3.2,{deco:false})}   // tree -> pond
+spur(54,[[55,1436],[57,1441.5]],3,{deco:false});   // pond
 // Holly Court: a ring lane round the green, two links past the lodge, and a walk to every plot
 {const C=COURT,ring=a=>[C.x+Math.cos(a*Math.PI/180)*C.R,C.z+Math.sin(a*Math.PI/180)*C.R];
  addRoute(ringPts(C.x,C.z,C.R,20,.4),3.3,{loop:true,deco:false});
@@ -996,14 +1004,14 @@ ZONES.push({x:XTREE.x,z:XTREE.z,r:TRING+7},{x:COURT.x,z:COURT.z,r:COURT.HR+10},{
 // ---------- things that line the walks: hedges, little pines, street lamps, candy-cane lamps, benches
 const BENCHES=[];
 {let rs=4242;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
- const avoid=[[XTREE.x,XTREE.z,TRING+4],[POND.x,POND.z,POND.r+4],[-124,1386,8],[GACHA_AT.x,GACHA_AT.z,6.5],[PLAZA.x,PLAZA.z,10],[-30,1372,5],[-20,1400,4],[-47,1374,6],[YARD.x,YARD.z,YARD.r-2],[WORKSHOP.x,WORKSHOP.z,8],
+ const avoid=[[XTREE.x,XTREE.z,20.5],[LODGE.x,LODGE.z,23],[...lodgeW(0,-LODGE.d/2-6),7],[POND.x,POND.z,POND.r+4],[-124,1386,8],[GACHA_AT.x,GACHA_AT.z,6.5],[PLAZA.x,PLAZA.z,10],[-30,1372,5],[-20,1400,4],[-47,1374,6],[YARD.x,YARD.z,YARD.r-2],[WORKSHOP.x,WORKSHOP.z,8],
    ...LIFTDEF.map(L=>[L.x+3,L.zb+4,9]),...COURT_PLOTS.map(p=>{const [dx,dz]=plotDir(p);return[p.x+dx*3,p.z+dz*3,10]})];
  const clear=(x,z,r)=>{if(onPath(x,z,r+.35))return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;
    if(COLLIDERS.some(c=>x>c.x0-r-.5&&x<c.x1+r+.5&&z>c.z0-r-.5&&z<c.z1+r+.5))return false;for(const b of BENCHES)if(Math.hypot(b.x-x,b.z-z)<r+1.4)return false;return true};
  const lamps=[],canes=[],bushes=[],pines=[],taken=[];
  const free2=(x,z,r)=>clear(x,z,r)&&!taken.some(([tx,tz,tr])=>Math.hypot(tx-x,tz-z)<tr+r);
  const put=(arr,x,z,r,extra)=>{arr.push([x,z,...extra]);taken.push([x,z,r])};
- const bench=(x,z,fx,fz)=>{const ry=Math.atan2(fx,fz);BENCHES.push({x,z,ry});taken.push([x,z,1.1]);COLLIDERS.push(oBox(x,z,1,.42,ry))};
+ const bench=(x,z,fx,fz)=>{const ry=Math.atan2(fx,fz);BENCHES.push({x,z,ry});for(const s of [-.45,.45]){const sx=x+Math.cos(ry)*s,sz=z-Math.sin(ry)*s;MSEATS.push({x:sx,z:sz,yaw:ry,y:groundH(sx,sz)-.3,bench:1})}taken.push([x,z,1.1]);COLLIDERS.push(oBox(x,z,1,.42,ry))};
  for(const r of PATHS){if(!r.deco)continue;const P=r.pts,hw=r.w/2*1.2;let d=0,nextLamp=4+rnd()*5,side=rnd()<.5?1:-1,ln=0,nextBench=10+rnd()*14;
    for(let i=1;i<P.length-1;i++){d+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);const tx=P[i+1][0]-P[i-1][0],tz=P[i+1][1]-P[i-1][1],L=Math.hypot(tx,tz),nx=-tz/L,nz=tx/L;
      if(d>=nextLamp){const x=P[i][0]+nx*side*(hw+.9),z=P[i][1]+nz*side*(hw+.9);if(free2(x,z,.6)){ln%3===2?put(canes,x,z,.8,[Math.atan2(nz*side,-nx*side)]):put(lamps,x,z,.6,[]);ln++;side=-side;nextLamp=d+16+rnd()*7}else nextLamp=d+1.2}
@@ -1011,20 +1019,10 @@ const BENCHES=[];
      if(rnd()<.2){const s=rnd()<.5?1:-1,cx=P[i][0]+nx*s*(hw+1.9+rnd()*1.4),cz=P[i][1]+nz*s*(hw+1.9+rnd()*1.4),k=1+(rnd()*3|0);
        for(let j=0;j<k;j++){const x=cx+(rnd()-.5)*2.2,z=cz+(rnd()-.5)*2.2,sz=.6+rnd()*.55;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}}
      if(rnd()<.06){const s=rnd()<.5?1:-1,o=hw+4+rnd()*3.5,x=P[i][0]+nx*s*o,z=P[i][1]+nz*s*o,sz=.42+rnd()*.3;if(free2(x,z,1.6)&&!treeNear(x,z,3))put(pines,x,z,1.6,[sz,rnd()*6])}}}
- // round the Great Tree: lamps and candy canes on the outer edge, benches facing the tree
- {const mainA=Math.atan2(1422.6-XTREE.z,81.2-XTREE.x),pondA=Math.atan2(POND.z-XTREE.z,POND.x-XTREE.x),near=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)))<.24;
-  for(let i=0;i<16;i++){const a=i/16*Math.PI*2+.1;if(near(a,mainA)||near(a,pondA))continue;const R=TRING+3.2,x=XTREE.x+Math.cos(a)*R,z=XTREE.z+Math.sin(a)*R;
-    if(i%2)bench(x+Math.cos(a)*.5,z+Math.sin(a)*.5,-Math.cos(a),-Math.sin(a));else if(i%4===0)put(canes,x,z,.8,[Math.atan2(Math.sin(a),-Math.cos(a))]);else put(lamps,x,z,.6,[])}
-  for(let i=0;i<26;i++){const a=rnd()*Math.PI*2;if(near(a,mainA)||near(a,pondA))continue;const R=TRING+5+rnd()*2.5,x=XTREE.x+Math.cos(a)*R,z=XTREE.z+Math.sin(a)*R,sz=.6+rnd()*.5;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}}
- // Holly Court green: lamps on the inside of the ring, benches round a little tree
+ // Holly Court green with the Great Tree: lamps inside the ring lane, benches facing the tree, a few hedges
  {const C=COURT;for(let i=0;i<8;i++){const a=(i+.5)/8*Math.PI*2,R=C.R-2.7;(i%2?put(canes,C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,.8,[Math.atan2(-Math.sin(a),Math.cos(a))]):put(lamps,C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,.6,[]))}
-  for(let i=0;i<4;i++){const a=i/4*Math.PI*2+Math.PI/4,R=9;bench(C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,-Math.cos(a),-Math.sin(a))}
-  for(let i=0;i<40;i++){const a=rnd()*Math.PI*2,R=14+rnd()*11,x=C.x+Math.cos(a)*R,z=C.z+Math.sin(a)*R,sz=.6+rnd()*.5;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}
-  for(let i=0;i<7;i++){const a=i/7*Math.PI*2+.4,R=19+rnd()*3,x=C.x+Math.cos(a)*R,z=C.z+Math.sin(a)*R;if(free2(x,z,1.6))put(pines,x,z,1.6,[.5+rnd()*.25,rnd()*6])}
-  const gy=groundH(C.x,C.z),t=new THREE.Mesh(firGeo(8.5,3.1,17,2.6,12),M({vertexColors:true,roughness:.92}));t.position.set(C.x,gy,C.z);t.castShadow=true;mtn.add(t);
-  for(let i=0;i<70;i++){const u=Math.random(),a=Math.random()*6.283,r=(1-u)*2.9+.25;addBulb(C.x+Math.cos(a)*r,gy+1.2+u*7,C.z+Math.sin(a)*r,[0xffd890,0xffe6b8,0xffc060][i%3])}
-  mesh(new THREE.OctahedronGeometry(.5,0),new THREE.MeshStandardMaterial({color:0xffe066,emissive:0xffcc00,emissiveIntensity:2}),C.x,gy+9.1,C.z,mtn);addGlow(C.x,gy+9.1,C.z,0xffd040);addPool(C.x,C.z,9,0xffa050);
-  COLLIDERS.push({x0:C.x-1.6,x1:C.x+1.6,z0:C.z-1.6,z1:C.z+1.6})}
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8*0,R=24.6;if(Math.abs(Math.atan2(Math.sin(a+Math.PI/2),Math.cos(a+Math.PI/2)))<.3)continue;bench(C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,-Math.cos(a),-Math.sin(a))}
+  for(let i=0;i<30;i++){const a=rnd()*Math.PI*2,R=21.5+rnd()*4,x=C.x+Math.cos(a)*R,z=C.z+Math.sin(a)*R,sz=.5+rnd()*.4;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}}
  const _m=new THREE.Matrix4(),_q=new THREE.Quaternion(),blk=0x1b1c22;
  // hedges: snow-capped, no fairy lights
  {const bm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.62,1),M({color:0x1e5232,roughness:.95,flatShading:true}),bushes.length),sm=new THREE.InstancedMesh(new THREE.SphereGeometry(.56,10,6,0,Math.PI*2,0,Math.PI/2.4),M({color:0xf6faff,roughness:.85}),bushes.length);
@@ -1070,7 +1068,7 @@ const BENCHES=[];
  const onRun=(x,z)=>Math.abs(x-mainX(z))<36||Math.abs(x-leftX(z))<26||(z<PARK.z0+20&&Math.abs(x-rightX(z))<22)||(x>PARK.x0-8&&x<PARK.x1+8&&z>PARK.z0-30&&z<PARK.z1+30)||(z>PIPE.z0-30&&z<PIPE.z1+30&&Math.abs(x-PIPE.x)<30);
  const inLift=(x,z)=>LIFTDEF.some(L=>z>L.zt-40&&z<L.zb+40&&x>L.x-10&&x<L.x+15);
  const blocked=(x,z,r)=>COLLIDERS.some(c=>x>c.x0-r&&x<c.x1+r&&z>c.z0-r&&z<c.z1+r);
- function free(x,z,r){if(Math.abs(x)>290||z<Z0+20||z>Z1-20)return false;if(onPath(x,z,r+.8))return false;if(z<ZB-30&&onRun(x,z))return false;if(inLift(x,z))return false;
+ function free(x,z,r){if(Math.abs(x)>290||z<Z0+20||z>Z1-20)return false;if(Math.abs(x)>ropeX(z)-4-r||z>ROPE_ZE-4)return false;if(onPath(x,z,r+.8))return false;if(z<ZB-30&&onRun(x,z))return false;if(inLift(x,z))return false;
    if(blocked(x,z,r+2)||treeNear(x,z,r+1.5))return false;if(ZONES.some(q=>Math.hypot(x-q.x,z-q.z)<q.r+r)||Math.abs(z-RACE.startZ)<8||Math.abs(z-RACE.finZ)<8)return false;if(Math.hypot(x+30,z-1392)<12||Math.hypot(x-PLAZA.x,z-PLAZA.z)<12||Math.hypot(x-XTREE.x,z-XTREE.z)<17)return false;
    if(z>ZB-50&&Math.abs(x-mainX(ZB-50))<20&&z<ZB+5)return false;
    for(const d of DECO)if(Math.hypot(d.x-x,d.z-z)<r+d.r+2)return false;return true}
@@ -1554,6 +1552,7 @@ function showTrick(name,pts,bad,combo){$('trickname').textContent=name;$('trickp
 function addPoints(n){n=Math.round(n);if(n<=0)return;SAVE.points+=n;SAVE.earned+=n;saveT=1}
 function buffMult(){const b=SAVE.buff;if(b&&b.until>Date.now())return b.mult;return 1}
 function award(base,name,quality=1,extra=''){
+  if(RIDE_SLEIGH&&P.loc==='mtn'&&P.pos.z>ZB-40){if(T-(P.slNoPts||-99)>8){P.slNoPts=T;hint('🛷 Sleighs don\'t earn points in the village. Fly up the mountain to score.',3)}return 0}
   const now=T;if(now-P.combo.last<5)P.combo.n++;else P.combo.n=1;P.combo.last=now;
   const cm=Math.min(3,1+.25*(P.combo.n-1)),bm=buffMult(),gm=RIDE_SLEIGH?1:(curEquip().st.pts||1);const pm=petMult(),pts=Math.round(base*.85*gm*quality*cm*bm*pm);if(gm>1)extra=(extra?extra+' · ':'')+'Gear ×'+gm;if(pm>1)extra=(extra?extra+' · ':'')+'Pet +'+Math.round(pm*100-100)+'%';
   addPoints(pts);if(pts>SAVE.best)SAVE.best=pts;
@@ -1640,9 +1639,10 @@ function land(gh){
   if(hv>3&&!inPipe){const vy=Math.atan2(P.vel.x,P.vel.z);yawRes=Math.abs(wrapA(P.yaw-vy));yawRes=Math.min(yawRes,Math.PI-yawRes)}
   const vn=P.vel.dot(n);P.vel.addScaledVector(n,-vn);P.vel.multiplyScalar(1-Math.min(.25,Math.max(0,-vn)*.012));
   if(a.t<.35&&Math.abs(a.spin)<1&&Math.abs(a.flip)<1){P.mode='ride';P.air=null;return}
-  if(vn<-48){P.air=null;P.mode='ride';crash('Too big! Hard landing');return}
+  if(flipRes>1.3||yawRes>1.3){P.air=null;P.mode='ride';crash(flipRes>1.3?'Wipeout! Land on your feet':'Wipeout! Land straight');return}
+  if(vn<-32){P.air=null;P.mode='ride';crash('Too big! Hard landing');return}
   if(hv>1){const ny=Math.atan2(P.vel.x,P.vel.z);P.visYaw=wrapA((P.visYaw||0)+P.yaw-ny);P.yaw=ny}
-  const q=0;P.mode='ride';
+  const q=Math.max(flipRes/1.3,yawRes/1.3);P.mode='ride';
   sfx.thud(.35+Math.min(.6,-vn*.03));sfx.land(Math.min(1,-vn*.04));scoreAir(a,q);P.air=null}
 function checkRails(){
   if(P.pos.x<PARK.x0||P.pos.x>PARK.x1)return;
@@ -1696,7 +1696,7 @@ function pickSeat(L,s,skip){L.at(s,_cc);_cc.y-=CABLE_H;L.at(s+1,_cn);const yaw=M
   for(let k=0;k<4;k++){if(k===skip)continue;const sp=seatPos(_cc,yaw,k,_sv);let taken=false;for(const o of others.values())if(o.loc==='mtn'&&o.tgt&&(o.tgt.anim===3)&&Math.hypot(o.pos.x-sp.x,o.pos.z-sp.z)<.45&&Math.abs(o.pos.y-sp.y)<1.5){taken=true;break}if(!taken)return k}return -1}
 // the rope line: open country to look at, but the resort is where you can go
 let boundHint=-99;
-function boundWorld(){if(P.loc!=='mtn')return;const X=246,ZA=-55,ZE=1608;let hit=false;
+function boundWorld(){if(P.loc!=='mtn')return;const X=ropeX(P.pos.z)-.6,ZA=-55,ZE=ROPE_ZE-.6;let hit=false;
   if(P.pos.x>X){P.pos.x=X;P.vel.x=Math.min(0,P.vel.x);hit=true}else if(P.pos.x<-X){P.pos.x=-X;P.vel.x=Math.max(0,P.vel.x);hit=true}
   if(P.pos.z<ZA){P.pos.z=ZA;P.vel.z=Math.max(0,P.vel.z);hit=true}else if(P.pos.z>ZE){P.pos.z=ZE;P.vel.z=Math.min(0,P.vel.z);hit=true}
   if(hit){if(P.mode==='walk'||P.mode==='ride')P.pos.y=Math.max(P.pos.y,groundH(P.pos.x,P.pos.z));if(T-boundHint>6){boundHint=T;hint('That\'s the backcountry. The resort ends at the rope line.',3)}}}
@@ -1730,7 +1730,7 @@ function step(dt){
 function afterStep(dt){
   if(P.loc!=='mtn'||P.mode==='lift'||P.mode==='liftwait')return;
   // points for skiing downhill
-  if(P.pos.y<P.lastAlt-10){P.lastAlt-=10;addPoints(2.5*buffMult())}
+  if(P.pos.y<P.lastAlt-10){P.lastAlt-=10;if(!(RIDE_SLEIGH&&P.pos.z>ZB-40))addPoints(2.5*buffMult())}
   // presents
   for(const g of PRESENTS){if(g.taken&&T-g.taken>180){g.taken=0;g.g.visible=true}
     if(!g.taken&&Math.abs(P.pos.x-g.x)<1.8&&Math.abs(P.pos.z-g.z)<1.8&&Math.abs(P.pos.y-g.y)<3){g.taken=T;g.g.visible=false;const pts=Math.round(150*buffMult());addPoints(pts);showTrick('🎁 Present!',pts);sfx.chime(2)}}}
@@ -1756,7 +1756,7 @@ function nearestInteract(){
   const sp=P.vel.length();
   for(const L of LIFTS)if(Math.hypot(P.pos.x-L.load.x,P.pos.z-L.load.z)<7&&sp<9)return{label:'Ride the '+L.name+' · press G to wait for friends',act:()=>{if(P.mode==='walk'||RIDE_SLEIGH)setOnFoot(false,SAVE.sport);boardLift(L)}};
   if(Math.hypot(P.pos.x-LODGE.door.x,P.pos.z-LODGE.door.z)<4.5&&sp<8)return{label:"Go inside the Cocoa Lodge & Rudolph's Gear",act:()=>enterRoom('lodge')};
-  if(sp<4){const s=nearSeat(MSEATS);if(s)return{label:'Sit by the fire',act:()=>sitOn(s)}}
+  if(sp<4){const s=nearSeat(MSEATS);if(s)return{label:s.bench?'🪑 Sit on the bench':'Sit by the fire',act:()=>sitOn(s)}}
   for(const f of EXTRA_INTERACT){const r=f(sp);if(r)return r}
   return null}
 const EXTRA_INTERACT=[];
@@ -1766,7 +1766,7 @@ function switchScene(){sceneOf(P.loc).add(me.root)}
 function enterRoom(k){sfx.door();fadeTo(()=>{const R=ROOMS[k];P.loc=k;P.mode='walk';P.seat=null;P.lift=null;P.air=null;P.pos.copy(R.door);P.pos.z-=1;P.vel.set(0,0,0);P.yaw=Math.PI;camS.yaw=Math.PI;camS.yawOff=0;switchScene();
   refreshShopLabels();hint('Cocoa bar on the right · Rudolph\'s Gear shop through the arch on the left. Walk up to anything and press <span class="kbd">E</span>.',6);
   })}
-function exitRoom(){sfx.door();fadeTo(()=>{const B=ROOMS[P.loc].out;P.loc='mtn';P.mode='walk';P.seat=null;P.pos.copy(B.door);P.pos.z-=1.5;P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.yaw=Math.PI;camS.yaw=Math.PI;P.lastAlt=P.pos.y;switchScene()})}
+function exitRoom(){sfx.door();fadeTo(()=>{const B=ROOMS[P.loc].out;P.loc='mtn';P.mode='walk';P.seat=null;P.pos.copy(B.door);const ov=B.out||V3(0,0,-1);P.pos.addScaledVector(ov,1.5);P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.yaw=Math.atan2(ov.x,ov.z);camS.yaw=P.yaw;P.lastAlt=P.pos.y;switchScene()})}
 const enterLodge=()=>enterRoom('lodge'),exitLodge=exitRoom;
 
 /* ================= Audio ================= */
@@ -1876,6 +1876,7 @@ function openChat(){if(state!=='play')return;$('chatbox').classList.remove('hidd
 let chatUnlock=false;
 function closeChat(){$('chatbox').classList.add('hidden');$('chatin').value='';$('chatin').blur();$('chatlog').classList.add('fade')}
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){const t=$('chatin').value.replace(/\s+/g,' ').trim().slice(0,120);
+  if(/^\/snowman$/i.test(t)){if(typeof CLOUD!=='undefined'&&CLOUD.user&&!CLOUD.admin){chatSys('🧪 /snowman only works for guests and arcade admins');closeChat();return}const need=GS_GOAL-gsTotal();if(need<=0)chatSys('☃ The giant snowman is already finished');else{const rows=[];for(let left=need;left>0;left-=60)rows.push([myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),Math.min(60,left),Date.now()]);gsMerge(GS.c,rows);world.send({k:'gs',c:GS.c,r:rows});chatSys('🧪 Giant snowman finished instantly')}closeChat();return}
   {const mm=t.match(/^\/points\s+(\d{1,8})$/i);if(mm){if(typeof CLOUD!=='undefined'&&CLOUD.user&&!CLOUD.admin){chatSys('🧪 /points only works for guests and arcade admins');closeChat();return}const n=Math.min(+mm[1],typeof CLOUD!=='undefined'&&CLOUD.user?1000000:1e8);SAVE.points+=n;saveT=1;save();chatSys('🧪 Test command: +'+fmt(n)+' pts');closeChat();return}}
   if(t&&performance.now()-lastChat>900){lastChat=performance.now();say(me,t);chatLine(SAVE.name,t);world.send({k:'c',t})}closeChat()}else if(e.key==='Escape')closeChat()});
 $('chatlog').classList.add('fade');
@@ -1987,7 +1988,7 @@ function updateRoll(dt){if(!P.roll)return;if(state!=='play'||P.loc!=='mtn'||P.mo
   if(Math.hypot(myBall.position.x-DROP.x,myBall.position.z-DROP.z)<DROP.r){depositBall();return}
   if(sp>.2){const d=sp*dt;if(!P.skate&&!onIce(myBall.position.x,myBall.position.z))R.r=Math.min(1.15,R.r+d*.007/R.r);_ax.set(Math.cos(P.yaw),0,-Math.sin(P.yaw));myBall.rotateOnWorldAxis(_ax,d/R.r);ballTrail('me',myBall.position,P.yaw,R.r)}}
 // a rolled snowball scrapes up the fresh snow and leaves a packed, darker track behind it that slowly fills back in
-const BT_N=700,BT_LIFE=75,BT={x:new Float32Array(BT_N),z:new Float32Array(BT_N),y:new Float32Array(BT_N),yaw:new Float32Array(BT_N),w:new Float32Array(BT_N),t:new Float32Array(BT_N).fill(-1e9)},BT_LAST=new Map();let btI=0,btT=0;
+const BT_N=700,BT_LIFE=6.5,BT={x:new Float32Array(BT_N),z:new Float32Array(BT_N),y:new Float32Array(BT_N),yaw:new Float32Array(BT_N),w:new Float32Array(BT_N),t:new Float32Array(BT_N).fill(-1e9)},BT_LAST=new Map();let btI=0,btT=0;
 const btMesh=(()=>{const tex=canvasTex(64,128,(g,W,H)=>{const gr=g.createLinearGradient(0,0,W,0);gr.addColorStop(0,'rgba(120,140,175,0)');gr.addColorStop(.18,'rgba(120,140,175,.4)');gr.addColorStop(.5,'rgba(110,130,168,.42)');gr.addColorStop(.82,'rgba(120,140,175,.4)');gr.addColorStop(1,'rgba(120,140,175,0)');g.fillStyle=gr;g.fillRect(0,0,W,H);
     for(let i=0;i<40;i++){g.fillStyle=`rgba(${Math.random()<.5?'95,115,150':'235,242,255'},${.15+Math.random()*.25})`;g.fillRect(8+Math.random()*(W-16),0,1+Math.random()*2,H)}});
   const geo=new THREE.PlaneGeometry(1,1);geo.rotateX(-Math.PI/2);const m=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:.95,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),BT_N);
@@ -1996,7 +1997,7 @@ function ballTrail(key,bp,yaw,r){if(onIce(bp.x,bp.z))return;const L=BT_LAST.get(
   const i=btI;btI=(btI+1)%BT_N;BT.x[i]=bp.x;BT.z[i]=bp.z;BT.y[i]=groundH(bp.x,bp.z)+.035;BT.yaw[i]=yaw;BT.w[i]=Math.max(.35,r*1.55);BT.t[i]=T;btSet(i,1)}
 const _btm=new THREE.Matrix4(),_btq=new THREE.Quaternion();
 function btSet(i,k){_btq.setFromAxisAngle(UP,BT.yaw[i]);_btm.compose(_v1.set(BT.x[i],BT.y[i],BT.z[i]),_btq,_v2.set(BT.w[i]*k,1,.95*Math.max(k,.001)));btMesh.setMatrixAt(i,_btm);btMesh.instanceMatrix.needsUpdate=true}
-function updateBallTrail(dt){btT-=dt;if(btT>0)return;btT=.5;for(let i=0;i<BT_N;i++){const a=T-BT.t[i];if(a>BT_LIFE-12&&a<BT_LIFE+1)btSet(i,Math.max(0,(BT_LIFE-a)/12))}}
+function updateBallTrail(dt){btT-=dt;if(btT>0)return;btT=.1;for(let i=0;i<BT_N;i++){const a=T-BT.t[i];if(a>BT_LIFE-2.5&&a<BT_LIFE+1)btSet(i,Math.max(0,(BT_LIFE-a)/2.5))}}
 const _v1=V3(),_v2=V3();
 // one giant shared snowman: every snowball rolled into the circle adds to it
 const GS_GOAL=300,GS_STAY=15*60000,GPARTS=snowmanParts(3.6,21,'top',0xd62839),GSR=GPARTS.R;let GS={c:0,list:[]},gsSeq=0,gsShown=0,gsKey='';
@@ -2035,13 +2036,15 @@ function mergeLB(rows){let ch=false;for(const r of rows){if(!Array.isArray(r))co
 drawLeaderboard(LB);
 let race=null,prevZ=null;
 function updateRace(dt){const riding=state==='play'&&P.loc==='mtn'&&['ride','air','grind','crash'].includes(P.mode);const z=P.pos.z,pz=prevZ;prevZ=riding?z:null;const bar=$('racebar');
-  if(!riding||pz===null){if(race&&!riding){race=null;bar.classList.add('hidden')}return}
-  if(!race){if(pz<RACE.startZ&&z>=RACE.startZ&&Math.abs(P.pos.x-mainX(RACE.startZ))<16){race={t0:T,next:0,miss:0};toast('🏁 Jingle Race started! Ride through all 8 gates.')}else return}
-  while(race.next<RACE.gates.length&&z>=RACE.gates[race.next].z){const G=RACE.gates[race.next];if(Math.abs(P.pos.x-G.x)>3.8){race.miss++;toast('Missed gate '+(race.next+1)+'! +3 seconds')}race.next++}
+  if(!riding||pz===null){if(race&&!riding){race=null;loopsReset();bar.classList.add('hidden')}return}
+  if(!race){if(pz<RACE.startZ&&z>=RACE.startZ&&Math.abs(P.pos.x-mainX(RACE.startZ))<16){race={t0:T,next:0,miss:0};toast('🏁 Jingle Race started! Ride through all '+RACE.gates.length+' glowing loops.')}else return}
+  while(race.next<RACE.gates.length&&z>=RACE.gates[race.next].z){const G=RACE.gates[race.next];if(Math.abs(P.pos.x-G.x)>RACE.R+.5){race.miss++;toast('Missed loop '+(race.next+1)+'! +3 seconds')}race.next++}
+  RACE.gates.forEach((G,i)=>{if(!G.m)return;const on=i===race.next,s=on?1.12+Math.sin(T*7)*.08:1;G.m.scale.setScalar(s);G.m.children[0].material.color.setHex(i<race.next?0x7dff9a:0xffd84a)});
   const el=T-race.t0;
-  if(pz<RACE.finZ&&z>=RACE.finZ){const time=el+race.miss*3;race=null;bar.classList.add('hidden');finishRace(time);return}
-  if(z<RACE.startZ-5||el>180||Math.abs(P.pos.x-mainX(z))>55){race=null;bar.classList.add('hidden');toast('Race cancelled. Start again under the START banner.');return}
-  bar.classList.remove('hidden');bar.textContent=`⏱ ${el.toFixed(1)}s · gate ${race.next}/${RACE.gates.length}`+(race.miss?` · +${race.miss*3}s penalty`:'')}
+  if(pz<RACE.finZ&&z>=RACE.finZ){const time=el+race.miss*3;race=null;loopsReset();bar.classList.add('hidden');finishRace(time);return}
+  if(z<RACE.startZ-5||el>240||Math.abs(P.pos.x-mainX(z))>55){race=null;loopsReset();bar.classList.add('hidden');toast('Race cancelled. Start again under the START banner.');return}
+  bar.classList.remove('hidden');bar.textContent=`⏱ ${el.toFixed(1)}s · loop ${race.next}/${RACE.gates.length}`+(race.miss?` · +${race.miss*3}s penalty`:'')}
+function loopsReset(){for(const G of RACE.gates)if(G.m){G.m.scale.setScalar(1);G.m.children[0].material.color.setHex(0xffd84a)}}
 function finishRace(time){const pb=!SAVE.raceBest||time<SAVE.raceBest;if(pb)SAVE.raceBest=rnd2(time);addPoints(100+(pb?150:0));save();
   toast(`🏁 Finished in ${time.toFixed(2)}s!`+(pb?' New personal best! +250 points':' +100 points'));const row=[SAVE.name,rnd2(time),Date.now()];mergeLB([row]);world.send({k:'lb',r:row});
   const rank=LB.findIndex(r=>r[0]===SAVE.name)+1;if(rank&&rank<=10)chatSys(`🏁 You're #${rank} on the Jingle Race leaderboard`)}
@@ -2145,7 +2148,7 @@ const fdLastFrom=new Map();
   if(m.k==='lg'){if(P.lift&&P.lift.hold&&LIFTS.indexOf(P.lift.L)===num(m.L)&&Array.isArray(m.ids))liftApplyGo(num(m.at),m.ids.filter(x=>typeof x==='string').slice(0,16));return}
   if(m.k==='s'){const o=others.get(m.i);if(o){o.lh=Number.isInteger(m.lh)?m.lh:-1;o.sl=ITEM[m.sl]&&ITEM[m.sl].cat==='sleigh'?m.sl:null;o.tr=ITEM[m.tr]&&ITEM[m.tr].cat==='trail'?m.tr:null;o.pt=ITEM[m.pe]&&ITEM[m.pe].cat==='pet'?m.pe:null;o.rb=clamp(num(m.rb),0,1.2)}}}}
 // ---------- circular village minimap
-const MM_SPOTS=[['🏠','Lodge & Gear',LODGE.x,LODGE.z-4],['⛸','Pond',POND.x,POND.z],['☃','Snowman Yard',GIANT.x,GIANT.z],['🎆','Workshop',WORKSHOP.x,WORKSHOP.z],['🏁','Race board',LBPOS.x,LBPOS.z],['🎄','Great Tree',XTREE.x,XTREE.z],...LIFTS.map(L=>['🚡',L.name,L.x+2.5,L.zb])];
+const MM_SPOTS=[['🏠','Lodge & Gear',LODGE.x,LODGE.z],['⛸','Pond',POND.x,POND.z],['☃','Snowman Yard',GIANT.x,GIANT.z],['🎆','Workshop',WORKSHOP.x,WORKSHOP.z],['🏁','Race board',LBPOS.x,LBPOS.z],['🎄','Great Tree',XTREE.x,XTREE.z],...LIFTS.map(L=>['🚡',L.name,L.x+2.5,L.zb])];
 let mmT=0;const _mf=V3();
 function drawMinimap(dt){const cv=$('minimap');const on=state==='play'&&P.loc==='mtn'&&P.pos.z>VILLAGE_Z-30&&P.mode!=='lift';cv.classList.toggle('hidden',!on);if(!on)return;mmT-=dt;if(mmT>0)return;mmT=1/15;
   const g=cv.getContext('2d'),W=cv.width,C=W/2,R=C-4,SC=R/110;camera.getWorldDirection(_mf);let fx=_mf.x,fz=_mf.z;const fl=Math.hypot(fx,fz)||1;fx/=fl;fz/=fl;const rx=-fz,rz=fx;
@@ -2153,7 +2156,7 @@ function drawMinimap(dt){const cv=$('minimap');const on=state==='play'&&P.loc===
   g.clearRect(0,0,W,W);g.save();g.beginPath();g.arc(C,C,R,0,7);g.clip();const bg=g.createRadialGradient(C,C,10,C,C,R);bg.addColorStop(0,'#eef4ff');bg.addColorStop(1,'#b9c8e6');g.fillStyle=bg;g.fillRect(0,0,W,W);
   // ski hill edge and lodge footprint
   g.fillStyle='rgba(120,140,190,.35)';g.beginPath();const e=[[-260,VILLAGE_Z],[260,VILLAGE_Z],[260,VILLAGE_Z-400],[-260,VILLAGE_Z-400]].map(([x,z])=>toS(x,z));e.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.fill();
-  g.fillStyle='#8a4a2a';g.beginPath();[[LODGE.x-LODGE.w/2,LODGE.z-LODGE.d/2],[LODGE.x+LODGE.w/2,LODGE.z-LODGE.d/2],[LODGE.x+LODGE.w/2,LODGE.z+LODGE.d/2],[LODGE.x-LODGE.w/2,LODGE.z+LODGE.d/2]].map(([x,z])=>toS(x,z)).forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.fill();
+  g.fillStyle='#8a4a2a';g.beginPath();[[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>toS(...lodgeW(a*LODGE.w/2,b*LODGE.d/2))).forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.fill();
   {const [px,py]=toS(POND.x,POND.z);g.fillStyle='#8fd3ff';g.beginPath();g.arc(px,py,POND.r*SC,0,7);g.fill()}
   for(const L of LIFTS){const [ax,ay]=toS(L.x+2.5,L.zb),[bx,by]=toS(L.x+2.5,L.zb-300);g.strokeStyle='rgba(60,60,80,.6)';g.lineWidth=3;g.setLineDash([6,5]);g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();g.setLineDash([])}
   g.textAlign='center';g.textBaseline='middle';
@@ -2307,7 +2310,7 @@ function stepLaunch(dt){const Lc=P.launch;Lc.t+=dt;
 
 // ---------- realistic candy decor in the empty village spots
 {const DE=[];const avoid=[[LODGE.x,LODGE.z,26],[PLAZA.x,PLAZA.z,14],[XTREE.x,XTREE.z,18],[POND.x,POND.z,POND.r+6],[YARD.x,YARD.z,YARD.r+2],[WORKSHOP.x,WORKSHOP.z,10],[LBPOS.x,LBPOS.z,8],[GACHA.x,GACHA.z,9],[LAUNCH.x,LAUNCH.z,10],[-30,1372,10],[-20,1400,5]];
- const ok=(x,z,r)=>{if(Math.abs(x)>238||z<1352||z>1494||onPath(x,z,r+.8))return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;for(const L of LIFTS)if(Math.abs(x-L.x-2.5)<9+r&&z>L.zb-60&&z<L.zb+14)return false;
+ const ok=(x,z,r)=>{if(Math.abs(x)>ropeX(z)-6||z<1352||z>1494||onPath(x,z,r+.8))return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;for(const L of LIFTS)if(Math.abs(x-L.x-2.5)<9+r&&z>L.zb-60&&z<L.zb+14)return false;
    if(COLLIDERS.some(c=>x>c.x0-r-1&&x<c.x1+r+1&&z>c.z0-r-1&&z<c.z1+r+1))return false;if(Math.abs(x-mainX(1340))<16&&z<1372)return false;for(const d of DE)if(Math.hypot(d.x-x,d.z-z)<d.r+r+2)return false;return true};
  let rs=77;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
  const put=(kind,r,n)=>{let k=0;for(let i=0;i<900&&k<n;i++){const x=-236+rnd()*472,z=1354+rnd()*140;if(ok(x,z,r)){DE.push({kind,x,z,r,ry:Math.atan2(-x,1420-z)+(rnd()-.5)*.6});k++}}};
@@ -2898,7 +2901,7 @@ $('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');i
   if(d.dtog){const id=d.dtog;if(!decoOwned(id))return;houseCfgSet(h=>{h.d=h.d.includes(id)?h.d.filter(x=>x!==id):[...h.d,id]});renderPanel();return}
   if(d.hout!==undefined){if(!moveOutArm){moveOutArm=1;renderPanel();return}moveOutArm=0;SAVE.house=null;save();hsT=0;refreshHouses();closePanel();toast('🏡 You moved out. Your decorations are saved for your next cottage.')}});
 function updateHouses(dt){houseT-=dt;if(houseT<=0){houseT=1;refreshHouses();const mh=myHouse(),k=MM_SPOTS.findIndex(s=>s[1]==='My cottage');if(k>=0)MM_SPOTS.splice(k,1);if(mh)MM_SPOTS.push(['🏠','My cottage',PLOTS[mh.p].x,PLOTS[mh.p].z])}
-  const cp=camera.position;for(const h of HOUSES){if(!h.g)continue;const near=Math.hypot(cp.x-h.x,cp.z-h.z)<170;h.g.visible=near||P.loc==='mtn';if(near)for(const f of h.g.userData.anim)f(T)}}
+  const cp=camera.position;for(const h of HOUSES){if(!h.g)continue;const near=Math.hypot(cp.x-h.x,cp.z-h.z)<170;h.g.visible=Math.hypot(cp.x-h.x,cp.z-h.z)<420;if(near)for(const f of h.g.userData.anim)f(T)}}
 {const b=netExtra;netExtra=()=>{const o=b();hsT-=1;if(hsT<=0){hsT=20;const h=myHouse();o.hs=h?h:0}return o}}
 {const base=world.onmsg;world.onmsg=m=>{base(m);if(m.k==='s'&&m.hs!==undefined){const o=others.get(m.i);if(o)o.hs=m.hs?cleanHS(m.hs):null}}}
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);updateHouses(dt);updateLabels()}}
@@ -3034,16 +3037,33 @@ startLaunch=function(){if(!SAVE.owned.includes('pass1')){if(SAVE.points>=10000)b
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);updateLaunchMap(dt);updateBonus()}}
 // ---------- floating labels for every hill, like the village attractions
 {const tops=[];const L0=LIFTS[0],L1=LIFTS[1];
- glowTitle('⛰ The Summit','North Pole Express top · every run starts here',L0.top.x+16,L0.top.z+10,{h:9,col:'#9fe0ff',w:12});
- glowTitle('🧝 Elf Quad Top','Mid-mountain · Jingle Jumps & the race hill',L1.top.x+14,L1.top.z+8,{h:8,col:'#7dff9a',w:11});
- glowTitle('🏁 Jingle Race Run','Competitive hill · race the gates to the village',mainX(RACE.startZ-45),RACE.startZ-45,{h:12,col:'#ffd54d',w:13});
- glowTitle('🏁 Jingle Race Run','Competitive hill · race finish',mainX(ZB-110)+26,ZB-110,{h:12,col:'#ffd54d',w:12});
- glowTitle("❄ Dasher's Drop",'Steep run · Superpipe halfway down',leftX(95),95,{h:10,col:'#ff8fd0',w:12});
- glowTitle("❄ Dasher's Drop",'Steep run · Superpipe',leftX(ZB-110),ZB-110,{h:10,col:'#ff8fd0',w:11});
- glowTitle("🦌 Prancer's Path",'Gentle cruiser · leads to Jingle Jumps',rightX(95),95,{h:10,col:'#ffb36b',w:12});
- glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z0-14,{h:11,col:'#c77dff',w:12});
- glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z1+30,{h:10,col:'#c77dff',w:11})}
+ glowTitle('⛰ The Summit','North Pole Express top · every run starts here',L0.top.x+16,L0.top.z+10,{near:110,h:9,col:'#9fe0ff',w:12});
+ glowTitle('🧝 Elf Quad Top','Mid-mountain · Jingle Jumps & the race hill',L1.top.x+14,L1.top.z+8,{near:110,h:8,col:'#7dff9a',w:11});
+ glowTitle('🏁 Jingle Race Run','Competitive hill · race the gates to the village',mainX(RACE.startZ-45),RACE.startZ-45,{near:110,h:12,col:'#ffd54d',w:13});
+ glowTitle('🏁 Jingle Race Run','Competitive hill · race finish',mainX(ZB-110)+26,ZB-110,{near:110,h:12,col:'#ffd54d',w:12});
+ glowTitle("❄ Dasher's Drop",'Steep run · Superpipe halfway down',leftX(95),95,{near:110,h:10,col:'#ff8fd0',w:12});
+ glowTitle("❄ Dasher's Drop",'Steep run · Superpipe',leftX(ZB-110),ZB-110,{near:110,h:10,col:'#ff8fd0',w:11});
+ glowTitle("🦌 Prancer's Path",'Gentle cruiser · leads to Jingle Jumps',rightX(95),95,{near:110,h:10,col:'#ffb36b',w:12});
+ glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z0-14,{near:110,h:11,col:'#c77dff',w:12});
+ glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z1+30,{near:110,h:10,col:'#c77dff',w:11})}
 Object.assign(window.__fx,{petMult,openLaunchMap,closeLaunchMap,showGachaCard,toggleInv,lm:()=>LM,updateBonus});
+// ---------- glowing lines at the summit that split the three runs
+{const segs=[[z=>(leftX(z)+mainX(z))/2,0x6fe0ff],[z=>(mainX(z)+rightX(z))/2,0xff8fd0]],z0=24,z1=112;
+ for(const [fx,col] of segs){for(const [w,op] of [[1.1,1],[5,.3]]){const pos=[],idx=[];let n=0;
+     for(let z=z0;z<=z1;z+=3){const x=fx(z),dx=(fx(z+1)-fx(z-1))/2,L=Math.hypot(dx,1),nx=1/L,nz=-dx/L;for(const s of [-1,1]){const px=x+nx*w/2*s,pz=z+nz*w/2*s;pos.push(px,groundH(px,pz)+.35,pz)}if(n)idx.push((n-1)*2,(n-1)*2+1,n*2,(n-1)*2+1,n*2+1,n*2);n++}
+     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);
+     const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,blending:THREE.NormalBlending,side:THREE.DoubleSide,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-4}));m.renderOrder=2;mtn.add(m)}
+   for(let z=z0;z<=z1;z+=8){const x=fx(z),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.12,.15,1.4,8),new THREE.MeshBasicMaterial({color:col,toneMapped:false}),x,y+.7,z,mtn);addBulb(x,y+1.5,z,col);addGlow(x,y+1.5,z,col)}}
+ buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0}
+// ---------- performance: don't draw small things that are far away (the whole village from the summit, run props from the village)
+const CULL=[];
+{const box=new THREE.Box3(),sp=new THREE.Sphere();mtn.updateMatrixWorld(true);
+ for(const o of mtn.children){if(o.isPoints||o.isLight||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c:sp.center.clone(),r:sp.radius,far:false})}}
+let cullT=0;
+function setFar(e,far){e.far=far;e.o.traverse(c=>{if(!c.isLight)c.layers.set(far?2:0)})}
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);cullT-=dt;if(cullT>0)return;cullT=.3;const cp=camera.position,lim=LM?1e9:state==='play'?560:1e9;
+  for(const e of CULL){const far=cp.distanceTo(e.c)-e.r>lim;if(far!==e.far)setFar(e,far)}}}
+Object.assign(window.__fx,{CULL,renderer});
 
 /* ================= Camera ================= */
 let curCrouch=0;
@@ -3071,7 +3091,7 @@ function updateCamera(dt){
   const yaw=camS.yaw+camS.yawOff,pitch=clamp(.3+camS.pitchOff,-.3,1.3);
   const dist=INDOOR()?4.6:freeCam()?6.6:(P.mode==='lift'?8.5:6.9+Math.min(3,P.vel.length()*.06));
   // smoothed look-at height so small terrain steps and hops don't jerk the view
-  const tyT=P.pos.y+(INDOOR()?1.5:freeCam()?2.15:(P.mode==='lift'?1.5:2.0));camS.ty=camS.ty==null||Math.abs(camS.ty-tyT)>6?tyT:camS.ty+(tyT-camS.ty)*(1-Math.exp(-10*dt));
+  const tyT=P.pos.y+(INDOOR()?1.5:freeCam()?2.15:(P.mode==='lift'?1.5:2.0));camS.ty=camS.ty==null||P.mode==="launch"||Math.abs(camS.ty-tyT)>6?tyT:camS.ty+(tyT-camS.ty)*(1-Math.exp(-10*dt));
   _ct.set(P.pos.x,camS.ty,P.pos.z);
   _cp.set(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(dist).add(_ct);
   if(P.loc==='mtn'){const gh=groundH(_cp.x,_cp.z)+.7;camS.gh=camS.gh==null||Math.abs(camS.gh-gh)>5?gh:camS.gh+(gh-camS.gh)*(1-Math.exp(-8*dt));if(_cp.y<camS.gh)_cp.y=camS.gh}
