@@ -2980,8 +2980,8 @@ const pctTxt=m=>'+'+Math.round(m*100-100)+'%';
 // ---------- top-right bonus label
 let bonusKey='';
 function updateBonus(){const el=$('bonus');if(!el)return;const eq=curEquip(),gm=RIDE_SLEIGH?1:(eq.st&&eq.st.pts||1),pm=petMult(),b=SAVE.buff,now=Date.now(),bm=b&&b.until>now?b.mult:1,tot=gm*pm*bm;
-  const rows=[];if(gm>1)rows.push(`<div class="br">${SAVE.sport==='board'?'🏂':'⛷️'} ${esc(eq.name)} <b>×${gm.toFixed(2).replace(/0$/,'')}</b></div>`);
-  if(pm>1){const it=ITEM[SAVE.eq.pet];rows.push(`<div class="br">${PET_ICON[it.id]||'🐾'} ${esc(it.name)} <b>${pctTxt(pm)}</b></div>`)}
+  const rows=[];if(gm>1)rows.push(`<div class="br">${SAVE.sport==='board'?'🏂':'⛷️'} Gear · ${esc(eq.name)} <b>×${gm.toFixed(2).replace(/0$/,'')}</b></div>`);
+  if(pm>1){const it=ITEM[SAVE.eq.pet];rows.push(`<div class="br">${PET_ICON[it.id]||'🐾'} Pet · ${esc(it.name)} <b>${pctTxt(pm)}</b></div>`)}
   if(bm>1){const s=Math.ceil((b.until-now)/1000);rows.push(`<div class="br">${FOODI[b.id]?.icon||'☕'} Toasty <b>×${bm.toFixed(2).replace(/0$/,'')}</b><span>${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span></div>`)}
   const html=rows.length?`<div class="bt">✨ Point bonus <b>×${tot.toFixed(2)}</b></div>${rows.join('')}`:`<div class="bt">✨ No point bonus yet</div><div class="none">Gear, pets and cocoa bar treats boost your points</div>`;
   if(html!==bonusKey){bonusKey=html;el.innerHTML=html}
