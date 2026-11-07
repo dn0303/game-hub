@@ -881,11 +881,9 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
 {ZONES.push({x:POND.x,z:POND.z,r:POND.r+4});const gy=groundH(POND.x,POND.z);
  const iceTex=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#bfe3f7';g.fillRect(0,0,W,H);g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;for(let i=0;i<70;i++){g.beginPath();const x=Math.random()*W,y=Math.random()*H,a=Math.random()*6.3,l=20+Math.random()*60;g.moveTo(x,y);g.quadraticCurveTo(x+Math.cos(a+.6)*l*.5,y+Math.sin(a+.6)*l*.5,x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}},[3,3]);
  const geo=new THREE.CircleGeometry(POND.r,120,0);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++){const x=pa.getX(i)+POND.x,z=pa.getZ(i)+POND.z;pa.setY(i,groundH(x,z)+.07)}geo.computeVertexNormals();
- const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x16304a,emissiveIntensity:.35}));ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
+ const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x0e2234,emissiveIntensity:.2}));ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
  const rimM=M({color:0xf8fbff,roughness:.8});for(let i=0;i<130;i++){const a=i/130*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+.4),z=POND.z+Math.sin(a)*(POND.r+.4);const s=mesh(new THREE.SphereGeometry(.7+((i*7)%3)*.15,10,8),rimM,x,groundH(x,z)-.2,z,mtn);s.scale.set(1.3,.45,1.3)}
- for(let i=0;i<20;i++){const a=i/20*Math.PI*2+.2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.07,.09,3,8),vpostM,x,y+1.5,z,mtn);addGlow(x,y+3.1,z,0xffd08a);addPool(x,z,5,0xffb060)}
- for(let i=0;i<200;i++){const a=i/200*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2);addBulb(x,groundH(x,z)+2.75-Math.abs(Math.sin(a*4))*.4,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
- addPool(POND.x,POND.z,POND.r*1.1,0x88c8ff);glowTitle('⛸ SNOWFLAKE POND','Skating · ice hockey · ice fishing',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
+ glowTitle('⛸ SNOWFLAKE POND','Skating · ice hockey · ice fishing',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
 }
 // ----- Snowman Yard
 {ZONES.push({x:YARD.x,z:YARD.z,r:YARD.r-4});
@@ -3059,7 +3057,7 @@ Object.assign(window.__fx,{petMult,openLaunchMap,closeLaunchMap,showGachaCard,to
 // ---------- performance: don't draw small things that are far away (the whole village from the summit, run props from the village)
 const CULL=[];
 {const box=new THREE.Box3(),sp=new THREE.Sphere();mtn.updateMatrixWorld(true);
- for(const o of mtn.children){if(o.isPoints||o.isLight||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c0:sp.center.clone(),p0:o.position.clone(),c:sp.center.clone(),r:sp.radius,far:false})}}
+ for(const o of mtn.children){if(o.isInstancedMesh||o.frustumCulled===false||o.isPoints||o.isLight||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c0:sp.center.clone(),p0:o.position.clone(),c:sp.center.clone(),r:sp.radius,far:false})}}
 let cullT=0;
 function setFar(e,far){e.far=far;e.o.traverse(c=>{if(!c.isLight)c.layers.set(far?2:0)})}
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);cullT-=dt;if(cullT>0)return;cullT=.3;const cp=camera.position,lim=LM?1e9:state==='play'?560:1e9;
