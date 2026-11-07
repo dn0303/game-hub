@@ -501,7 +501,7 @@ function textSprite(text,{font='600 44px Fredoka, sans-serif',fg='#fff',bg='rgba
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,transparent:true}));s.scale.set(w*scale,h*scale,1);s.renderOrder=5;return s}
 const shadeHex=(hex,k)=>{const c=new THREE.Color(hex);if(k>0)c.lerp(new THREE.Color(0xffffff),k);else c.multiplyScalar(1+k);return '#'+c.getHexString()};
 // fancy sign: gradient board, double gold border, holly in the corners, glowing text, snow on top, and a carved wooden frame
-function signPlane(lines,w,h,{bg='#7a3b1f',fg='#fff',border='#ffd27a',px=512,frame=true}={}){
+function signPlane(lines,w,h,{bg='#7a3b1f',fg='#fff',border='#ffd27a',px=512,frame=true,glow=0}={}){
   const ph=Math.round(px*h/w);const t=canvasTex(px,ph,(g,W,H)=>{const u=Math.min(W,H),rr=(x,y,ww,hh,r)=>{g.beginPath();g.roundRect(x,y,ww,hh,r)};
     const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,shadeHex(bg,.22));gr.addColorStop(.5,bg);gr.addColorStop(1,shadeHex(bg,-.35));g.fillStyle=gr;g.fillRect(0,0,W,H);
     g.globalAlpha=.07;for(let y=0;y<H;y+=4){g.fillStyle=(y/4)%2?'#000':'#fff';g.fillRect(0,y+Math.sin(y)*1.5,W,1.5)}g.globalAlpha=1;
@@ -513,10 +513,10 @@ function signPlane(lines,w,h,{bg='#7a3b1f',fg='#fff',border='#ffd27a',px=512,fra
     g.textAlign='center';g.textBaseline='middle';const lh=(H-lw*3)/(lines.length+.4);
     lines.forEach((l,i)=>{const [txt,sz,col]=Array.isArray(l)?l:[l,.55];let fs=Math.round(lh*sz);g.font=`700 ${fs}px Fredoka, sans-serif`;const mw=g.measureText(txt).width,maxW=W-lw*7;if(mw>maxW){fs=Math.floor(fs*maxW/mw);g.font=`700 ${fs}px Fredoka, sans-serif`}
       const y=lw*1.5+lh*(i+.7);g.shadowColor='rgba(0,0,0,.65)';g.shadowBlur=fs*.18;g.shadowOffsetY=fs*.06;g.fillStyle=col||fg;g.fillText(txt,W/2,y);
-      if(i===0&&lines.length>1){g.shadowColor=col||fg;g.shadowBlur=fs*.35;g.shadowOffsetY=0;g.globalAlpha=.45;g.fillText(txt,W/2,y);g.globalAlpha=1}g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0});
+      if(i===0&&lines.length>1){g.shadowColor=col||fg;g.shadowBlur=fs*(glow?.7:.35);g.shadowOffsetY=0;g.globalAlpha=glow?.9:.45;g.fillText(txt,W/2,y);if(glow){g.shadowBlur=fs*.3;g.fillText(txt,W/2,y)}g.globalAlpha=1}g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0});
     g.fillStyle='#f6faff';g.beginPath();g.moveTo(0,0);const n=Math.max(8,Math.round(W/40));for(let k=0;k<=n;k++){const x=k/n*W;g.lineTo(x,u*(.035+.03*Math.abs(Math.sin(k*1.7))))}g.lineTo(W,0);g.closePath();g.fill();
     for(let k=0;k<n/2;k++){const x=(k+.5)/(n/2)*W+Math.sin(k*3.1)*W/n*.5;g.beginPath();g.moveTo(x-u*.012,u*.04);g.lineTo(x+u*.012,u*.04);g.lineTo(x,u*(.08+.05*Math.abs(Math.sin(k*2.3))));g.closePath();g.fill()}});
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,roughness:.8}));const back=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:shadeHex(bg,-.3),roughness:.8}));back.rotation.y=Math.PI;back.position.z=-.01;m.add(back);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,roughness:.8,...(glow?{emissive:0xffffff,emissiveMap:t,emissiveIntensity:glow}:{})}));const back=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:shadeHex(bg,-.3),roughness:.8}));back.rotation.y=Math.PI;back.position.z=-.01;m.add(back);
   if(frame){const f=clamp(Math.min(w,h)*.07,.035,.2),d=.07,wm=signFrameM;for(const [fw,fh,x,y] of [[w+2*f,f,0,h/2+f/2],[w+2*f,f,0,-h/2-f/2],[f,h,-w/2-f/2,0],[f,h,w/2+f/2,0]])m.add(mesh(new THREE.BoxGeometry(fw,fh,d),wm,x,y,-.025));
     m.add(mesh(new THREE.BoxGeometry(w+2*f+.04,f*.8,d+.08),signSnowM,0,h/2+f*1.25,-.02))}
   return m}
@@ -739,14 +739,30 @@ const XLIGHTS=[];
  let rs=29;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
  const H=20.4,R0=7.9,prof=t=>R0*Math.pow(Math.max(0,1-t),1.05)*(1+.06*Math.sin(t*21+1))+.25;
  mesh(new THREE.CylinderGeometry(.55,.95,3.4,10),M({color:0x4a2e1a,roughness:.95}),0,1.5,0,g);
- {const parts=[[new THREE.ConeGeometry(R0*.55,H*.92,14),0x0a2516,mtx(0,H*.47+.5,0)]],shades=[0x123d26,0x16472c,0x0e331f,0x1b5032,0x0c2c1b,0x1f5a38],lv=Math.round(H*2.7);
-  for(let l=0;l<lv;l++){const t=l/lv,y=1.9+t*(H-2),R=prof(t),n=Math.max(6,Math.round(17*(1-t*.62)));
-    for(let k=0;k<n;k++){const a=k/n*Math.PI*2+l*1.71+rnd()*.5,len=R*(.74+rnd()*.38),droop=.26+t*.1+rnd()*.24,wid=Math.max(.22,len*.22);
-      const b=new THREE.ConeGeometry(wid,len,5,1);b.scale(.42,1,1);b.rotateZ(-Math.PI/2);b.translate(len/2,0,0);b.rotateZ(-droop);b.rotateY(-a);b.translate(0,y,0);parts.push([b,shades[(rnd()*6)|0],null]);
-      if(len>1.4)for(const s of [-1,1]){if(rnd()<.3)continue;const f=.4+rnd()*.35,l2=len*(.32+rnd()*.18),c=new THREE.ConeGeometry(l2*.28,l2,4,1);c.scale(.42,1,1);c.rotateZ(-Math.PI/2);c.translate(l2/2,0,0);c.rotateZ(-droop-.1-rnd()*.2);c.rotateY(-a+s*(.6+rnd()*.3));
-        c.translate(Math.cos(a)*len*f*Math.cos(droop),y-Math.sin(droop)*len*f,Math.sin(a)*len*f*Math.cos(droop));parts.push([c,shades[(rnd()*6)|0],null])}}}
-  const f=new THREE.Mesh(mergeColored(parts),M({vertexColors:true,roughness:.92}));f.castShadow=true;f.receiveShadow=true;g.add(f);
-  const sn=[];for(let i=0;i<150;i++){const t=rnd()*.9,y=2.1+t*(H-2.5),R=prof(t)*(.55+rnd()*.35),a=rnd()*6.28;const q=new THREE.SphereGeometry(.28+rnd()*.24,7,4);q.scale(1.6,.28,.9);sn.push([q,0xf2f7ff,mtx(Math.cos(a)*R,y-R*.22+.12,Math.sin(a)*R,-a)])}
+ // soft, layered fir boughs with a needle texture (no spiky cones)
+ {const needle=canvasTex(256,256,(g,W,H2)=>{g.fillStyle='#2f7444';g.fillRect(0,0,W,H2);const cols=['#3f8a52','#1f5232','#56a066','#184428','#6bb07a','#2e6a42'];
+     for(let i=0;i<2600;i++){const x=rnd()*W,y=rnd()*H2,a=Math.PI/2+(rnd()-.5)*1.3,l=6+rnd()*12;g.strokeStyle=cols[(rnd()*cols.length)|0];g.lineWidth=1+rnd()*1.4;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}
+     for(let i=0;i<260;i++){g.fillStyle='rgba(235,245,255,'+(.15+rnd()*.25)+')';g.fillRect(rnd()*W,rnd()*H2,2,1.5)}},[1,1]);
+  const foliM=new THREE.MeshStandardMaterial({map:needle,vertexColors:true,roughness:.9,side:THREE.DoubleSide,emissive:0x0b2212,emissiveIntensity:1});
+  const P_=[],N_=[],U_=[],C_=[],I_=[];const col=new THREE.Color();
+  const pushGeo=(geo,m4,hex,shade=1)=>{const g2=geo.index?geo.toNonIndexed():geo;g2.applyMatrix4(m4);const p2=g2.attributes.position,n2=g2.attributes.normal,u2=g2.attributes.uv;col.set(hex).multiplyScalar(shade);
+    for(let i=0;i<p2.count;i++){P_.push(p2.getX(i),p2.getY(i),p2.getZ(i));N_.push(n2.getX(i),n2.getY(i),n2.getZ(i));U_.push(u2?u2.getX(i)*2:0,u2?u2.getY(i)*2:0);C_.push(col.r,col.g,col.b)}};
+  // inner dark core so you never see through
+  pushGeo(new THREE.ConeGeometry(R0*.62,H*.9,16,1,true),mtx(0,H*.45+1.2,0),0x0b2416,.8);
+  // tiers: drooping skirts with scalloped edges
+  const TL=12;for(let l=0;l<TL;l++){const tb=l/TL*.94,tt=Math.min(.99,tb+2.3/TL),yb=1.9+tb*(H-2),yt=1.9+tt*(H-2),rb=prof(tb),rt=prof(tt)*.35,AS=72,RS=7,ph=rnd()*6,sc=7+((l*3)%4);
+    const geo=new THREE.BufferGeometry(),pos=[],uv=[],idx=[];
+    for(let r=0;r<=RS;r++){const u=r/RS;for(let k=0;k<=AS;k++){const a=k/AS*Math.PI*2,sca=.5+.5*Math.cos(a*sc+ph),rr=rt+(rb*(1+.06*sca)-rt)*u,y=yt+(yb-yt)*u-(.55+.35*sca)*u*u*(rb/R0)*1.6;pos.push(Math.cos(a)*rr,y,Math.sin(a)*rr);uv.push(k/AS*rb*1.3,u*2.2)}}
+    for(let r=0;r<RS;r++)for(let k=0;k<AS;k++){const i0=r*(AS+1)+k,i1=i0+1,i2=i0+AS+1,i3=i2+1;idx.push(i0,i2,i1,i1,i2,i3)}
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
+    pushGeo(geo,new THREE.Matrix4(),[0x5aa86c,0x4f9e63,0x63b074][l%3],.82+rnd()*.1);
+    // fluffy bough tufts along the tier's lower edge
+    const nt=Math.round(16+rb*5);for(let k=0;k<nt;k++){const a=k/nt*Math.PI*2+rnd()*.25,rr=rb*(.8+rnd()*.14),sz=(.42+rnd()*.3)*(.55+rb/R0*.6),y=yb-(.25+rnd()*.3)*(rb/R0)*1.6;
+      const q=new THREE.IcosahedronGeometry(1,1);const m4=new THREE.Matrix4().compose(V3(Math.cos(a)*rr,y,Math.sin(a)*rr),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,-a,-.35)),V3(sz*1.35,sz*.32,sz*.8));pushGeo(q,m4,[0x5aa86c,0x4c9a60,0x68b57a,0x46905a][(rnd()*4)|0])}}
+  const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.Float32BufferAttribute(P_,3));fg.setAttribute('normal',new THREE.Float32BufferAttribute(N_,3));fg.setAttribute('uv',new THREE.Float32BufferAttribute(U_,2));fg.setAttribute('color',new THREE.Float32BufferAttribute(C_,3));
+  const f=new THREE.Mesh(fg,foliM);f.castShadow=true;f.receiveShadow=true;g.add(f);
+  // soft snow resting on the tier edges
+  const sn=[];for(let l=0;l<12;l++){const tb=l/12*.94,yb=1.9+tb*(H-2),rb=prof(tb),n=Math.round(5+rb*1.6);for(let k=0;k<n;k++){if(rnd()<.35)continue;const a=rnd()*6.28,R=rb*(.62+rnd()*.25);const q=new THREE.SphereGeometry(.3+rnd()*.25,8,5);q.scale(1.7,.26,1);sn.push([q,0xf2f7ff,mtx(Math.cos(a)*R,yb+.05-(R/rb)*.5*(rb/R0)*1.2+.35,Math.sin(a)*R,-a)])}}
   g.add(new THREE.Mesh(mergeColored(sn),M({vertexColors:true,roughness:.8,emissive:0x0c1424})))}
  const onTree=(t,k=1)=>{const a=rnd()*Math.PI*2,R=prof(t)*k;return[Math.cos(a)*R,1.9+t*(H-2.4),Math.sin(a)*R]};
  // warm fairy lights scattered through the branches (no rainbow spiral)
@@ -862,9 +878,9 @@ for(let i=0;i<20;i++){const z=128+i*58;RACE.gates.push({z,x:mainX(z)+(i%2?5.5:-5
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
 // Roblox-style floating name tags over each attraction (no physical signboards)
 const FLOAT_LABELS=[];
-function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null,near=85,keepSub=false,gate=null}={}){const gy=y??groundH(x,z);if(!keepSub)sub=null;
+function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null,near=85,keepSub=false,gate=null,raw=false}={}){const gy=y??groundH(x,z);if(!keepSub)sub=null;
   const sp=txt.indexOf(' '),icon=sp>0&&/[^\x00-\x7F]/.test(txt.slice(0,sp))?txt.slice(0,sp):'',name=icon?txt.slice(sp+1):txt;
-  const title=name.toLowerCase().replace(/(^|[\s&·'-])([a-z])/g,(m,a,b)=>a+b.toUpperCase()).replace(/'S\b/g,"'s");
+  const title=raw?name:name.toLowerCase().replace(/(^|[\s&·'-])([a-z])/g,(m,a,b)=>a+b.toUpperCase()).replace(/'S\b/g,"'s");
   const W=1024,H=sub?280:190,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
   let fs=104;g.font=`800 ${fs}px Fredoka, sans-serif`;const tw=()=>g.measureText((icon?icon+' ':'')+title).width;while(tw()>W-60&&fs>40){fs-=4;g.font=`800 ${fs}px Fredoka, sans-serif`}
   const ty=sub?95:H/2;g.lineWidth=20;g.strokeStyle='rgba(8,12,28,.92)';g.strokeText((icon?icon+' ':'')+title,W/2,ty);g.shadowColor=col;g.shadowBlur=26;g.fillStyle='#ffffff';g.fillText((icon?icon+' ':'')+title,W/2,ty);g.shadowBlur=0;
@@ -2674,6 +2690,7 @@ const LANE_Z=1562,CW=8,CD=6.4,CFH=.55,CWH=3.1,COV=.5,CA=.56,CWT=CFH+CWH,CRH=CD/2
 const PLOTS=COURT_PLOTS;
 const DECO=[
  {id:'paint0',t:'paint',n:'Cranberry Red',p:0,c:0xa8322a,sh:0xf4efe4,d:'Classic barn-red siding.'},
+ {id:'paint7',t:'paint',n:'Holly Green',p:0,c:0x2f6b3a,sh:0xf4efe4,d:'Deep holly-green siding, white trim.'},
  {id:'paint1',t:'paint',n:'Vanilla Cream',p:2000,c:0xf1e2bf,sh:0x2f5a3a,d:'Soft cream with forest-green shutters.'},
  {id:'paint2',t:'paint',n:'Sage Green',p:3000,c:0x8fae8a,sh:0xf4efe4,d:'Calm sage siding, white trim.'},
  {id:'paint3',t:'paint',n:'Frosty Blue',p:3000,c:0x8db6d6,sh:0xf4efe4,d:'Icy blue like a winter sky.'},
@@ -2777,7 +2794,7 @@ function buildCottage(cfg,name,{thumb=false}={}){const g=new THREE.Group();const
   {const w=mesh(new THREE.PlaneGeometry(1.5,4.6),M({map:pathTex,roughness:.9}),0,.04,CD/2+5.05,g);w.rotation.x=-Math.PI/2;w.receiveShadow=true}
   {mesh(new THREE.BoxGeometry(.1,1.1,.1),woodM,3.3,.55,CD/2+6.6,g);const mb=mesh(new THREE.CylinderGeometry(.2,.2,.55,14,1,false,0,Math.PI),M({color:0x1f3a6a,metalness:.3,roughness:.4}),3.3,1.15,CD/2+6.6,g);mb.rotation.x=Math.PI/2;mb.rotation.z=Math.PI/2;
    mesh(new THREE.BoxGeometry(.4,.02,.55),M({color:0x1f3a6a,metalness:.3,roughness:.4}),3.3,1.15,CD/2+6.6,g);mesh(new THREE.BoxGeometry(.03,.18,.08),M({color:0xd62839}),3.52,1.3,CD/2+6.7,g)}
-  if(!thumb){const s=signPlane([[(name||'Someone')+"'s",.3,'#ffe9b0'],['Cottage',.42,'#fff']],2,.9,{bg:'#4a2a14',border:'#ffd27a'});s.position.set(-2.6,1.35,CD/2+6.6);g.add(s);for(const x of [-3.5,-1.7])mesh(new THREE.BoxGeometry(.1,1.4,.1),woodM,x,.7,CD/2+6.55,g)}
+  if(!thumb){if(name){const s=signPlane([[name,.78,'#ffe27a'],["'s Cottage",.34,'#fff']],2.4,1.15,{bg:'#4a2a14',border:'#ffd27a',glow:.55});s.position.set(-2.6,1.45,CD/2+6.6);g.add(s);for(const x of [-3.7,-1.5])mesh(new THREE.BoxGeometry(.1,1.4,.1),woodM,x,.7,CD/2+6.55,g)}}
   // warm light spilling onto the snow
   if(!thumb){const pool=new THREE.Mesh(new THREE.PlaneGeometry(14,10),new THREE.MeshBasicMaterial({map:glowTex,color:0xffa04a,transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthWrite:false}));pool.rotation.x=-Math.PI/2;pool.position.set(0,.06,CD/2+3);g.add(pool)}
   // string lights
@@ -2851,12 +2868,15 @@ function cfgSeed(g){return (g.userData.seed||3)}
 
 // ---------- plots, the lane and the "free plot" markers
 const HOUSES=PLOTS.map((p,i)=>({...p,i,g:null,key:'',owner:null,marker:null,col:null}));
-{glowTitle('🏡 HOLLY COURT','Free cottages · decorate them with points',COURT.x,COURT.z,{h:12.5,col:'#ffb36b',w:10});
+{glowTitle('🏡 HOLLY COURT','Cottages for sale · decorate them with points',COURT.x,COURT.z,{h:12.5,col:'#ffb36b',w:10});
  ZONES.push(...PLOTS.map(p=>({x:p.x,z:p.z,r:12})));
  for(const h of HOUSES){const m=new THREE.Group(),gy=groundH(h.x,h.z);m.position.set(h.x,gy,h.z);m.rotation.y=h.ry;mtn.add(m);h.marker=m;const rib=M({color:0xd62839,roughness:.6}),st=M({color:0x8a6040});
    for(const sx of [-1,1])for(const sz of [-1,1])mesh(new THREE.BoxGeometry(.08,.6,.08),st,sx*CW/2,.3,sz*CD/2,m);for(const sz of [-1,1])mesh(new THREE.BoxGeometry(CW,.03,.03),rib,0,.5,sz*CD/2,m);for(const sx of [-1,1])mesh(new THREE.BoxGeometry(.03,.03,CD),rib,sx*CW/2,.5,0,m);
    const onPlot=()=>{if(P.loc!=='mtn')return false;const dx=P.pos.x-h.x,dz=P.pos.z-h.z,c=Math.cos(h.ry),s=Math.sin(h.ry),lx=dx*c-dz*s,lz=dx*s+dz*c;return Math.abs(lx)<CW/2+.4&&Math.abs(lz)<CD/2+.4};h.onPlot=onPlot;
-   const lb=glowTitle('🏡 Free Cottage','Press E to move in · it\'s free!',h.x,h.z,{h:3.2,col:'#ffd54d',w:10,keepSub:true,gate:onPlot});mtn.remove(lb);m.add(lb);lb.position.set(0,lb.userData.y0=3.8,0)}}
+   m.visible=false;h.near=()=>P.loc==='mtn'&&Math.hypot(P.pos.x-h.x,P.pos.z-h.z)<14}}
+const COTTAGE_PRICE=5000,plotPaint=i=>i%2?'paint7':'paint0';
+function setHouseLabel(h,o){const k=o?'o:'+o.name:'sale';if(h.lbK===k)return;h.lbK=k;if(h.lb){mtn.remove(h.lb);const j=FLOAT_LABELS.indexOf(h.lb);if(j>=0)FLOAT_LABELS.splice(j,1);h.lb.material.map.dispose();h.lb.material.dispose()}
+  h.lb=o?glowTitle('🏡 '+o.name+"'s Cottage",null,h.x,h.z,{h:7.4,col:'#ffd54d',w:10,raw:true,gate:h.near}):glowTitle('🏡 Cottage for Sale',`Press E at the door · ${fmt(COTTAGE_PRICE)} pts`,h.x,h.z,{h:7.4,col:'#7dff9a',w:10,keepSub:true,gate:h.near})}
 buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
 const plotFront=(h,d=CD/2+3)=>{const [dx,dz]=plotDir(h);return[h.x+dx*d,h.z+dz*d]};
 function plotOwners(){const own=new Array(PLOTS.length).fill(null),cand=[];const mh=myHouse();if(mh)cand.push({id:myId,name:SAVE.name||'You',cfg:mh});
@@ -2865,18 +2885,18 @@ function plotOwners(){const own=new Array(PLOTS.length).fill(null),cand=[];const
 let houseT=0,hsT=0;
 function refreshHouses(){const own=plotOwners(),mh=myHouse();
   if(mh&&own[mh.p]&&own[mh.p].id!==myId){const free=own.findIndex((o,i)=>!o&&!HOUSES[i].lock);if(free>=0){SAVE.house.p=free;save();toast(`🏡 ${own[mh.p].name} already lives on that plot, so your cottage moved to another spot on Holly Court`);return refreshHouses()}}
-  HOUSES.forEach((h,i)=>{const o=own[i];h.owner=o;const key=o?o.id+'|'+o.name+'|'+JSON.stringify(o.cfg):'';if(key===h.key)return;h.key=key;
+  HOUSES.forEach((h,i)=>{const o=own[i];h.owner=o;const key=o?o.id+'|'+o.name+'|'+JSON.stringify(o.cfg):'free';setHouseLabel(h,o);if(key===h.key)return;h.key=key;
     if(h.g){mtn.remove(h.g);h.g.traverse(m=>{if(m.isMesh||m.isPoints){m.geometry!==bulbGeo&&m.geometry.dispose()}});h.g=null}
     if(h.col){const k=COLLIDERS.indexOf(h.col);if(k>=0)COLLIDERS.splice(k,1);h.col=null}
-    h.marker.visible=!o;if(!o)return;const g=buildCottage(o.cfg,o.name);g.position.set(h.x,groundH(h.x,h.z),h.z);g.rotation.y=h.ry;g.userData.seed=i;mtn.add(g);h.g=g;
+    const g=buildCottage(o?o.cfg:{p:i,w:plotPaint(i),r:'roof0',l:'',d:[]},o?o.name:'');g.position.set(h.x,groundH(h.x,h.z),h.z);g.rotation.y=h.ry;g.userData.seed=i;mtn.add(g);h.g=g;
     {const [dx,dz]=plotDir(h);h.col=oBox(h.x+dx,h.z+dz,CW/2+.3,CD/2+1.3,h.ry)}COLLIDERS.push(h.col)})}
-function claimPlot(i){const mh=myHouse();SAVE.house=mh?{...mh,p:i}:{p:i,c:Date.now(),w:'paint0',r:'roof0',l:'',d:[]};save();hsT=0;refreshHouses();
+function claimPlot(i){const mh=myHouse();if(!mh){if(SAVE.points<COTTAGE_PRICE){toast(`🏡 This cottage costs ${fmt(COTTAGE_PRICE)} pts. You have ${fmt(SAVE.points)}.`);return}SAVE.points-=COTTAGE_PRICE;saveT=1}SAVE.house=mh?{...mh,p:i}:{p:i,c:Date.now(),w:plotPaint(i),r:'roof0',l:'',d:[]};save();hsT=0;refreshHouses();
   bigPop('🏡',mh?'Moved to a new plot!':'Welcome home!',mh?'Your decorations came with you':'Walk up to your door and press E to decorate','#ffb36b')}
 function houseCfgSet(f){const h=myHouse();if(!h)return;f(h);SAVE.house=h;save();hsT=0;refreshHouses()}
 EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn'||P.mode!=='walk')return null;for(const h of HOUSES){const [fx,fz]=plotFront(h);const [gx,gz]=plotFront(h,CD/2+5.5);if(Math.hypot(P.pos.x-fx,P.pos.z-fz)>4.2&&Math.hypot(P.pos.x-gx,P.pos.z-gz)>3&&!(!h.owner&&h.onPlot&&h.onPlot()))continue;
     const o=h.owner,mh=myHouse();if(o&&o.id===myId)return{label:'🏡 Decorate your cottage',act:()=>openPanel('house')};
     if(o)return{label:`🏡 ${o.name}'s Cottage · ${o.cfg.d.length+(o.cfg.l?1:0)} decorations`,act:()=>toast(`🏡 ${o.name}'s cottage. Nice lights!`)};
-    return{label:mh?'🏡 Move your cottage to this plot (free, keeps decorations)':'🏡 Move into this cottage (free)',act:()=>claimPlot(h.i)}}return null});
+    return{label:mh?'🏡 Move your cottage to this plot (free, keeps decorations)':`🏡 Buy this cottage · ${fmt(COTTAGE_PRICE)} pts`,act:()=>claimPlot(h.i)}}return null});
 // ---------- decorating panel
 let houseTab='paint',moveOutArm=0;
 const HOUSE_FOCUS={wreath:[0,CFH+1.5,CD/2,.75],candles:[2.5,CFH+1.5,CD/2,.9],smoke:[1.5,CWT+1.5,0,3.6],gifts:[2.3,CFH+.4,CD/2+1.3,.85],garland:[0,CWT-.3,CD/2,3],roofsanta:[-.8,CWT+1.4,1.4,2.6]};
