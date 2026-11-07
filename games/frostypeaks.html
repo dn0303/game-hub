@@ -178,6 +178,38 @@ input{font-family:inherit}
 #pause .card{width:min(360px,100%);display:flex;flex-direction:column;gap:10px;text-align:center}
 #toast{position:fixed;left:50%;top:150px;transform:translateX(-50%);z-index:40;background:var(--panel);border:1px solid var(--line);padding:8px 16px;border-radius:12px;font-weight:600;transition:opacity .3s;pointer-events:none}
 @media (max-width:640px){#keys{display:none}#trickname{font-size:24px}}
+
+/* ---------- v10: bonus pill, inventory, gacha result card, launcher map ---------- */
+#buff{display:none!important}
+#bonus{border-radius:16px;padding:7px 13px;font-size:13px;line-height:1.45;text-align:right;min-width:150px}
+#bonus .bt{font-size:14px;color:#ffe9a8}#bonus .bt b{color:var(--gold);font-size:17px}#bonus .br{opacity:.92}#bonus .br b{color:#7dff9a}#bonus .br span{opacity:.7;margin-left:4px}#bonus .none{opacity:.7;font-size:12px}
+#invbtn{pointer-events:auto;cursor:pointer;color:#fff;font-family:inherit;font-size:14px;display:flex;align-items:center;gap:6px}#invbtn:hover{background:rgba(40,60,96,.95);border-color:var(--gold)}
+#invbtn kbd,.kb{background:rgba(255,255,255,.16);border-radius:5px;padding:0 6px;font-size:12px;font-family:inherit}
+.invsec{margin:14px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:1.5px;opacity:.75;display:flex;align-items:center;gap:8px}.invsec:after{content:'';flex:1;height:1px;background:var(--line)}
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.icard{background:rgba(255,255,255,.06);border:2px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:center}
+.icard.eq{border-color:var(--gold);box-shadow:0 0 14px #ffc93433}.icard .isw{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:24px;flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.icard .iin{flex:1;min-width:0}.icard h3{font-size:14px;margin:0 0 2px}.icard p{font-size:12px;opacity:.75;margin:0 0 6px}
+.iempty{opacity:.6;font-size:14px;padding:8px 2px}
+.gres{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:6px 4px 2px}
+.gres .gbadge{font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:4px 14px;border-radius:999px;border:2px solid currentColor}
+.gres .gpic{width:230px;height:230px;border-radius:24px;display:grid;place-items:center;position:relative;overflow:hidden;animation:gpop .6s cubic-bezier(.2,1.6,.4,1)}
+.gres .gpic:before{content:'';position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 10%,rgba(255,255,255,.18) 12%,transparent 14% 35%,rgba(255,255,255,.18) 37%,transparent 39% 60%,rgba(255,255,255,.18) 62%,transparent 64% 85%,rgba(255,255,255,.18) 87%,transparent 89%);animation:gspin 7s linear infinite}
+.gres .gpic img{position:relative;width:190px!important;height:190px!important}
+.gres h2{font-size:32px;margin:6px 0 0}.gres .gdesc{opacity:.8;font-size:15px;max-width:380px}
+.gres .gnew{font-size:18px;font-weight:700}.gres .gperk{font-size:14px;color:#7dff9a}
+@keyframes gpop{from{transform:scale(.3) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}@keyframes gspin{to{transform:rotate(360deg)}}
+body.lmap-on #hud,body.lmap-on #toast{opacity:0;transition:opacity .4s}
+#lmap{position:fixed;inset:0;z-index:30;cursor:default}
+#lmap .lmhead{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 18px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#lmap .lmhead h2{margin:0;font-size:22px}#lmap .lmhead div{font-size:14px;opacity:.85;margin-top:2px}#lmap .lmhead .btn{margin-top:8px}
+.lmlab{position:absolute;transform:translate(-50%,-100%);background:rgba(14,26,46,.9);border:2px solid #9fe0ff;border-radius:14px;color:#fff;font-family:inherit;padding:5px 10px 6px;cursor:pointer;text-align:center;min-width:110px;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 18px #9fe0ff55;transition:transform .15s,box-shadow .15s,border-color .15s;animation:lmin .4s both}
+.lmlab:after{content:'';position:absolute;left:50%;bottom:calc(-2px - var(--pl,14px));width:2px;height:var(--pl,14px);background:#9fe0ff;transform:translateX(-50%)}
+.lmlab:before{content:'';position:absolute;left:50%;bottom:calc(-8px - var(--pl,14px));width:10px;height:10px;border-radius:50%;background:#fff;transform:translateX(-50%);box-shadow:0 0 10px #9fe0ff,0 0 20px #9fe0ff}
+.lmlab:hover{transform:translate(-50%,-100%) scale(1.08);border-color:var(--gold);box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 26px #ffc93488}
+.lmlab b{display:inline;font-size:15px}.lmlab small{display:block;font-size:11px;opacity:.8;max-width:170px}.lmlab .li{font-size:17px;margin-right:4px}
+.lmlab.here{border-color:#ff8fd0;cursor:default;min-width:0;box-shadow:0 0 18px #ff8fd066}.lmlab.here:after{background:#ff8fd0}.lmlab.here:before{box-shadow:0 0 10px #ff8fd0}.lmlab.here:hover{transform:translate(-50%,-100%)}
+@keyframes lmin{from{opacity:0;margin-top:-14px}to{opacity:1;margin-top:0}}
 </style>
 </head>
 <body>
@@ -200,7 +232,7 @@ input{font-family:inherit}
 
 <div id="hud" class="hidden">
   <div id="locname"></div>
-  <div id="topright"><div class="pill" id="pts">0<small>pts</small></div><div class="pill hidden" id="buff"></div><div class="pill" id="online">Connecting…</div></div>
+  <div id="topright"><div class="pill" id="pts">0<small>pts</small></div><div class="pill hidden" id="buff"></div><div class="pill" id="bonus"></div><div class="pill" id="online">Connecting…</div><button class="pill" id="invbtn">🎒 Inventory <kbd>I</kbd></button></div>
   <div class="pill" id="musbtn" title="Music (N)">🎹 Music on</div>
   <div id="trick" style="opacity:0"><div id="trickname"></div><div id="trickpts"></div><div id="combo"></div></div>
   <div id="prompt" class="hidden"></div>
@@ -411,7 +443,7 @@ function groomMask(x,z){
   return g}
 function baseH(x,z){
   let h=prof(z);const ax=Math.abs(x);const vill=smooth(ZB-60,ZB,z);const ac=Math.min(ax,250);
-  h+=ac*ac*.00025*(1-.9*vill);
+  {const pw=1-smooth(42,56,Math.hypot(x-160,z-1466));h+=ac*ac*.00025*(1-.9*vill)*(1-pw)+160*160*.000025*pw}
   // open country beyond the resort: rolling forested hills instead of walls
   const out=Math.max(ax-238,0)+Math.max(z-1600,0)+Math.max(-70-z,0)*1.4;
   if(out>0){h+=out*.03*(ax>250?1:.5)*(1-vill*.3)+16*(1-Math.exp(-out/35))+70*(1-Math.exp(-out/260))+(10*Math.sin(x*.009+z*.004)*Math.cos(z*.007-x*.003)+5*Math.sin(x*.023+z*.019))*smooth(0,80,out)+(ax>250?(ax-250)*(ac*.0005*(1-.9*vill)):0)}
@@ -467,10 +499,28 @@ function textSprite(text,{font='600 44px Fredoka, sans-serif',fg='#fff',bg='rgba
   const c=document.createElement('canvas'),g=c.getContext('2d');g.font=font;const w=Math.ceil(g.measureText(text).width)+pad*2;c.width=w;c.height=h;
   g.font=font;g.fillStyle=bg;g.beginPath();g.roundRect(0,0,w,h,h/2.6);g.fill();g.fillStyle=fg;g.textBaseline='middle';g.textAlign='center';g.fillText(text,w/2,h/2+2);
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,transparent:true}));s.scale.set(w*scale,h*scale,1);s.renderOrder=5;return s}
-function signPlane(lines,w,h,{bg='#7a3b1f',fg='#fff',border='#ffd27a',px=512}={}){
-  const ph=Math.round(px*h/w);const t=canvasTex(px,ph,(g,W,H)=>{g.fillStyle=bg;g.fillRect(0,0,W,H);g.strokeStyle=border;g.lineWidth=W*.02;g.strokeRect(W*.02,W*.02,W-W*.04,H-W*.04);
-    g.fillStyle=fg;g.textAlign='center';g.textBaseline='middle';const lh=H/(lines.length+.4);lines.forEach((l,i)=>{const [txt,sz,col]=Array.isArray(l)?l:[l,.55];g.font=`700 ${Math.round(lh*sz)}px Fredoka, sans-serif`;g.fillStyle=col||fg;g.fillText(txt,W/2,lh*(i+.7))})});
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,roughness:.8}));const back=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:bg,roughness:.8}));back.rotation.y=Math.PI;back.position.z=-.01;m.add(back);return m}
+const shadeHex=(hex,k)=>{const c=new THREE.Color(hex);if(k>0)c.lerp(new THREE.Color(0xffffff),k);else c.multiplyScalar(1+k);return '#'+c.getHexString()};
+// fancy sign: gradient board, double gold border, holly in the corners, glowing text, snow on top, and a carved wooden frame
+function signPlane(lines,w,h,{bg='#7a3b1f',fg='#fff',border='#ffd27a',px=512,frame=true}={}){
+  const ph=Math.round(px*h/w);const t=canvasTex(px,ph,(g,W,H)=>{const u=Math.min(W,H),rr=(x,y,ww,hh,r)=>{g.beginPath();g.roundRect(x,y,ww,hh,r)};
+    const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,shadeHex(bg,.22));gr.addColorStop(.5,bg);gr.addColorStop(1,shadeHex(bg,-.35));g.fillStyle=gr;g.fillRect(0,0,W,H);
+    g.globalAlpha=.07;for(let y=0;y<H;y+=4){g.fillStyle=(y/4)%2?'#000':'#fff';g.fillRect(0,y+Math.sin(y)*1.5,W,1.5)}g.globalAlpha=1;
+    const vg=g.createRadialGradient(W/2,H*.45,u*.15,W/2,H/2,Math.max(W,H)*.65);vg.addColorStop(0,'rgba(255,240,200,.12)');vg.addColorStop(1,'rgba(0,0,0,.38)');g.fillStyle=vg;g.fillRect(0,0,W,H);
+    const lw=Math.max(3,u*.045);g.strokeStyle=border;g.lineWidth=lw;rr(lw,lw,W-lw*2,H-lw*2,u*.09);g.stroke();g.lineWidth=Math.max(1.5,lw*.28);g.globalAlpha=.75;rr(lw*2.3,lw*2.3,W-lw*4.6,H-lw*4.6,u*.06);g.stroke();g.globalAlpha=1;
+    if(u>=70){const hs=u*.13;for(const [cx,cy,sx,sy] of [[lw*2.6,lw*2.6,1,1],[W-lw*2.6,lw*2.6,-1,1],[lw*2.6,H-lw*2.6,1,-1],[W-lw*2.6,H-lw*2.6,-1,-1]]){
+      for(const a of [.25,1.3]){g.save();g.translate(cx,cy);g.scale(sx,sy);g.rotate(a);g.fillStyle='#2f8a46';g.beginPath();g.ellipse(hs*.55,0,hs*.55,hs*.22,0,0,7);g.fill();g.strokeStyle='#1d5a2c';g.lineWidth=1.5;g.beginPath();g.moveTo(0,0);g.lineTo(hs*1.05,0);g.stroke();g.restore()}
+      for(const [bx,by] of [[.12,.1],[.26,.05],[.06,.24]]){g.fillStyle='#e0202f';g.beginPath();g.arc(cx+sx*hs*bx*2,cy+sy*hs*by*2,hs*.13,0,7);g.fill();g.fillStyle='rgba(255,255,255,.6)';g.beginPath();g.arc(cx+sx*hs*bx*2-hs*.04,cy+sy*hs*by*2-hs*.04,hs*.04,0,7);g.fill()}}}
+    g.textAlign='center';g.textBaseline='middle';const lh=(H-lw*3)/(lines.length+.4);
+    lines.forEach((l,i)=>{const [txt,sz,col]=Array.isArray(l)?l:[l,.55];let fs=Math.round(lh*sz);g.font=`700 ${fs}px Fredoka, sans-serif`;const mw=g.measureText(txt).width,maxW=W-lw*7;if(mw>maxW){fs=Math.floor(fs*maxW/mw);g.font=`700 ${fs}px Fredoka, sans-serif`}
+      const y=lw*1.5+lh*(i+.7);g.shadowColor='rgba(0,0,0,.65)';g.shadowBlur=fs*.18;g.shadowOffsetY=fs*.06;g.fillStyle=col||fg;g.fillText(txt,W/2,y);
+      if(i===0&&lines.length>1){g.shadowColor=col||fg;g.shadowBlur=fs*.35;g.shadowOffsetY=0;g.globalAlpha=.45;g.fillText(txt,W/2,y);g.globalAlpha=1}g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0});
+    g.fillStyle='#f6faff';g.beginPath();g.moveTo(0,0);const n=Math.max(8,Math.round(W/40));for(let k=0;k<=n;k++){const x=k/n*W;g.lineTo(x,u*(.035+.03*Math.abs(Math.sin(k*1.7))))}g.lineTo(W,0);g.closePath();g.fill();
+    for(let k=0;k<n/2;k++){const x=(k+.5)/(n/2)*W+Math.sin(k*3.1)*W/n*.5;g.beginPath();g.moveTo(x-u*.012,u*.04);g.lineTo(x+u*.012,u*.04);g.lineTo(x,u*(.08+.05*Math.abs(Math.sin(k*2.3))));g.closePath();g.fill()}});
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,roughness:.8}));const back=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:shadeHex(bg,-.3),roughness:.8}));back.rotation.y=Math.PI;back.position.z=-.01;m.add(back);
+  if(frame){const f=clamp(Math.min(w,h)*.07,.035,.2),d=.07,wm=signFrameM;for(const [fw,fh,x,y] of [[w+2*f,f,0,h/2+f/2],[w+2*f,f,0,-h/2-f/2],[f,h,-w/2-f/2,0],[f,h,w/2+f/2,0]])m.add(mesh(new THREE.BoxGeometry(fw,fh,d),wm,x,y,-.025));
+    m.add(mesh(new THREE.BoxGeometry(w+2*f+.04,f*.8,d+.08),signSnowM,0,h/2+f*1.25,-.02))}
+  return m}
+const signFrameM=new THREE.MeshStandardMaterial({color:0x4a2c16,roughness:.7}),signSnowM=new THREE.MeshStandardMaterial({color:0xf6faff,roughness:.85});
 const stripeTex=(a,b,n=6)=>canvasTex(64,64,(g,W,H)=>{g.fillStyle=a;g.fillRect(0,0,W,H);g.fillStyle=b;for(let i=-n;i<n*2;i++){g.beginPath();g.moveTo(i*W/n,0);g.lineTo(i*W/n+W/n/2,0);g.lineTo(i*W/n+W/n/2-W,H);g.lineTo(i*W/n-W,H);g.fill()}});
 const caneTex=stripeTex('#ffffff','#d6202f',4);caneTex.wrapS=caneTex.wrapT=THREE.RepeatWrapping;
 const mkSweater=(bg,band,m1,m2)=>canvasTex(128,128,(g,W,H)=>{g.fillStyle=bg;g.fillRect(0,0,W,H);g.fillStyle=band;g.fillRect(0,20,W,14);g.fillRect(0,94,W,14);g.fillStyle='#fff';
@@ -560,7 +610,7 @@ for(let x=-300;x<=300;x+=7.5)for(let z=70;z<=ZB+10;z+=7.5){
   const dens=ax>240?.45:.62+.25*Math.sin(tx*.02+tz*.013);if(srand()>dens)continue;if(clearOfTrees(tx,tz))continue;
   const s=.75+srand()*.75;TREES.push({x:tx,z:tz,s,y:groundH(tx,tz)})}
 // decorative trees in village / summit edges
-for(let i=0;i<70;i++){const a=srand()*Math.PI*2;const x=(srand()<.5?-1:1)*(200+srand()*40),z=ZB+20+srand()*150;TREES.push({x,z,s:.8+srand()*.6,y:groundH(x,z)})}
+for(let i=0;i<70;i++){const a=srand()*Math.PI*2;const x=(srand()<.5?-1:1)*(200+srand()*40),z=ZB+20+srand()*150,sc=.8+srand()*.6;if(Math.hypot(x-160,z-1466)>52)TREES.push({x,z,s:sc,y:groundH(x,z)})}
 for(const t of TREES){const k=Math.floor(t.x/TCELL)+','+Math.floor(t.z/TCELL);if(!TGRID.has(k))TGRID.set(k,[]);TGRID.get(k).push(t)}
 {const im=new THREE.InstancedMesh(treeGeo,M({vertexColors:true,roughness:.9}),TREES.length);const m4=new THREE.Matrix4();
  TREES.forEach((t,i)=>{im.setMatrixAt(i,mtx(t.x,t.y-.2,t.z,srand()*6,t.s*(1.2+((i*7)%5)*.12)))});im.castShadow=true;im.receiveShadow=true;mtn.add(im)}
@@ -679,20 +729,47 @@ building(LODGE,"COCOA LODGE & RUDOLPH'S GEAR",0x7a1f1f);
  for(let i=0;i<=14;i++){const a=i/14*Math.PI;addBulb(LODGE.x+Math.cos(a)*2.6,gy+6.6+Math.sin(a)*2.6,fz-2.4,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
  for(const sx of [-1,1])for(let k=0;k<3;k++){const b=mesh(new THREE.BoxGeometry(.7-k*.15,.6-k*.12,.7-k*.15),M({color:[0xd62839,0x1f9d55,0xffc934][k]}),LODGE.x+sx*(4+k*.8),gy+.3,fz-1.4-k*.3,mtn);b.rotation.y=k}}
 LODGE.door=V3(LODGE.x,groundH(LODGE.x,LODGE.z-LODGE.d/2-2),LODGE.z-LODGE.d/2-2);
-// giant Christmas tree
+// giant Christmas tree: a full, natural fir hung with glowing stars, hearts, moons, snowflakes and gifts
 const XLIGHTS=[];
 {const gy=groundH(XTREE.x,XTREE.z),g=new THREE.Group(),XS=2.1;g.position.set(XTREE.x,gy,XTREE.z);g.scale.setScalar(XS);mtn.add(g);
- mesh(new THREE.CylinderGeometry(.7,.9,3,10),M({color:0x5a3a22}),0,1.5,0,g);
- {const f=new THREE.Mesh(firGeo(19.4,7.6,7,2.4,13),M({vertexColors:true,roughness:.92}));f.castShadow=true;f.position.y=.6;g.add(f);
-  const sn=[];let rs=11;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};for(let i=0;i<90;i++){const t=rnd()*.9,y=2.4+t*16.6,R=(1-t)*7+.4,a=rnd()*6.28;const gq=new THREE.SphereGeometry(.32+rnd()*.25,7,4);gq.scale(1.5,.3,.9);sn.push([gq,0xf2f7ff,mtx(Math.cos(a)*R*.82,y-R*.25,Math.sin(a)*R*.82,-a)])}
-  const sm=new THREE.Mesh(mergeColored(sn),M({vertexColors:true,roughness:.8,emissive:0x0c1424}));g.add(sm)}
- const star=mesh(new THREE.OctahedronGeometry(1.1,0),new THREE.MeshStandardMaterial({color:0xffe066,emissive:0xffcc00,emissiveIntensity:2}),0,20.6,0,g);star.scale.set(1,1.3,.4);g.userData.star=star;
- const cols=[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0,0xffffff];const n=260;const im=new THREE.InstancedMesh(new THREE.SphereGeometry(.2,8,6),new THREE.MeshBasicMaterial(),n);
- for(let i=0;i<n;i++){const t=i/n,y=2.5+t*16.5,r=(1-t)*6.6+.7,a=t*Math.PI*2*9;im.setMatrixAt(i,mtx(Math.cos(a)*r,y,Math.sin(a)*r));im.setColorAt(i,_c.set(cols[i%6]));addBulb(XTREE.x+Math.cos(a)*r*XS,gy+y*XS,XTREE.z+Math.sin(a)*r*XS,cols[i%6])}g.add(im);XLIGHTS.push(im);addGlow(XTREE.x,gy+20.6*XS,XTREE.z,0xffd040);addGlow(XTREE.x,gy+20.6*XS,XTREE.z,0xffb020);addPool(XTREE.x,XTREE.z,30,0xff9a50);
- const om=[0xd62839,0xffc934,0x2f7bff,0xc0c6d0];for(let i=0;i<40;i++){const t=srand()*.85,y=2.5+t*15,r=(1-t)*6.2+.6,a=srand()*6.28;mesh(new THREE.SphereGeometry(.38,10,8),M({color:om[i%4],metalness:.6,roughness:.25}),Math.cos(a)*r,y-.3,Math.sin(a)*r,g)}
- const pl=new THREE.PointLight(0xffd59a,150,75,1.5);pl.position.set(0,9,-8);g.add(pl);
- const gc=[0xd62839,0x1f9d55,0x2f7bff,0xffc934,0xa46bff];for(let i=0;i<12;i++){const a=i/12*Math.PI*2+.2,r=4.5+srand()*2,s=.6+srand()*.8;const b=mesh(new THREE.BoxGeometry(s,s*.8,s),M({color:gc[i%5]}),Math.cos(a)*r,s*.4,Math.sin(a)*r,g);b.rotation.y=srand()*3;b.castShadow=true;mesh(new THREE.BoxGeometry(s*1.02,s*.82,s*.18),M({color:0xffffff}),0,0,0,b)}
- COLLIDERS.push({x0:XTREE.x-13,x1:XTREE.x+13,z0:XTREE.z-13,z1:XTREE.z+13})}
+ let rs=29;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
+ const H=20.4,R0=7.9,prof=t=>R0*Math.pow(Math.max(0,1-t),1.05)*(1+.06*Math.sin(t*21+1))+.25;
+ mesh(new THREE.CylinderGeometry(.55,.95,3.4,10),M({color:0x4a2e1a,roughness:.95}),0,1.5,0,g);
+ {const parts=[[new THREE.ConeGeometry(R0*.55,H*.92,14),0x0a2516,mtx(0,H*.47+.5,0)]],shades=[0x123d26,0x16472c,0x0e331f,0x1b5032,0x0c2c1b,0x1f5a38],lv=Math.round(H*2.7);
+  for(let l=0;l<lv;l++){const t=l/lv,y=1.9+t*(H-2),R=prof(t),n=Math.max(6,Math.round(17*(1-t*.62)));
+    for(let k=0;k<n;k++){const a=k/n*Math.PI*2+l*1.71+rnd()*.5,len=R*(.74+rnd()*.38),droop=.26+t*.1+rnd()*.24,wid=Math.max(.22,len*.22);
+      const b=new THREE.ConeGeometry(wid,len,5,1);b.scale(.42,1,1);b.rotateZ(-Math.PI/2);b.translate(len/2,0,0);b.rotateZ(-droop);b.rotateY(-a);b.translate(0,y,0);parts.push([b,shades[(rnd()*6)|0],null]);
+      if(len>1.4)for(const s of [-1,1]){if(rnd()<.3)continue;const f=.4+rnd()*.35,l2=len*(.32+rnd()*.18),c=new THREE.ConeGeometry(l2*.28,l2,4,1);c.scale(.42,1,1);c.rotateZ(-Math.PI/2);c.translate(l2/2,0,0);c.rotateZ(-droop-.1-rnd()*.2);c.rotateY(-a+s*(.6+rnd()*.3));
+        c.translate(Math.cos(a)*len*f*Math.cos(droop),y-Math.sin(droop)*len*f,Math.sin(a)*len*f*Math.cos(droop));parts.push([c,shades[(rnd()*6)|0],null])}}}
+  const f=new THREE.Mesh(mergeColored(parts),M({vertexColors:true,roughness:.92}));f.castShadow=true;f.receiveShadow=true;g.add(f);
+  const sn=[];for(let i=0;i<150;i++){const t=rnd()*.9,y=2.1+t*(H-2.5),R=prof(t)*(.55+rnd()*.35),a=rnd()*6.28;const q=new THREE.SphereGeometry(.28+rnd()*.24,7,4);q.scale(1.6,.28,.9);sn.push([q,0xf2f7ff,mtx(Math.cos(a)*R,y-R*.22+.12,Math.sin(a)*R,-a)])}
+  g.add(new THREE.Mesh(mergeColored(sn),M({vertexColors:true,roughness:.8,emissive:0x0c1424})))}
+ const onTree=(t,k=1)=>{const a=rnd()*Math.PI*2,R=prof(t)*k;return[Math.cos(a)*R,1.9+t*(H-2.4),Math.sin(a)*R]};
+ // warm fairy lights scattered through the branches (no rainbow spiral)
+ {const n=420,im=new THREE.InstancedMesh(new THREE.SphereGeometry(.09,6,4),new THREE.MeshBasicMaterial({toneMapped:false}),n),wc=[0xffd27a,0xffe6b8,0xffbf55,0xfff2d6];
+  for(let i=0;i<n;i++){const t=Math.pow(rnd(),.85)*.93,[x,y,z]=onTree(t,.72+rnd()*.3);im.setMatrixAt(i,mtx(x,y-.25,z));im.setColorAt(i,_c.set(wc[i%4]));addBulb(XTREE.x+x*XS,gy+(y-.25)*XS,XTREE.z+z*XS,wc[i%4])}g.add(im);XLIGHTS.push(im)}
+ // glowing ornaments
+ {const draw=(kind)=>canvasTex(128,128,(c,W)=>{c.translate(64,64);const col={star:'#ffd75a',heart:'#ff5a7a',moon:'#fff0a8',flake:'#dff4ff',gift:'#ff4a4a',bell:'#ffcf4a'}[kind];c.shadowColor=col;c.shadowBlur=22;c.fillStyle=col;c.strokeStyle=col;c.lineCap='round';c.lineJoin='round';
+    if(kind==='star'){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?19:44;c.lineTo(Math.cos(a)*r,Math.sin(a)*r)}c.closePath();c.fill();c.fill()}
+    else if(kind==='heart'){c.beginPath();c.moveTo(0,40);c.bezierCurveTo(-58,0,-34,-46,0,-18);c.bezierCurveTo(34,-46,58,0,0,40);c.fill();c.fill()}
+    else if(kind==='moon'){c.beginPath();c.arc(0,0,40,0,7);c.fill();c.globalCompositeOperation='destination-out';c.shadowBlur=0;c.beginPath();c.arc(18,-12,34,0,7);c.fill();c.globalCompositeOperation='source-over'}
+    else if(kind==='flake'){c.lineWidth=7;for(let i=0;i<6;i++){c.save();c.rotate(i*Math.PI/3);c.beginPath();c.moveTo(0,0);c.lineTo(0,-44);c.moveTo(0,-26);c.lineTo(-12,-36);c.moveTo(0,-26);c.lineTo(12,-36);c.stroke();c.restore()}}
+    else if(kind==='gift'){c.fillRect(-34,-26,68,58);c.shadowBlur=0;c.fillStyle='#ffd75a';c.fillRect(-7,-26,14,58);c.fillRect(-34,-4,68,12);c.lineWidth=7;c.strokeStyle='#ffd75a';c.beginPath();c.ellipse(-14,-34,14,9,-.4,0,7);c.ellipse(14,-34,14,9,.4,0,7);c.stroke()}
+    else{c.beginPath();c.moveTo(-34,26);c.quadraticCurveTo(-30,-40,0,-40);c.quadraticCurveTo(30,-40,34,26);c.closePath();c.fill();c.beginPath();c.arc(0,32,9,0,7);c.fill()}
+    c.shadowBlur=0;c.globalAlpha=.55;c.fillStyle='#fff';c.beginPath();c.arc(-10,-12,9,0,7);c.fill()});
+  const kinds=['star','heart','moon','flake','gift','bell','star','heart'],mats={};for(const k of new Set(kinds))mats[k]=new THREE.SpriteMaterial({map:draw(k),transparent:true,depthWrite:false,toneMapped:false});
+  for(let i=0;i<96;i++){const k=kinds[i%kinds.length],t=.04+rnd()*.84,[x,y,z]=onTree(t,.9+rnd()*.12),s=new THREE.Sprite(mats[k]),sz=(k==='star'||k==='heart'?1.25:1.05)*(1.15-t*.45)*(.8+rnd()*.4);s.position.set(x,y,z);s.scale.set(sz,sz,1);g.add(s)}
+  const om=[0xb3122a,0xd4a63a,0x8a0f1f,0xe9d9b0];for(let i=0;i<46;i++){const t=.05+rnd()*.85,[x,y,z]=onTree(t,.86);mesh(new THREE.SphereGeometry(.36,12,10),M({color:om[i%4],metalness:.7,roughness:.22}),x,y-.4,z,g)}}
+ // the big star on top
+ {const sh=new THREE.Shape();for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,r=i%2?.62:1.55;i?sh.lineTo(Math.cos(a)*r,Math.sin(a)*r):sh.moveTo(Math.cos(a)*r,Math.sin(a)*r)}
+  const sg=new THREE.ExtrudeGeometry(sh,{depth:.3,bevelEnabled:true,bevelThickness:.12,bevelSize:.1,bevelSegments:2});sg.center();
+  const star=mesh(sg,new THREE.MeshStandardMaterial({color:0xffe27a,emissive:0xffc21a,emissiveIntensity:2.4,metalness:.4,roughness:.3}),0,H+.9,0,g);g.userData.star=star;
+  addGlow(XTREE.x,gy+(H+.9)*XS,XTREE.z,0xffd040);addGlow(XTREE.x,gy+(H+.9)*XS,XTREE.z,0xffb020);addGlow(XTREE.x,gy+(H+.9)*XS,XTREE.z,0xff9a20)}
+ addPool(XTREE.x,XTREE.z,30,0xff9a50);
+ const pl=new THREE.PointLight(0xffc98a,170,80,1.5);pl.position.set(0,8,-9);g.add(pl);
+ const gc=[0xd62839,0x1f9d55,0x2f7bff,0xffc934,0xa46bff,0xf6f0e6];for(let i=0;i<18;i++){const a=i/18*Math.PI*2+rnd()*.3,r=5.6+rnd()*2.6,s=.5+rnd()*.8;const b=mesh(new THREE.BoxGeometry(s,s*.8,s),M({color:gc[i%6],roughness:.5}),Math.cos(a)*r,s*.4,Math.sin(a)*r,g);b.rotation.y=rnd()*3;b.castShadow=true;mesh(new THREE.BoxGeometry(s*1.02,s*.82,s*.16),M({color:i%6===3?0xd62839:0xffd75a}),0,0,0,b);mesh(new THREE.BoxGeometry(s*.16,s*.82,s*1.02),M({color:i%6===3?0xd62839:0xffd75a}),0,0,0,b)}
+ {const m=mesh(new THREE.CylinderGeometry(6.4,6.9,.5,40),M({color:0xf6faff,roughness:.85}),0,-.12,0,g)}
+ COLLIDERS.push({x0:XTREE.x-13.5,x1:XTREE.x+13.5,z0:XTREE.z-13.5,z1:XTREE.z+13.5})}
 // snowmen & lamp posts
 const SNOWMEN=[[-190,1450],[-120,1452],[-150,1395],[88,1420]];
 SNOWMEN.forEach(([x,z],k)=>{const g=buildSnowman(.95,k*5+2,k%2?'beanie':'top',[0xd62839,0x1f9d55,0x2f7bff,0xffc934][k]);g.position.set(x,groundH(x,z),z);g.rotation.y=Math.PI+srand()-.5;mtn.add(g);COLLIDERS.push({x0:x-1.2,x1:x+1.2,z0:z-1.2,z1:z+1.2})});
@@ -774,10 +851,10 @@ function updateFireworks(dt){fwNext-=dt;if(fwNext<=0){fwNext=.7+Math.random()*1.
 
 /* ================= New village spots: pond, snowman yard, firework workshop, race + leaderboard ================= */
 const ZONES=[];
-const POND={x:58,z:1548,r:40},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
-const GIANT={x:-70,z:1400},DROP={x:-59,z:1385,r:3.2};
-const RACE={startZ:1000,finZ:1300,gates:[]};
-for(let i=0;i<8;i++){const z=1032+i*33;RACE.gates.push({z,x:mainX(z)+(i%2?7:-7)})}
+const POND={x:160,z:1466,r:40},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
+const GIANT={x:-70,z:1400},DROP={x:-70,z:1400,r:7.2};
+const RACE={startZ:420,finZ:1300,gates:[]};
+for(let i=0;i<16;i++){const z=470+i*52;RACE.gates.push({z,x:mainX(z)+(i%2?7:-7)})}
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
 // Roblox-style floating name tags over each attraction (no physical signboards)
 const FLOAT_LABELS=[];
@@ -810,7 +887,7 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
 {ZONES.push({x:YARD.x,z:YARD.z,r:YARD.r-4});
  const s=twoSided([['☃ SNOWMAN YARD',.5,'#ffffff'],['Press E to roll a snowball · walk to grow it',.27],['Roll it into the glowing circle to build the giant snowman',.27]],5.4,2,{bg:'#1f5a32',border:'#ffffff'});
  const sx=YARD.x-13,sz=YARD.z-4,sy=groundH(sx,sz);s.position.set(sx,sy+2.9,sz);s.rotation.y=.5;mtn.add(s);for(const d of [-2.4,2.4])mesh(new THREE.CylinderGeometry(.09,.09,3.9),vpostM,sx+d*Math.cos(.5),sy+1.95,sz-d*Math.sin(.5),mtn);addGlow(sx,sy+4.2,sz,0xffe0a0);addPool(sx,sz+2,6,0xffc080);
- {const y=groundH(DROP.x,DROP.z);for(const [a,b,o] of [[DROP.r-.35,DROP.r,.8],[DROP.r*.35,DROP.r*.5,.5]]){const ring=mesh(new THREE.RingGeometry(a,b,48),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:o}),DROP.x,y+.07,DROP.z,mtn);ring.rotation.x=-Math.PI/2}
+ {const y=groundH(DROP.x,DROP.z);for(const [a,b,o] of [[DROP.r-.35,DROP.r,.8],[4.6,5,.5]]){const ring=mesh(new THREE.RingGeometry(a,b,48),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:o}),DROP.x,y+.07,DROP.z,mtn);ring.rotation.x=-Math.PI/2}
   addPool(DROP.x,DROP.z,DROP.r*1.6,0x6fc8ff);for(let i=0;i<16;i++){const a=i/16*Math.PI*2;addBulb(DROP.x+Math.cos(a)*(DROP.r+.3),y+.25,DROP.z+Math.sin(a)*(DROP.r+.3),i%2?0x9fe0ff:0xffffff)}}
  addPool(GIANT.x,GIANT.z,9,0xffc890);glowTitle('☃ SNOWMAN YARD','Roll snowballs · build the giant',YARD.x-6,YARD.z-17,{h:7.5,ry:0,col:'#ffffff',w:11});COLLIDERS.push({x0:GIANT.x-4,x1:GIANT.x+4,z0:GIANT.z-4,z1:GIANT.z+4});
  for(let i=0;i<10;i++){const a=i/10*Math.PI*2+.3,x=YARD.x+Math.cos(a)*17,z=YARD.z+Math.sin(a)*17,y=groundH(x,z);const m=mesh(new THREE.SphereGeometry(.9,10,8),M({color:0xf8fbff}),x,y-.25,z,mtn);m.scale.set(1.4,.5,1.1)}}
@@ -845,7 +922,7 @@ function drawLeaderboard(rows){const g=LB_CV.getContext('2d'),W=512,H=640;g.fill
  RACE.gates.forEach((G,i)=>{const col=i%2?0x2f7bff:0xe2283a;for(const d of [-3.5,3.5]){const x=G.x+d,y=groundH(x,G.z);mesh(new THREE.CylinderGeometry(.08,.08,2.6,8),M({color:col}),x,y+1.3,G.z,mtn);
      const f=mesh(new THREE.PlaneGeometry(1,.7),new THREE.MeshStandardMaterial({color:col,side:THREE.DoubleSide,emissive:col,emissiveIntensity:.4}),x+(d<0?-.5:.5),y+2.2,G.z,mtn);addBulb(x,y+2.7,G.z,col)}addPool(G.x,G.z,4.5,col)})}
 // ----- village signpost
-{const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎆 Firework Workshop → plaza',.3],['⛸ Skating pond → behind the plaza',.3],['☃ Snowman Yard → by the leaderboard',.3],['🛍 Lodge & Gear Shop → straight ahead',.3]],4.2,3,{bg:'#3b1d0e'});
+{const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎁 Pet Gacha → right here',.3],['⛸ Pond, hockey & fishing → past the Great Tree',.27],['☃ Snowman Yard → west, by the race board',.27],['🏡 Holly Court cottages → behind the lodge',.27],['🏁 Jingle Race → Candy Cane Lane (middle hill)',.27]],4.6,3.4,{bg:'#3b1d0e'});
  s.position.set(x,y+2.7,z);s.rotation.y=Math.PI;mtn.add(s);mesh(new THREE.CylinderGeometry(.09,.09,2.6),vpostM,x,y+1.3,z,mtn);COLLIDERS.push({x0:x-.3,x1:x+.3,z0:z-.3,z1:z+.3})}
 
 // ----- glowing titles over the main places
@@ -859,51 +936,134 @@ for(const L of LIFTS){const x=L.x+2.5,z=L.zb+9;glowTitle('🚡 '+L.name.toUpperC
  const segs=[];const line=(a,b)=>{const ya=groundH(a[0],a[1])+1.25,yb=groundH(b[0],b[1])+1.25;for(let k=0;k<4;k++){const t0=k/4,t1=(k+1)/4,sag=t=>Math.sin(t*Math.PI)*.35;segs.push(a[0]+(b[0]-a[0])*t0,ya+(yb-ya)*t0-sag(t0),a[1]+(b[1]-a[1])*t0,a[0]+(b[0]-a[0])*t1,ya+(yb-ya)*t1-sag(t1),a[1]+(b[1]-a[1])*t1)}};
  for(const sx of [-246,246])for(let z=-55;z+14<=1610;z+=14)line([sx,z],[sx,z+14]);for(const sz of [-55,1611])for(let x=-246;x+14<=246;x+=14)line([x,sz],[x+14,sz]);
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(segs,3));mtn.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xff4a5a})))}
-/* ================= Lit Christmas walkways linking every village spot ================= */
-// each route is a polyline of [x,z] points; Main Street runs east-west in front of the lodge
-const ROUTES=[
- [[-118,1428],[86,1428]],                                   // Main Street
- [[-112,1428],[-112,1402],[-121,1394]],                     // Snow Launcher
- [[-112,1402],[-101,1381]],                                 // North Pole Express
- [[-64,1428],[-64,1417]],                                   // Snowman Yard
- [[-38,1428],[-38,1388],[-45,1381]],                        // Jingle Race board
- [[-22,1428],[-22,1435]],                                   // Lodge door
- [[12,1428],[12,1421]],                                     // Firework Workshop
- [[40,1428],[40,1416]],                                     // Plaza
- [[57,1428],[57,1386],[46,1378]],                           // Elf Quad
- [[57,1406],[67,1399]],                                     // Pet Gacha
- [[86,1428],[92,1425]],                                     // Great Tree
- [[6,1428],[6,1556]],                                       // south to Holly Lane
- [[6,1497],[27,1518]]];                                     // Snowflake Pond
-const PATH_W=3.4,PATH_SEGS=[];
-for(const r of ROUTES)for(let i=0;i<r.length-1;i++)PATH_SEGS.push([r[i][0],r[i][1],r[i+1][0],r[i+1][1]]);
-function segDist(x,z,[ax,az,bx,bz]){const dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz,t=clamp(((x-ax)*dx+(z-az)*dz)/L2,0,1);return Math.hypot(x-ax-dx*t,z-az-dz*t)}
-function onPath(x,z,r=0){for(const s of PATH_SEGS)if(segDist(x,z,s)<PATH_W/2+r)return true;return false}
-{const cob=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#c9d2de';g.fillRect(0,0,W,H);
-   for(let r=0;r<8;r++)for(let c=0;c<8;c++){const x=c*32+(r%2)*16,y=r*32,v=150+Math.random()*45|0;g.fillStyle=`rgb(${v},${v-6},${v-16})`;g.beginPath();g.roundRect(x+3,y+3,26,26,8);g.fill();g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x+6,y+5,18,4)}
-   for(let i=0;i<500;i++){g.fillStyle=`rgba(250,252,255,${Math.random()*.55})`;g.beginPath();g.arc(Math.random()*W,Math.random()*H,1+Math.random()*4,0,7);g.fill()}
-   const e=g.createLinearGradient(0,0,0,H);e.addColorStop(0,'rgba(255,255,255,.95)');e.addColorStop(.12,'rgba(255,255,255,0)');e.addColorStop(.88,'rgba(255,255,255,0)');e.addColorStop(1,'rgba(255,255,255,.95)');g.fillStyle=e;g.fillRect(0,0,W,H)});
- cob.wrapS=cob.wrapT=THREE.RepeatWrapping;
- PATH_SEGS.forEach((s,i)=>{const [ax,az,bx,bz]=s,L=Math.hypot(bx-ax,bz-az)+PATH_W*.6,ang=Math.atan2(bz-az,bx-ax),cx=(ax+bx)/2,cz=(az+bz)/2;
-   const geo=new THREE.PlaneGeometry(L,PATH_W,Math.max(1,Math.ceil(L/3)),1);geo.rotateX(-Math.PI/2);geo.rotateY(-ang);const pa=geo.attributes.position;
-   for(let k=0;k<pa.count;k++)pa.setY(k,groundH(pa.getX(k)+cx,pa.getZ(k)+cz)+.05+i*.003);geo.computeVertexNormals();
-   const t=cob.clone();t.repeat.set(L/3.4,1);t.needsUpdate=true;const m=new THREE.Mesh(geo,M({map:t,roughness:.9}));m.position.set(cx,0,cz);m.receiveShadow=true;mtn.add(m)});
- // snowy hedges, lantern posts and string lights along both edges
- const bushes=[],posts=[],cols=[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0];let k=0;
- const clear=(x,z,own)=>{for(const s of PATH_SEGS)if(s!==own&&segDist(x,z,s)<PATH_W/2+1.4)return false;if(COLLIDERS.some(c=>x>c.x0-1&&x<c.x1+1&&z>c.z0-1&&z<c.z1+1))return false;if(Math.hypot(x-POND.x,z-POND.z)<POND.r+3)return false;return true};
- for(const s of PATH_SEGS){const [ax,az,bx,bz]=s,L=Math.hypot(bx-ax,bz-az),ux=(bx-ax)/L,uz=(bz-az)/L,nx=-uz,nz=ux;
-   for(const side of [-1,1]){const off=PATH_W/2+.75;let lastP=null;
-     for(let d=.8;d<L-.4;d+=1.55){const x=ax+ux*d+nx*off*side,z=az+uz*d+nz*off*side;if(!clear(x,z,s)){lastP=null;continue}bushes.push([x,z,.8+((k*7)%5)*.09,k*1.7]);k++;
-       if(Math.round(d/1.55)%6===3){posts.push([x,z]);if(lastP){for(let j=1;j<10;j++){const u=j/10,px=lastP[0]+(x-lastP[0])*u,pz=lastP[1]+(z-lastP[1])*u;addBulb(px,groundH(px,pz)+1.25-Math.sin(u*Math.PI)*.35,pz,cols[(k+j)%5])}}lastP=[x,z]}}}}
- const bm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.62,1),M({color:0x1e5a32,roughness:.95,flatShading:true}),bushes.length),sm=new THREE.InstancedMesh(new THREE.SphereGeometry(.56,10,6,0,Math.PI*2,0,Math.PI/2.4),M({color:0xf6faff,roughness:.85}),bushes.length);
- const bb=new THREE.InstancedMesh(new THREE.SphereGeometry(.07,6,5),new THREE.MeshBasicMaterial({toneMapped:false}),bushes.length*3);const _m=new THREE.Matrix4(),_q=new THREE.Quaternion();
- bushes.forEach(([x,z,s,r],i)=>{const y=groundH(x,z);_q.setFromAxisAngle(UP,r);_m.compose(V3(x,y+.42*s,z),_q,V3(s,s*.85,s));bm.setMatrixAt(i,_m);_m.compose(V3(x,y+.62*s,z),_q,V3(s*1.02,s*.6,s*1.02));sm.setMatrixAt(i,_m);
-   for(let j=0;j<3;j++){const a=r+j*2.1;bb.setMatrixAt(i*3+j,_m.makeTranslation(x+Math.cos(a)*.55*s,y+.42*s+(j-1)*.15,z+Math.sin(a)*.55*s));bb.setColorAt(i*3+j,_c.set(cols[(i+j)%5]))}});
- bm.castShadow=true;bm.receiveShadow=true;mtn.add(bm,sm,bb);
- const blk=M({color:0x1a1a1e,metalness:.6,roughness:.4}),lampM=new THREE.MeshStandardMaterial({color:0xffe2a8,emissive:0xffa040,emissiveIntensity:2}),wr=M({color:0x2f6a3a,roughness:.9}),bow=M({color:0xd62839,roughness:.5});
- const pp=new THREE.InstancedMesh(new THREE.CylinderGeometry(.05,.07,1.5,8),blk,posts.length),pl=new THREE.InstancedMesh(new THREE.BoxGeometry(.26,.32,.26),lampM,posts.length),pc=new THREE.InstancedMesh(new THREE.ConeGeometry(.24,.2,4),blk,posts.length),pw=new THREE.InstancedMesh(new THREE.TorusGeometry(.13,.045,6,12),wr,posts.length),pb=new THREE.InstancedMesh(new THREE.SphereGeometry(.05,6,5),bow,posts.length);
- posts.forEach(([x,z],i)=>{const y=groundH(x,z);pp.setMatrixAt(i,_m.makeTranslation(x,y+.75,z));pl.setMatrixAt(i,_m.makeTranslation(x,y+1.66,z));_q.setFromAxisAngle(UP,Math.PI/4);pc.setMatrixAt(i,_m.compose(V3(x,y+1.92,z),_q,V3(1,1,1)));pw.setMatrixAt(i,_m.makeTranslation(x,y+1.2,z+.08));pb.setMatrixAt(i,_m.makeTranslation(x,y+1.08,z+.12));addGlow(x,y+1.66,z,0xffc070);if(i%2===0)addPool(x,z,5,0xffa050)});
- mtn.add(pp,pl,pc,pw,pb)}
+/* ================= Winding Christmas walkways, the Great Tree circle and Holly Court ================= */
+const GACHA_AT={x:-9,z:1401,ry:0},COURT={x:-22,z:1502,R:31,HR:46},TRING=24.5;
+// 12 cottage plots: a straight back row plus a curve of houses on each side, all facing the green
+const COURT_PLOTS=[...[-43,-29,-15,-1].map(x=>({x,z:1551,ry:Math.PI})),
+  ...[205,180,155,130,50,25,0,-25].map(a=>{const r=a*Math.PI/180,x=COURT.x+Math.cos(r)*COURT.HR,z=COURT.z+Math.sin(r)*COURT.HR;return{x,z,ry:Math.atan2(COURT.x-x,COURT.z-z)}})];
+const plotDir=p=>[Math.sin(p.ry),Math.cos(p.ry)];
+// oriented box colliders share COLLIDERS: x0..z1 is the bounding box, cx/cz/hw/hd/ry the real shape
+function oBox(cx,cz,hw,hd,ry){const c=Math.abs(Math.cos(ry)),s=Math.abs(Math.sin(ry)),ex=hw*c+hd*s,ez=hw*s+hd*c;return{x0:cx-ex,x1:cx+ex,z0:cz-ez,z1:cz+ez,cx,cz,hw,hd,ry}}
+const PATHS=[],PATH_SEGS=[];
+function smoothRoute(cp,loop){const c=new THREE.CatmullRomCurve3(cp.map(([x,z])=>V3(x,0,z)),!!loop,'centripetal');const n=Math.max(2,Math.ceil(c.getLength()/1.1));return c.getSpacedPoints(n).map(v=>[v.x,v.z])}
+function addRoute(cp,w,o={}){const pts=o.raw?cp:smoothRoute(cp,o.loop);const r={pts,w,deco:o.deco!==false,loop:!!o.loop,seed:PATHS.length};PATHS.push(r);
+  for(let i=0;i<pts.length-1;i++)PATH_SEGS.push([pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1],w/2]);return r}
+function segDist(x,z,[ax,az,bx,bz]){const dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1e-6,t=clamp(((x-ax)*dx+(z-az)*dz)/L2,0,1);return Math.hypot(x-ax-dx*t,z-az-dz*t)}
+function onPath(x,z,r=0){for(const s of PATH_SEGS)if(segDist(x,z,s)<s[4]+r)return true;return false}
+const ringPts=(cx,cz,R,n,j=0)=>{const a=[];for(let i=0;i<n;i++){const t=i/n*Math.PI*2;a.push([cx+Math.cos(t)*(R+Math.sin(i*2.3)*j),cz+Math.sin(t)*(R+Math.sin(i*2.3)*j)])}return a};
+// Main Street meanders east-west in front of the lodge and ends at the Great Tree circle
+const MAIN=addRoute([[-123,1427],[-96,1430.5],[-67,1426.5],[-39,1429.5],[-11,1427],[16,1430],[44,1426.6],[66,1427.6],[81.2,1422.6]],4.2);
+const msZ=x=>{let b=MAIN.pts[0];for(const p of MAIN.pts)if(Math.abs(p[0]-x)<Math.abs(b[0]-x))b=p;return b[1]};
+const spur=(x,rest,w=3.1,o)=>addRoute([[x,msZ(x)],...rest],w,o);
+spur(-114,[[-116,1410],[-121,1396]]);                 // Snow Launcher
+spur(-98,[[-97,1403],[-101,1384]]);                   // North Pole Express
+spur(-64,[[-63.6,1422],[-65,1416.5]],3,{deco:false}); // Snowman Yard
+spur(-40,[[-38,1405],[-41,1390],[-45,1381]]);          // race board
+spur(-22,[[-22,1435.6]],3.2,{deco:false});             // lodge door
+spur(-12,[[-10.6,1414],[-9,1406.4]],3,{deco:false});   // Pet Gacha + What To Do
+spur(12,[[12.4,1421]],3,{deco:false});                 // Firework Workshop
+spur(38,[[40.4,1416]],3,{deco:false});                 // Plaza
+spur(58,[[60,1404],[54,1388],[46,1379]]);              // Elf Quad
+addRoute(ringPts(XTREE.x,XTREE.z,TRING,18,.5),3.6,{loop:true,deco:false});   // circle round the Great Tree
+{const a=Math.atan2(POND.z-XTREE.z,POND.x-XTREE.x),d=Math.hypot(POND.x-XTREE.x,POND.z-XTREE.z);const P=t=>[XTREE.x+Math.cos(a)*t,XTREE.z+Math.sin(a)*t];
+ addRoute([P(TRING),P((TRING+d-POND.r)/2+.5),P(d-POND.r-1.2)],3.2,{deco:false})}   // tree -> pond
+// Holly Court: a ring lane round the green, two links past the lodge, and a walk to every plot
+{const C=COURT,ring=a=>[C.x+Math.cos(a*Math.PI/180)*C.R,C.z+Math.sin(a*Math.PI/180)*C.R];
+ addRoute(ringPts(C.x,C.z,C.R,20,.4),3.3,{loop:true,deco:false});
+ spur(-50,[[-49.5,1448],[-45.5,1466],ring(235)]);spur(6,[[5,1448],[1.4,1466],ring(305)]);
+ for(const p of COURT_PLOTS){const [dx,dz]=plotDir(p),fx=p.x+dx*10.1,fz=p.z+dz*10.1;let ex,ez;
+   if(p.ry===Math.PI){ex=p.x;ez=C.z+Math.sqrt(C.R*C.R-(p.x-C.x)**2)}else{const k=Math.hypot(fx-C.x,fz-C.z);ex=C.x+(fx-C.x)/k*C.R;ez=C.z+(fz-C.z)/k*C.R}
+   addRoute([[fx,fz],[ex,ez]],2,{raw:true,deco:false})}}
+// ---------- path surface: packed snow and old flagstones with soft, ragged edges
+{const tex=canvasTex(512,256,(g,W,H)=>{g.fillStyle='#c6cfdd';g.fillRect(0,0,W,H);
+   for(let i=0;i<90;i++){const x=Math.random()*W,y=28+Math.random()*(H-56),r=9+Math.random()*15,v=158+Math.random()*34|0,pts=[];for(let k=0;k<7;k++){const a=k/7*6.283,rr=r*(.72+Math.random()*.38);pts.push([Math.cos(a)*rr*1.35,Math.sin(a)*rr])}
+     for(const ox of [-W,0,W]){g.fillStyle=`rgb(${v-10},${v-3},${v+8})`;g.beginPath();pts.forEach(([px,py],k)=>k?g.lineTo(x+ox+px,y+py):g.moveTo(x+ox+px,y+py));g.closePath();g.fill();g.strokeStyle='rgba(120,130,150,.35)';g.lineWidth=2;g.stroke()}}
+   for(let i=0;i<1700;i++){const x=Math.random()*W,y=Math.random()*H;g.fillStyle=`rgba(250,252,255,${Math.random()*.55})`;g.beginPath();g.arc(x,y,1+Math.random()*5,0,7);g.fill()}
+   for(let i=0;i<26;i++){const x=Math.random()*W,y=H*.3+Math.random()*H*.4;g.fillStyle='rgba(150,165,190,.18)';g.beginPath();g.ellipse(x,y,7,4,0,0,7);g.fill()}
+   g.globalCompositeOperation='destination-in';const e=g.createLinearGradient(0,0,0,H);e.addColorStop(0,'rgba(0,0,0,0)');e.addColorStop(.13,'rgba(0,0,0,.7)');e.addColorStop(.26,'#000');e.addColorStop(.74,'#000');e.addColorStop(.87,'rgba(0,0,0,.7)');e.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=e;g.fillRect(0,0,W,H);
+   g.globalCompositeOperation='destination-out';for(let i=0;i<260;i++){const top=Math.random()<.5,y=top?Math.random()*H*.2:H-Math.random()*H*.2,x=Math.random()*W,r=5+Math.random()*16;for(const ox of [-W,0,W]){g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.arc(x+ox,y,r,0,7);g.fill()}}});
+ tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.ClampToEdgeWrapping;
+ const mat=new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:.93,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+ PATHS.forEach((r,ri)=>{const P=r.pts,n=P.length,pos=[],uv=[],idx=[];let u=0;
+   for(let i=0;i<n;i++){const a=P[Math.max(0,i-1)],b=P[Math.min(n-1,i+1)];let tx=b[0]-a[0],tz=b[1]-a[1];const L=Math.hypot(tx,tz)||1;tx/=L;tz/=L;
+     if(i)u+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);const end=r.loop?1:Math.min(1,(i+.5)/2,(n-i-.5)/2);
+     const hw=r.w/2*(1.18+.13*Math.sin(u*.29+ri)+.09*Math.sin(u*.83+ri*2))*(.7+.3*end);
+     for(const k of [-1,-.5,0,.5,1]){const x=P[i][0]-tz*hw*k,z=P[i][1]+tx*hw*k;pos.push(x,groundH(x,z)+.06+ri*.002,z);uv.push(u/(r.w*1.15),(k+1)/2)}}
+   for(let i=0;i<n-1;i++)for(let k=0;k<4;k++){const a=i*5+k,b=a+1,c=a+5,d=c+1;idx.push(a,b,c,b,d,c)}
+   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
+   const m=new THREE.Mesh(geo,mat);m.receiveShadow=true;m.renderOrder=-1;mtn.add(m)})}
+ZONES.push({x:XTREE.x,z:XTREE.z,r:TRING+7},{x:COURT.x,z:COURT.z,r:COURT.HR+10},{x:GACHA_AT.x,z:GACHA_AT.z,r:7},{x:-124,z:1386,r:9});
+// ---------- things that line the walks: hedges, little pines, street lamps, candy-cane lamps, benches
+const BENCHES=[];
+{let rs=4242;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
+ const avoid=[[XTREE.x,XTREE.z,TRING+4],[POND.x,POND.z,POND.r+4],[-124,1386,8],[GACHA_AT.x,GACHA_AT.z,6.5],[PLAZA.x,PLAZA.z,10],[-30,1372,5],[-20,1400,4],[-47,1374,6],[YARD.x,YARD.z,YARD.r-2],[WORKSHOP.x,WORKSHOP.z,8],
+   ...LIFTDEF.map(L=>[L.x+3,L.zb+4,9]),...COURT_PLOTS.map(p=>{const [dx,dz]=plotDir(p);return[p.x+dx*3,p.z+dz*3,10]})];
+ const clear=(x,z,r)=>{if(onPath(x,z,r+.35))return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;
+   if(COLLIDERS.some(c=>x>c.x0-r-.5&&x<c.x1+r+.5&&z>c.z0-r-.5&&z<c.z1+r+.5))return false;for(const b of BENCHES)if(Math.hypot(b.x-x,b.z-z)<r+1.4)return false;return true};
+ const lamps=[],canes=[],bushes=[],pines=[],taken=[];
+ const free2=(x,z,r)=>clear(x,z,r)&&!taken.some(([tx,tz,tr])=>Math.hypot(tx-x,tz-z)<tr+r);
+ const put=(arr,x,z,r,extra)=>{arr.push([x,z,...extra]);taken.push([x,z,r])};
+ const bench=(x,z,fx,fz)=>{const ry=Math.atan2(fx,fz);BENCHES.push({x,z,ry});taken.push([x,z,1.1]);COLLIDERS.push(oBox(x,z,1,.42,ry))};
+ for(const r of PATHS){if(!r.deco)continue;const P=r.pts,hw=r.w/2*1.2;let d=0,nextLamp=4+rnd()*5,side=rnd()<.5?1:-1,ln=0,nextBench=10+rnd()*14;
+   for(let i=1;i<P.length-1;i++){d+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);const tx=P[i+1][0]-P[i-1][0],tz=P[i+1][1]-P[i-1][1],L=Math.hypot(tx,tz),nx=-tz/L,nz=tx/L;
+     if(d>=nextLamp){const x=P[i][0]+nx*side*(hw+.9),z=P[i][1]+nz*side*(hw+.9);if(free2(x,z,.6)){ln%3===2?put(canes,x,z,.8,[Math.atan2(nz*side,-nx*side)]):put(lamps,x,z,.6,[]);ln++;side=-side;nextLamp=d+16+rnd()*7}else nextLamp=d+1.2}
+     if(d>=nextBench){const s=-side,x=P[i][0]+nx*s*(hw+1.25),z=P[i][1]+nz*s*(hw+1.25);if(free2(x,z,1.1)){bench(x,z,-nx*s,-nz*s);nextBench=d+28+rnd()*24}else nextBench=d+1.5}
+     if(rnd()<.2){const s=rnd()<.5?1:-1,cx=P[i][0]+nx*s*(hw+1.9+rnd()*1.4),cz=P[i][1]+nz*s*(hw+1.9+rnd()*1.4),k=1+(rnd()*3|0);
+       for(let j=0;j<k;j++){const x=cx+(rnd()-.5)*2.2,z=cz+(rnd()-.5)*2.2,sz=.6+rnd()*.55;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}}
+     if(rnd()<.06){const s=rnd()<.5?1:-1,o=hw+4+rnd()*3.5,x=P[i][0]+nx*s*o,z=P[i][1]+nz*s*o,sz=.42+rnd()*.3;if(free2(x,z,1.6)&&!treeNear(x,z,3))put(pines,x,z,1.6,[sz,rnd()*6])}}}
+ // round the Great Tree: lamps and candy canes on the outer edge, benches facing the tree
+ {const mainA=Math.atan2(1422.6-XTREE.z,81.2-XTREE.x),pondA=Math.atan2(POND.z-XTREE.z,POND.x-XTREE.x),near=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)))<.24;
+  for(let i=0;i<16;i++){const a=i/16*Math.PI*2+.1;if(near(a,mainA)||near(a,pondA))continue;const R=TRING+3.2,x=XTREE.x+Math.cos(a)*R,z=XTREE.z+Math.sin(a)*R;
+    if(i%2)bench(x+Math.cos(a)*.5,z+Math.sin(a)*.5,-Math.cos(a),-Math.sin(a));else if(i%4===0)put(canes,x,z,.8,[Math.atan2(Math.sin(a),-Math.cos(a))]);else put(lamps,x,z,.6,[])}
+  for(let i=0;i<26;i++){const a=rnd()*Math.PI*2;if(near(a,mainA)||near(a,pondA))continue;const R=TRING+5+rnd()*2.5,x=XTREE.x+Math.cos(a)*R,z=XTREE.z+Math.sin(a)*R,sz=.6+rnd()*.5;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}}
+ // Holly Court green: lamps on the inside of the ring, benches round a little tree
+ {const C=COURT;for(let i=0;i<8;i++){const a=(i+.5)/8*Math.PI*2,R=C.R-2.7;(i%2?put(canes,C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,.8,[Math.atan2(-Math.sin(a),Math.cos(a))]):put(lamps,C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,.6,[]))}
+  for(let i=0;i<4;i++){const a=i/4*Math.PI*2+Math.PI/4,R=9;bench(C.x+Math.cos(a)*R,C.z+Math.sin(a)*R,-Math.cos(a),-Math.sin(a))}
+  for(let i=0;i<40;i++){const a=rnd()*Math.PI*2,R=14+rnd()*11,x=C.x+Math.cos(a)*R,z=C.z+Math.sin(a)*R,sz=.6+rnd()*.5;if(free2(x,z,sz*.6))put(bushes,x,z,sz*.55,[sz,rnd()*6])}
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2+.4,R=19+rnd()*3,x=C.x+Math.cos(a)*R,z=C.z+Math.sin(a)*R;if(free2(x,z,1.6))put(pines,x,z,1.6,[.5+rnd()*.25,rnd()*6])}
+  const gy=groundH(C.x,C.z),t=new THREE.Mesh(firGeo(8.5,3.1,17,2.6,12),M({vertexColors:true,roughness:.92}));t.position.set(C.x,gy,C.z);t.castShadow=true;mtn.add(t);
+  for(let i=0;i<70;i++){const u=Math.random(),a=Math.random()*6.283,r=(1-u)*2.9+.25;addBulb(C.x+Math.cos(a)*r,gy+1.2+u*7,C.z+Math.sin(a)*r,[0xffd890,0xffe6b8,0xffc060][i%3])}
+  mesh(new THREE.OctahedronGeometry(.5,0),new THREE.MeshStandardMaterial({color:0xffe066,emissive:0xffcc00,emissiveIntensity:2}),C.x,gy+9.1,C.z,mtn);addGlow(C.x,gy+9.1,C.z,0xffd040);addPool(C.x,C.z,9,0xffa050);
+  COLLIDERS.push({x0:C.x-1.6,x1:C.x+1.6,z0:C.z-1.6,z1:C.z+1.6})}
+ const _m=new THREE.Matrix4(),_q=new THREE.Quaternion(),blk=0x1b1c22;
+ // hedges: snow-capped, no fairy lights
+ {const bm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.62,1),M({color:0x1e5232,roughness:.95,flatShading:true}),bushes.length),sm=new THREE.InstancedMesh(new THREE.SphereGeometry(.56,10,6,0,Math.PI*2,0,Math.PI/2.4),M({color:0xf6faff,roughness:.85}),bushes.length);
+  bushes.forEach(([x,z,s,r],i)=>{const y=groundH(x,z);_q.setFromAxisAngle(UP,r);_m.compose(V3(x,y+.42*s,z),_q,V3(s,s*(.75+(i%3)*.08),s*.95));bm.setMatrixAt(i,_m);_m.compose(V3(x,y+.62*s,z),_q,V3(s*1.02,s*.6,s*1.02));sm.setMatrixAt(i,_m)});
+  bm.castShadow=bm.receiveShadow=true;mtn.add(bm,sm)}
+ {const im=new THREE.InstancedMesh(treeGeo,M({vertexColors:true,roughness:.9}),pines.length);pines.forEach(([x,z,s,r],i)=>im.setMatrixAt(i,mtx(x,groundH(x,z)-.15,z,r,s*1.25)));im.castShadow=true;mtn.add(im);
+  for(const [x,z] of pines)COLLIDERS.push({x0:x-.5,x1:x+.5,z0:z-.5,z1:z+.5})}
+ // street lamps: black iron with a warm lantern and a little wreath
+ {const g=mergeColored([[new THREE.CylinderGeometry(.2,.26,.42,10),blk,mtx(0,.21,0)],[new THREE.CylinderGeometry(.065,.095,3.4,10),blk,mtx(0,1.9,0)],[new THREE.CylinderGeometry(.14,.1,.14,10),blk,mtx(0,3.58,0)],
+    ...[[-1,0],[1,0],[0,-1],[0,1]].map(([a,b])=>[new THREE.BoxGeometry(a?.04:.44,.58,b?.04:.44),blk,mtx(a*.2,3.95,b*.2)]),[new THREE.ConeGeometry(.36,.32,4),blk,mtx(0,4.4,0,Math.PI/4)],[new THREE.SphereGeometry(.07,8,6),blk,mtx(0,4.62,0)],
+    [new THREE.TorusGeometry(.2,.065,6,14),0x1f5a32,mtx(0,3.1,.1)],[new THREE.SphereGeometry(.07,8,6),0xd62839,mtx(0,2.9,.17)]]);
+  const im=new THREE.InstancedMesh(g,M({vertexColors:true,metalness:.45,roughness:.5}),lamps.length),gl=new THREE.InstancedMesh(new THREE.BoxGeometry(.34,.5,.34),new THREE.MeshStandardMaterial({color:0xffe6b0,emissive:0xffb050,emissiveIntensity:2.2}),lamps.length);
+  lamps.forEach(([x,z],i)=>{const y=groundH(x,z);im.setMatrixAt(i,mtx(x,y,z,i*.7));gl.setMatrixAt(i,mtx(x,y+3.95,z));addGlow(x,y+3.95,z,0xffc070);addPool(x,z,5,0xb87038);COLLIDERS.push({x0:x-.25,x1:x+.25,z0:z-.25,z1:z+.25})});
+  im.castShadow=true;mtn.add(im,gl)}
+ // giant candy-cane street lamps: the hook holds a hanging lantern over the walk
+ {const curve=new THREE.CatmullRomCurve3([V3(0,0,0),V3(0,3,0),V3(0,5.3,0),V3(.18,5.95,0),V3(.7,6.25,0),V3(1.2,6.05,0),V3(1.42,5.6,0)]);
+  const tg=new THREE.TubeGeometry(curve,60,.15,10,false),ct=caneTex.clone();ct.repeat.set(18,1);ct.needsUpdate=true;
+  const hang=mergeColored([[new THREE.CylinderGeometry(.018,.018,.42,5),blk,mtx(1.42,5.35,0)],[new THREE.ConeGeometry(.3,.24,6),0xb8902e,mtx(1.42,5.05,0)],[new THREE.CylinderGeometry(.27,.22,.08,8),0xb8902e,mtx(1.42,4.5,0)],
+    [new THREE.SphereGeometry(.34,12,8),0xf6faff,mtx(0,.12,0)],[new THREE.TorusGeometry(.2,.07,6,14),0x1f5a32,mtx(0,5.25,.08,0,1)],[new THREE.SphereGeometry(.09,8,6),0xd62839,mtx(0,5.06,.16)]]);
+  const cm=new THREE.InstancedMesh(tg,M({map:ct,roughness:.35}),canes.length),hm=new THREE.InstancedMesh(hang,M({vertexColors:true,metalness:.5,roughness:.45}),canes.length),
+   gm=new THREE.InstancedMesh(new THREE.CylinderGeometry(.22,.22,.48,8),new THREE.MeshStandardMaterial({color:0xfff0c8,emissive:0xffb050,emissiveIntensity:2.2}),canes.length);
+  canes.forEach(([x,z,ry],i)=>{const y=groundH(x,z);const m=mtx(x,y-.1,z,ry);cm.setMatrixAt(i,m);hm.setMatrixAt(i,m);gm.setMatrixAt(i,mtx(x,y-.1,z,ry).multiply(new THREE.Matrix4().makeTranslation(1.42,4.76,0)));
+    const lx=x+Math.cos(ry)*1.42,lz=z-Math.sin(ry)*1.42;addGlow(lx,y+4.7,lz,0xffb860);addPool(lx,lz,5,0xb87038);COLLIDERS.push({x0:x-.3,x1:x+.3,z0:z-.3,z1:z+.3})});
+  cm.castShadow=true;mtn.add(cm,hm,gm)}
+ // wooden benches with iron ends and a dusting of snow
+ {const wd=0x7a4a2a,g=mergeColored([...[-.17,0,.17].map(z=>[new THREE.BoxGeometry(1.8,.06,.14),wd,mtx(0,.46,z)]),...[.66,.86].map(y=>[new THREE.BoxGeometry(1.8,.13,.05),wd,mtx(0,y,-.27,0,1,-.12)]),
+    ...[-.82,.82].flatMap(x=>[[new THREE.BoxGeometry(.07,.43,.5),blk,mtx(x,.22,0)],[new THREE.BoxGeometry(.06,.62,.06),blk,mtx(x,.72,-.27,0,1,-.12)],[new THREE.BoxGeometry(.07,.05,.44),blk,mtx(x,.62,.02)]]),
+    [new THREE.BoxGeometry(1.7,.05,.36),0xf4f8ff,mtx(0,.5,.02)],[new THREE.BoxGeometry(1.76,.05,.09),0xf4f8ff,mtx(0,.95,-.28,0,1,-.12)]]);
+  const im=new THREE.InstancedMesh(g,M({vertexColors:true,roughness:.8}),BENCHES.length);BENCHES.forEach((b,i)=>im.setMatrixAt(i,mtx(b.x,groundH(b.x,b.z),b.z,b.ry)));im.castShadow=im.receiveShadow=true;mtn.add(im)}}
+// ---------- the lantern fence round the Great Tree, with an evergreen garland and red bows
+{const R=19.5,n=36,gy0=groundH(XTREE.x,XTREE.z),parts=[],lan=[],postM=0x5a3a22;
+ for(let i=0;i<n;i++){const a=i/n*Math.PI*2,x=Math.cos(a)*R,z=Math.sin(a)*R,y=groundH(XTREE.x+x,XTREE.z+z)-gy0;parts.push([new THREE.CylinderGeometry(.09,.11,1.2,7),postM,mtx(x,y+.6,z)],[new THREE.SphereGeometry(.11,8,6),0xf6faff,mtx(x,y+1.24,z)]);
+   if(i%3===0){lan.push([x,y,z]);parts.push([new THREE.BoxGeometry(.3,.38,.3),0x2a1a10,mtx(x,y+1.42,z,a)],[new THREE.ConeGeometry(.26,.2,4),0x2a1a10,mtx(x,y+1.7,z,a+Math.PI/4)])}
+   else parts.push([new THREE.SphereGeometry(.1,8,6),0xd62839,mtx(x,y+1.02,z)]);
+   const b=(i+1)/n*Math.PI*2,x2=Math.cos(b)*R,z2=Math.sin(b)*R,y2=groundH(XTREE.x+x2,XTREE.z+z2)-gy0;
+   const c=new THREE.QuadraticBezierCurve3(V3(x,y+1.02,z),V3((x+x2)/2,(y+y2)/2+.7,(z+z2)/2),V3(x2,y2+1.02,z2));parts.push([new THREE.TubeGeometry(c,8,.09,6,false),0x1f5a32,null])}
+ const fm=new THREE.Mesh(mergeColored(parts),M({vertexColors:true,roughness:.85}));fm.position.set(XTREE.x,gy0,XTREE.z);mtn.add(fm);
+ const lg=new THREE.InstancedMesh(new THREE.BoxGeometry(.24,.3,.24),new THREE.MeshStandardMaterial({color:0xfff0c8,emissive:0xffb050,emissiveIntensity:2.4}),lan.length);
+ lan.forEach(([x,y,z],i)=>{lg.setMatrixAt(i,mtx(XTREE.x+x,gy0+y+1.42,XTREE.z+z));addGlow(XTREE.x+x,gy0+y+1.42,XTREE.z+z,0xffc070);addPool(XTREE.x+x,XTREE.z+z,3,0xa06030)});mtn.add(lg)}
 
 /* ---------- random Christmas decorations in the empty spaces ---------- */
 {const DECO=[];
@@ -1395,7 +1555,7 @@ function addPoints(n){n=Math.round(n);if(n<=0)return;SAVE.points+=n;SAVE.earned+
 function buffMult(){const b=SAVE.buff;if(b&&b.until>Date.now())return b.mult;return 1}
 function award(base,name,quality=1,extra=''){
   const now=T;if(now-P.combo.last<5)P.combo.n++;else P.combo.n=1;P.combo.last=now;
-  const cm=Math.min(3,1+.25*(P.combo.n-1)),bm=buffMult(),gm=RIDE_SLEIGH?1:(curEquip().st.pts||1);const pts=Math.round(base*.85*gm*quality*cm*bm);if(gm>1)extra=(extra?extra+' · ':'')+'Gear ×'+gm;
+  const cm=Math.min(3,1+.25*(P.combo.n-1)),bm=buffMult(),gm=RIDE_SLEIGH?1:(curEquip().st.pts||1);const pm=petMult(),pts=Math.round(base*.85*gm*quality*cm*bm*pm);if(gm>1)extra=(extra?extra+' · ':'')+'Gear ×'+gm;if(pm>1)extra=(extra?extra+' · ':'')+'Pet +'+Math.round(pm*100-100)+'%';
   addPoints(pts);if(pts>SAVE.best)SAVE.best=pts;
   const tags=[];if(P.combo.n>1)tags.push('Combo ×'+cm.toFixed(2).replace(/\.?0+$/,''));if(bm>1)tags.push('Toasty ×'+bm.toFixed(2).replace(/0$/,''));if(extra)tags.unshift(extra);
   showTrick(name,pts,false,tags.join(' · '));sfx.chime(Math.min(4,1+pts/600));return pts}
@@ -1421,7 +1581,10 @@ function takeoff(){P.mode='air';P.air={t:0,spin:0,flip:0,spinV:0,flipV:0,grabs:{
   if((SAVE.tutAir||0)<3){SAVE.tutAir=(SAVE.tutAir||0)+1;hint('In the air: <span class="kbd">A</span><span class="kbd">D</span> spin · <span class="kbd">W</span><span class="kbd">S</span> flip · hold <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span><span class="kbd">I</span> to grab',4)}}
 function steerInput(){return (held('KeyA','ArrowLeft')?1:0)-(held('KeyD','ArrowRight')?1:0)}
 function collideWorld(){
-  for(const c of COLLIDERS){if(P.pos.x>c.x0&&P.pos.x<c.x1&&P.pos.z>c.z0&&P.pos.z<c.z1){const dx0=P.pos.x-c.x0,dx1=c.x1-P.pos.x,dz0=P.pos.z-c.z0,dz1=c.z1-P.pos.z,m=Math.min(dx0,dx1,dz0,dz1);
+  for(const c of COLLIDERS){if(c.ry!==undefined){if(P.pos.x>c.x0&&P.pos.x<c.x1&&P.pos.z>c.z0&&P.pos.z<c.z1){const co=Math.cos(c.ry),si=Math.sin(c.ry),rx=P.pos.x-c.cx,rz=P.pos.z-c.cz,lx=rx*co-rz*si,lz=rx*si+rz*co;
+      if(Math.abs(lx)<c.hw&&Math.abs(lz)<c.hd){const px=c.hw-Math.abs(lx),pz=c.hd-Math.abs(lz);let nx=0,nz=0;if(px<pz)nx=Math.sign(lx)||1;else nz=Math.sign(lz)||1;const wx=nx*co+nz*si,wz=-nx*si+nz*co,push=Math.min(px,pz);
+        P.pos.x+=wx*push;P.pos.z+=wz*push;const vn=P.vel.x*wx+P.vel.z*wz;if(vn<0){P.vel.x-=wx*vn;P.vel.z-=wz*vn}}}continue}
+    if(P.pos.x>c.x0&&P.pos.x<c.x1&&P.pos.z>c.z0&&P.pos.z<c.z1){const dx0=P.pos.x-c.x0,dx1=c.x1-P.pos.x,dz0=P.pos.z-c.z0,dz1=c.z1-P.pos.z,m=Math.min(dx0,dx1,dz0,dz1);
     const sp=Math.hypot(P.vel.x,P.vel.z);if(sp>13&&P.mode!=='crash'&&P.mode!=='walk')crash('Ouch! Watch where you\'re going');
     if(m===dx0){P.pos.x=c.x0;P.vel.x=Math.min(0,P.vel.x)}else if(m===dx1){P.pos.x=c.x1;P.vel.x=Math.max(0,P.vel.x)}else if(m===dz0){P.pos.z=c.z0;P.vel.z=Math.min(0,P.vel.z)}else{P.pos.z=c.z1;P.vel.z=Math.max(0,P.vel.z)}}}
   const t=treeNear(P.pos.x,P.pos.z,.75);
@@ -1822,7 +1985,19 @@ const _ax=V3(),_bp=V3();
 function updateRoll(dt){if(!P.roll)return;if(state!=='play'||P.loc!=='mtn'||P.mode!=='walk'){dropRoll();return}
   const R=P.roll,sp=Math.hypot(P.vel.x,P.vel.z);ballAt(P.pos,P.yaw,R.r,myBall.position);myBall.scale.setScalar(R.r);
   if(Math.hypot(myBall.position.x-DROP.x,myBall.position.z-DROP.z)<DROP.r){depositBall();return}
-  if(sp>.2){const d=sp*dt;if(!P.skate&&!onIce(myBall.position.x,myBall.position.z))R.r=Math.min(1.15,R.r+d*.007/R.r);_ax.set(Math.cos(P.yaw),0,-Math.sin(P.yaw));myBall.rotateOnWorldAxis(_ax,d/R.r)}}
+  if(sp>.2){const d=sp*dt;if(!P.skate&&!onIce(myBall.position.x,myBall.position.z))R.r=Math.min(1.15,R.r+d*.007/R.r);_ax.set(Math.cos(P.yaw),0,-Math.sin(P.yaw));myBall.rotateOnWorldAxis(_ax,d/R.r);ballTrail('me',myBall.position,P.yaw,R.r)}}
+// a rolled snowball scrapes up the fresh snow and leaves a packed, darker track behind it that slowly fills back in
+const BT_N=700,BT_LIFE=75,BT={x:new Float32Array(BT_N),z:new Float32Array(BT_N),y:new Float32Array(BT_N),yaw:new Float32Array(BT_N),w:new Float32Array(BT_N),t:new Float32Array(BT_N).fill(-1e9)},BT_LAST=new Map();let btI=0,btT=0;
+const btMesh=(()=>{const tex=canvasTex(64,128,(g,W,H)=>{const gr=g.createLinearGradient(0,0,W,0);gr.addColorStop(0,'rgba(120,140,175,0)');gr.addColorStop(.18,'rgba(120,140,175,.4)');gr.addColorStop(.5,'rgba(110,130,168,.42)');gr.addColorStop(.82,'rgba(120,140,175,.4)');gr.addColorStop(1,'rgba(120,140,175,0)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+    for(let i=0;i<40;i++){g.fillStyle=`rgba(${Math.random()<.5?'95,115,150':'235,242,255'},${.15+Math.random()*.25})`;g.fillRect(8+Math.random()*(W-16),0,1+Math.random()*2,H)}});
+  const geo=new THREE.PlaneGeometry(1,1);geo.rotateX(-Math.PI/2);const m=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:.95,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),BT_N);
+  m.frustumCulled=false;const z=new THREE.Matrix4().makeScale(0,0,0);for(let i=0;i<BT_N;i++)m.setMatrixAt(i,z);mtn.add(m);return m})();
+function ballTrail(key,bp,yaw,r){if(onIce(bp.x,bp.z))return;const L=BT_LAST.get(key);if(L&&Math.hypot(L[0]-bp.x,L[1]-bp.z)<.5)return;BT_LAST.set(key,[bp.x,bp.z]);
+  const i=btI;btI=(btI+1)%BT_N;BT.x[i]=bp.x;BT.z[i]=bp.z;BT.y[i]=groundH(bp.x,bp.z)+.035;BT.yaw[i]=yaw;BT.w[i]=Math.max(.35,r*1.55);BT.t[i]=T;btSet(i,1)}
+const _btm=new THREE.Matrix4(),_btq=new THREE.Quaternion();
+function btSet(i,k){_btq.setFromAxisAngle(UP,BT.yaw[i]);_btm.compose(_v1.set(BT.x[i],BT.y[i],BT.z[i]),_btq,_v2.set(BT.w[i]*k,1,.95*Math.max(k,.001)));btMesh.setMatrixAt(i,_btm);btMesh.instanceMatrix.needsUpdate=true}
+function updateBallTrail(dt){btT-=dt;if(btT>0)return;btT=.5;for(let i=0;i<BT_N;i++){const a=T-BT.t[i];if(a>BT_LIFE-12&&a<BT_LIFE+1)btSet(i,Math.max(0,(BT_LIFE-a)/12))}}
+const _v1=V3(),_v2=V3();
 // one giant shared snowman: every snowball rolled into the circle adds to it
 const GS_GOAL=300,GS_STAY=15*60000,GPARTS=snowmanParts(3.6,21,'top',0xd62839),GSR=GPARTS.R;let GS={c:0,list:[]},gsSeq=0,gsShown=0,gsKey='';
 try{const s=JSON.parse(localStorage.getItem('frostypeaks_gs')||'null');if(s&&Array.isArray(s.list)&&typeof s.c==='number')GS=s}catch{}
@@ -1853,10 +2028,10 @@ function depositBall(){const R=P.roll,a=clamp(Math.round(R.r*R.r*45),1,60),wasDo
   const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});const fin=gsTotal()>=GS_GOAL,pts=ballPts(R.r)+(fin?1500:0);addPoints(pts);showTrick(fin?'☃ Giant Snowman finished!':'☃ Snow added to the giant!',pts);
   const pc=Math.min(100,Math.floor(gsTotal()/GS_GOAL*100));if(fin){toast('☃ You finished the giant snowman! +'+pts+' points');chatSys('☃ The giant snowman in the Snowman Yard is finished!')}else toast(`❄ +${a} snow added. The giant snowman is ${pc}% built. +${pts} points`)}
 // ---------- Jingle Race + leaderboard
-let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
-function mergeLB(rows){let ch=false;for(const r of rows){if(!Array.isArray(r))continue;const n=cleanName(String(r[0]||'')),t=num(r[1]),d=num(r[2]);if(!n||t<12||t>400)continue;
+let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb2')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
+function mergeLB(rows){let ch=false;for(const r of rows){if(!Array.isArray(r))continue;const n=cleanName(String(r[0]||'')),t=num(r[1]),d=num(r[2]);if(!n||t<25||t>400)continue;
     const k=LB.findIndex(x=>x[0].toLowerCase()===n.toLowerCase());if(k<0){LB.push([n,rnd2(t),d]);ch=true}else if(t<LB[k][1]-.004){LB[k]=[n,rnd2(t),d];ch=true}}
-  if(ch){LB.sort((a,b)=>a[1]-b[1]);LB=LB.slice(0,20);try{localStorage.setItem('frostypeaks_lb',JSON.stringify(LB))}catch{}drawLeaderboard(LB);if(panelKind==='race')renderPanel()}return ch}
+  if(ch){LB.sort((a,b)=>a[1]-b[1]);LB=LB.slice(0,20);try{localStorage.setItem('frostypeaks_lb2',JSON.stringify(LB))}catch{}drawLeaderboard(LB);if(panelKind==='race')renderPanel()}return ch}
 drawLeaderboard(LB);
 let race=null,prevZ=null;
 function updateRace(dt){const riding=state==='play'&&P.loc==='mtn'&&['ride','air','grind','crash'].includes(P.mode);const z=P.pos.z,pz=prevZ;prevZ=riding?z:null;const bar=$('racebar');
@@ -1990,12 +2165,12 @@ function drawMinimap(dt){const cv=$('minimap');const on=state==='play'&&P.loc===
 // ---------- per-frame update
 function updateExtras(dt){updateExtras2(dt);updateDrawn(dt);updateTrails(dt);updateGiant(dt);drawMinimap(dt);
   if(state!=='play'&&state!=='menu')return;
-  updateRoll(dt);updateRace(dt);updateSync(dt);
+  updateRoll(dt);updateBallTrail(dt);updateRace(dt);updateSync(dt);
   if(state==='play'){const sp=Math.hypot(P.vel.x,P.vel.z);updatePet('me',SAVE.eq.pet,P.pos,P.yaw,me.root.parent,sp,dt,P.mode==='lift',me.root,P.loc==='mtn'&&P.mode!=='walk');
     if(P.loc==='mtn'&&['ride','air','grind'].includes(P.mode))trailFor('me',SAVE.eq.trail,P.pos,P.vel.length(),dt)}
   for(const [id,o] of others){const g=o.tgt;const sp=g?Math.hypot(g.v.x,g.v.z):0;updatePet(id,o.pt,o.pos,o.yaw,o.A.root.parent,sp,dt,!!(g&&g.anim===3),o.A.root,!!(g&&[0,1,2,7,9].includes(g.anim)));
     if(g&&o.loc==='mtn'&&(g.anim===0||g.anim===1||g.anim===7)&&o.tr)trailFor(id,o.tr,o.pos,g.v.length(),dt);
-    let b=OBALLS.get(id);if(o.rb>.1&&o.loc==='mtn'){if(!b){b=new THREE.Mesh(BALL_GEO,snowBallM);b.castShadow=true;mtn.add(b);OBALLS.set(id,b)}b.scale.setScalar(o.rb);ballAt(o.pos,o.yaw,o.rb,b.position);if(sp>.2)b.rotateOnWorldAxis(_ax.set(Math.cos(o.yaw),0,-Math.sin(o.yaw)),sp*dt/o.rb)}
+    let b=OBALLS.get(id);if(o.rb>.1&&o.loc==='mtn'){if(!b){b=new THREE.Mesh(BALL_GEO,snowBallM);b.castShadow=true;mtn.add(b);OBALLS.set(id,b)}b.scale.setScalar(o.rb);ballAt(o.pos,o.yaw,o.rb,b.position);if(sp>.2){b.rotateOnWorldAxis(_ax.set(Math.cos(o.yaw),0,-Math.sin(o.yaw)),sp*dt/o.rb);ballTrail(id,b.position,o.yaw,o.rb)}}
     else if(b){mtn.remove(b);OBALLS.delete(id)}}
   for(const k of PETS.keys())if(k!=='me'&&!others.has(k)){const p=PETS.get(k);p.obj.parent&&p.obj.parent.remove(p.obj);PETS.delete(k)}
   for(const k of OBALLS.keys())if(!others.has(k)){mtn.remove(OBALLS.get(k));OBALLS.delete(k)}}
@@ -2009,13 +2184,13 @@ EXTRA_INTERACT.push(sp=>{if(P.mode!=='walk')return null;
 window.__fx={giantBalls,giantDeco,GS:()=>GS,gsTotal,DROP,GIANT,RACE,LB:()=>LB,startRoll,updateRace,launchDrawn,sampleFw,PETS,onIce,POND,YARD,WORKSHOP,LBPOS,get race(){return race},get fwStrokes(){return fwStrokes},set fwStrokes(v){fwStrokes=v},updateExtras,nearestInteract,camera,equip,enterRoom};
 
 /* ================= Pet gacha, snowball fights, snow launcher, candy decor ================= */
-const GACHA={x:74,z:1398},LAUNCH={x:-124,z:1386},GACHA_COST=5000,DUPE_BACK=1000;
+const GACHA={...GACHA_AT,fx:Math.sin(GACHA_AT.ry),fz:Math.cos(GACHA_AT.ry)},gAt=(f,s=0)=>[GACHA.x+GACHA.fx*f+GACHA.fz*s,GACHA.z+GACHA.fz*f-GACHA.fx*s],LAUNCH={x:-124,z:1386},GACHA_COST=5000,DUPE_BACK=1000;
 ZONES.push({x:GACHA.x,z:GACHA.z,r:7},{x:LAUNCH.x,z:LAUNCH.z,r:9});
 function bigPop(icon,name,sub='',col='#ffd54d'){const d=document.createElement('div');d.className='bigpop';d.innerHTML=`<div class="bi">${icon}</div><div class="bn" style="color:${col}">${esc(name)}</div>${sub?`<div class="bs">${sub}</div>`:''}`;$('hud').appendChild(d);setTimeout(()=>d.classList.add('out'),2600);setTimeout(()=>d.remove(),3300)}
 
 // ---------- the capsule gacha machine
 const capTops=[];let gachaG,gachaCrank,gachaSpin=0,gachaAnim=null;
-{const gy=groundH(GACHA.x,GACHA.z),g=new THREE.Group();g.position.set(GACHA.x,gy,GACHA.z);g.rotation.y=-Math.PI/2;g.scale.setScalar(1.7);mtn.add(g);gachaG=g;
+{const gy=groundH(GACHA.x,GACHA.z),g=new THREE.Group();g.position.set(GACHA.x,gy,GACHA.z);g.rotation.y=GACHA.ry;g.scale.setScalar(1.7);mtn.add(g);gachaG=g;
  const red=M({color:0xd62839,roughness:.35,metalness:.2}),gold=M({color:0xffc934,metalness:.85,roughness:.25}),dark=M({color:0x1a0a0c,roughness:.6}),wh=M({color:0xffffff,roughness:.3});
  mesh(new THREE.CylinderGeometry(1.25,1.4,.25,32),gold,0,.12,0,g);
  const base=mesh(new THREE.CylinderGeometry(1.05,1.2,2,32),red,0,1.2,0,g);base.castShadow=true;
@@ -2034,13 +2209,13 @@ const capTops=[];let gachaG,gachaCrank,gachaSpin=0,gachaAnim=null;
    for(let i=0;i<n&&k<N;i++){const a=i/n*Math.PI*2+L,r=R*(.35+((i*7+L)%5)/7);const m=new THREE.Matrix4().compose(V3(Math.cos(a)*r,y,Math.sin(a)*r),new THREE.Quaternion().setFromEuler(new THREE.Euler(((i*3)%5)*.5,a,((i*7)%4)*.6)),V3(1,1,1));
      ti.setMatrixAt(k,m);bi.setMatrixAt(k,m);ti.setColorAt(k,_c.set(cols[k%cols.length]));k++}}
  ti.count=bi.count=k;g.add(ti,bi);
- for(let i=0;i<36;i++){const a=i/36*Math.PI*2;const lp=V3(Math.cos(a)*1.24,.6,Math.sin(a)*1.24).applyAxisAngle(UP,-Math.PI/2).multiplyScalar(1.7);addBulb(GACHA.x+lp.x,gy+.6*1.7,GACHA.z+lp.z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5]);
-   const lt=V3(Math.cos(a)*1.0,0,Math.sin(a)*1.0).applyAxisAngle(UP,-Math.PI/2).multiplyScalar(1.7);addBulb(GACHA.x+lt.x,gy+2.3*1.7,GACHA.z+lt.z,[0xffd030,0xff3030,0x30ff60,0x30a0ff][i%4])}
- addGlow(GACHA.x,gy+4.95*1.7,GACHA.z,0xffd040);addPool(GACHA.x,GACHA.z,9,0xff7ab0);addPool(GACHA.x-3,GACHA.z,5,0xffc070);
- const pl=new THREE.PointLight(0xffc8e8,40,22,1.5);pl.position.set(GACHA.x-4,gy+5,GACHA.z);mtn.add(pl);
+ for(let i=0;i<36;i++){const a=i/36*Math.PI*2;const lp=V3(Math.cos(a)*1.24,.6,Math.sin(a)*1.24).applyAxisAngle(UP,GACHA.ry).multiplyScalar(1.7);addBulb(GACHA.x+lp.x,gy+.6*1.7,GACHA.z+lp.z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5]);
+   const lt=V3(Math.cos(a)*1.0,0,Math.sin(a)*1.0).applyAxisAngle(UP,GACHA.ry).multiplyScalar(1.7);addBulb(GACHA.x+lt.x,gy+2.3*1.7,GACHA.z+lt.z,[0xffd030,0xff3030,0x30ff60,0x30a0ff][i%4])}
+ addGlow(GACHA.x,gy+4.95*1.7,GACHA.z,0xffd040);addPool(GACHA.x,GACHA.z,9,0xff7ab0);addPool(...gAt(3),5,0xffc070);
+ const pl=new THREE.PointLight(0xffc8e8,40,22,1.5);pl.position.set(gAt(4)[0],gy+5,gAt(4)[1]);mtn.add(pl);
  COLLIDERS.push({x0:GACHA.x-2.2,x1:GACHA.x+2.2,z0:GACHA.z-2.2,z1:GACHA.z+2.2});
- glowTitle('🎁 PET GACHA','5,000 pts a draw · win a pet',GACHA.x+3.5,GACHA.z,{h:10.5,ry:-Math.PI/2,col:'#ff8fd0',w:10,posts:false});
- for(const s of [-1,1]){const x=GACHA.x+3.5,z=GACHA.z+s*5.3,y=groundH(x,z);mesh(new THREE.CylinderGeometry(.16,.18,11,10),M({map:caneTex,roughness:.35}),x,y+5.5,z,mtn)}}
+ glowTitle('🎁 PET GACHA','5,000 pts a draw · win a pet',...gAt(-3.5),{h:10.5,ry:-Math.PI/2,col:'#ff8fd0',w:10,posts:false});
+ for(const s of [-1,1]){const [x,z]=gAt(-1.5,s*4.6),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.16,.18,11,10),M({map:caneTex,roughness:.35}),x,y+5.5,z,mtn)}}
 const _gp=V3();
 function gachaRoll(){const r=Math.random();let acc=0,rar=0;for(let i=0;i<RARITY.length;i++){acc+=RARITY[i].p;if(r<acc){rar=i;break}rar=i}
   const pool=ITEMS.filter(i=>i.cat==='pet'&&i.rar===rar);return pool[(Math.random()*pool.length)|0]}
@@ -2056,7 +2231,7 @@ function updateGacha(dt){gachaSpin=Math.max(0,gachaSpin-dt);if(gachaCrank)gachaC
   if(t<1.2){A.c.position.set(A.p0.x-t*1.2,A.p0.y+Math.sin(Math.min(1,t/1.2)*Math.PI)*1.2+t*.6,A.p0.z);A.c.rotation.set(t*6,t*9,0);A.c.scale.setScalar(1+t*1.2)}
   else if(t<1.9){const k=(t-1.2)/.7;A.c.rotation.set(0,t*14,0);A.c.scale.setScalar(2.44+Math.sin(k*40)*.08)}
   else{if(!A.opened){A.opened=1;trailEmit(A.c.position.x,A.c.position.y,A.c.position.z,['#ffffff','#'+col.toString(16).padStart(6,'0'),'#ffd54d'],120);A.pet.visible=true;A.pet.position.copy(A.c.position);A.pet.position.y-=.4;A.pet.scale.setScalar(2.2);
-      const r=RARITY[A.it.rar];bigPop(PET_ICON[A.it.id]||'🐾',A.it.name,`<b style="color:${r.col}">${r.name}</b> · `+(A.dupe?`You already have it: +${fmt(DUPE_BACK)} pts back`:'New pet! It follows you now'),r.col);
+      const r=RARITY[A.it.rar];showGachaCard(A.it,A.dupe);
       if(A.it.rar>=2){world.send({k:'gx',n:SAVE.name,p:A.it.id});chatSys(`🎁 You won the ${r.name} ${A.it.name}!`)}refreshTagPet()}
     const k=t-1.9;A.top.position.y=Math.min(1.2,k*3);A.top.rotation.x=-Math.min(1.4,k*4);A.bot.position.y=-Math.min(.6,k*2);A.pet.rotation.y+=dt*1.8;
     if(k>.8){A.c.visible=false}if(t>5.2){mtn.remove(A.c);mtn.remove(A.pet);gachaAnim=null}}}
@@ -2177,7 +2352,7 @@ buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
 
 // ---------- hooks
 EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn')return null;
-  if((P.mode==='walk'||P.mode==='ride')&&Math.hypot(P.pos.x-(GACHA.x-4),P.pos.z-GACHA.z)<3.6)return{label:'🎁 Pet Gacha · draw a pet for 5,000 pts',act:()=>openPanel('gacha')};
+  if((P.mode==='walk'||P.mode==='ride')&&Math.hypot(P.pos.x-gAt(4)[0],P.pos.z-gAt(4)[1])<3.6)return{label:'🎁 Pet Gacha · draw a pet for 5,000 pts',act:()=>openPanel('gacha')};
   if((P.mode==='walk'||P.mode==='ride')&&Math.hypot(P.pos.x-LAUNCH_SPOT.x,P.pos.z-LAUNCH_SPOT.z)<4)return SAVE.owned.includes('pass1')?{label:'❄ Snow Launcher · pick a hill to blast to',act:startLaunch}:{label:'❄ Buy the Snow Launcher pass · 10,000 pts (lifetime)',act:startLaunch};
   return null});
 {const base=world.onmsg;world.onmsg=m=>{
@@ -2491,9 +2666,9 @@ function updateTrade(dt){if(TR&&!others.has(TR.with))tradeCancel(false,'🤝 '+T
   base(m)}}
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);updateTrade(dt)}}
 Object.defineProperty(window.__fx,'TR',{get(){return TR},configurable:true});Object.assign(window.__fx,{thumbOf,petThumb,petImg,tradeRequest,onTrade,tradeCheck,plTarget:v=>plTarget=v,sendGift,setGift:v=>{giftAmt=v}});
-/* ================= Holly Lane cottages: move in free, decorate with points ================= */
+/* ================= Holly Court cottages: move in free, decorate with points ================= */
 const LANE_Z=1562,CW=8,CD=6.4,CFH=.55,CWH=3.1,COV=.5,CA=.56,CWT=CFH+CWH,CRH=CD/2*Math.tan(CA);
-const PLOTS=[...[-210,-170,-130,-90,-50,-10,130,170,210].map(x=>({x,z:1582})),...[-195,-145,185].map(x=>({x,z:1527}))];
+const PLOTS=COURT_PLOTS;
 const DECO=[
  {id:'paint0',t:'paint',n:'Cranberry Red',p:0,c:0xa8322a,sh:0xf4efe4,d:'Classic barn-red siding.'},
  {id:'paint1',t:'paint',n:'Vanilla Cream',p:2000,c:0xf1e2bf,sh:0x2f5a3a,d:'Soft cream with forest-green shutters.'},
@@ -2673,34 +2848,28 @@ function cfgSeed(g){return (g.userData.seed||3)}
 
 // ---------- plots, the lane and the "free plot" markers
 const HOUSES=PLOTS.map((p,i)=>({...p,i,g:null,key:'',owner:null,marker:null,col:null}));
-{const gy0=groundH(0,LANE_Z);for(const [x0,x1] of [[-234,16],[101,234]]){const L=x1-x0,geo=new THREE.PlaneGeometry(L,3.4,Math.ceil(L/4),1);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++)pa.setY(i,groundH(pa.getX(i)+(x0+x1)/2,pa.getZ(i)+LANE_Z)+.045);
-   const t=laneTex.clone();t.repeat.set(L/8,1);t.needsUpdate=true;const m=new THREE.Mesh(geo,M({map:t,roughness:.95}));m.position.set((x0+x1)/2,0,LANE_Z);m.receiveShadow=true;mtn.add(m)}
- for(const h of HOUSES)if(h.z>1560){const w=mesh(new THREE.PlaneGeometry(1.6,h.z-CD/2-8.6-LANE_Z-1.7),M({map:pathTex,roughness:.9}),h.x,groundH(h.x,LANE_Z+4)+.05,(LANE_Z+1.7+h.z-CD/2-8.6)/2,mtn);w.rotation.x=-Math.PI/2}
- const blk=M({color:0x1a1a1e,metalness:.6,roughness:.4}),lampG=new THREE.MeshStandardMaterial({color:0xffe2a8,emissive:0xffa040,emissiveIntensity:2});
- for(let x=-228;x<=228;x+=19){if(x>10&&x<104)continue;const z=LANE_Z+((x/19|0)%2?2.4:-2.4),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.07,.1,3.6,8),blk,x,y+1.8,z,mtn);mesh(new THREE.BoxGeometry(.38,.5,.38),lampG,x,y+3.85,z,mtn);mesh(new THREE.ConeGeometry(.34,.3,4),blk,x,y+4.25,z,mtn).rotation.y=Math.PI/4;
-   const w=mesh(new THREE.TorusGeometry(.2,.06,6,14),M({map:needleTex,color:0xa8d8a8}),x,y+3.2,z,mtn);w.rotation.y=Math.PI/2;addGlow(x,y+3.85,z,0xffc070);addPool(x,z,7,0xffa050)}
- glowTitle('🏡 HOLLY LANE','Free cottages · decorate them with points',6,LANE_Z-5,{h:6.5,col:'#ffb36b',w:9.5});
+{glowTitle('🏡 HOLLY COURT','Free cottages · decorate them with points',COURT.x,COURT.z,{h:12.5,col:'#ffb36b',w:10});
  ZONES.push(...PLOTS.map(p=>({x:p.x,z:p.z,r:12})));
- for(const h of HOUSES){const m=new THREE.Group(),gy=groundH(h.x,h.z);m.position.set(h.x,gy,h.z);m.rotation.y=Math.PI;mtn.add(m);h.marker=m;const rib=M({color:0xd62839,roughness:.6}),st=M({color:0x8a6040});
+ for(const h of HOUSES){const m=new THREE.Group(),gy=groundH(h.x,h.z);m.position.set(h.x,gy,h.z);m.rotation.y=h.ry;mtn.add(m);h.marker=m;const rib=M({color:0xd62839,roughness:.6}),st=M({color:0x8a6040});
    for(const sx of [-1,1])for(const sz of [-1,1])mesh(new THREE.BoxGeometry(.08,.6,.08),st,sx*CW/2,.3,sz*CD/2,m);for(const sz of [-1,1])mesh(new THREE.BoxGeometry(CW,.03,.03),rib,0,.5,sz*CD/2,m);for(const sx of [-1,1])mesh(new THREE.BoxGeometry(.03,.03,CD),rib,sx*CW/2,.5,0,m);
    const lb=glowTitle('🏡 Free Cottage','Walk up and press E to move in',h.x,h.z,{h:3.2,col:'#ffd54d',w:7});mtn.remove(lb);m.add(lb);lb.position.set(0,lb.userData.y0=3.8,0)}}
 buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
-const plotFront=h=>[h.x,h.z-(CD/2+3)];
+const plotFront=(h,d=CD/2+3)=>{const [dx,dz]=plotDir(h);return[h.x+dx*d,h.z+dz*d]};
 function plotOwners(){const own=new Array(PLOTS.length).fill(null),cand=[];const mh=myHouse();if(mh)cand.push({id:myId,name:SAVE.name||'You',cfg:mh});
   for(const [id,o] of others)if(o.hs)cand.push({id,name:o.name,cfg:o.hs});
   for(const c of cand){const cur=own[c.cfg.p];if(!cur||c.cfg.c<cur.cfg.c||(c.cfg.c===cur.cfg.c&&c.id<cur.id))own[c.cfg.p]=c}return own}
 let houseT=0,hsT=0;
 function refreshHouses(){const own=plotOwners(),mh=myHouse();
-  if(mh&&own[mh.p]&&own[mh.p].id!==myId){const free=own.findIndex((o,i)=>!o&&!HOUSES[i].lock);if(free>=0){SAVE.house.p=free;save();toast(`🏡 ${own[mh.p].name} already lives on that plot, so your cottage moved to another spot on Holly Lane`);return refreshHouses()}}
+  if(mh&&own[mh.p]&&own[mh.p].id!==myId){const free=own.findIndex((o,i)=>!o&&!HOUSES[i].lock);if(free>=0){SAVE.house.p=free;save();toast(`🏡 ${own[mh.p].name} already lives on that plot, so your cottage moved to another spot on Holly Court`);return refreshHouses()}}
   HOUSES.forEach((h,i)=>{const o=own[i];h.owner=o;const key=o?o.id+'|'+o.name+'|'+JSON.stringify(o.cfg):'';if(key===h.key)return;h.key=key;
     if(h.g){mtn.remove(h.g);h.g.traverse(m=>{if(m.isMesh||m.isPoints){m.geometry!==bulbGeo&&m.geometry.dispose()}});h.g=null}
     if(h.col){const k=COLLIDERS.indexOf(h.col);if(k>=0)COLLIDERS.splice(k,1);h.col=null}
-    h.marker.visible=!o;if(!o)return;const g=buildCottage(o.cfg,o.name);g.position.set(h.x,groundH(h.x,h.z),h.z);g.rotation.y=Math.PI;g.userData.seed=i;mtn.add(g);h.g=g;
-    h.col={x0:h.x-CW/2-.3,x1:h.x+CW/2+.3,z0:h.z-CD/2-2.3,z1:h.z+CD/2+.3};COLLIDERS.push(h.col)})}
+    h.marker.visible=!o;if(!o)return;const g=buildCottage(o.cfg,o.name);g.position.set(h.x,groundH(h.x,h.z),h.z);g.rotation.y=h.ry;g.userData.seed=i;mtn.add(g);h.g=g;
+    {const [dx,dz]=plotDir(h);h.col=oBox(h.x+dx,h.z+dz,CW/2+.3,CD/2+1.3,h.ry)}COLLIDERS.push(h.col)})}
 function claimPlot(i){const mh=myHouse();SAVE.house=mh?{...mh,p:i}:{p:i,c:Date.now(),w:'paint0',r:'roof0',l:'',d:[]};save();hsT=0;refreshHouses();
   bigPop('🏡',mh?'Moved to a new plot!':'Welcome home!',mh?'Your decorations came with you':'Walk up to your door and press E to decorate','#ffb36b')}
 function houseCfgSet(f){const h=myHouse();if(!h)return;f(h);SAVE.house=h;save();hsT=0;refreshHouses()}
-EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn'||P.mode!=='walk')return null;for(const h of HOUSES){const [fx,fz]=plotFront(h);if(Math.hypot(P.pos.x-fx,P.pos.z-fz)>4.2&&Math.hypot(P.pos.x-h.x,P.pos.z-(h.z-CD/2-5.5))>3)continue;
+EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn'||P.mode!=='walk')return null;for(const h of HOUSES){const [fx,fz]=plotFront(h);const [gx,gz]=plotFront(h,CD/2+5.5);if(Math.hypot(P.pos.x-fx,P.pos.z-fz)>4.2&&Math.hypot(P.pos.x-gx,P.pos.z-gz)>3)continue;
     const o=h.owner,mh=myHouse();if(o&&o.id===myId)return{label:'🏡 Decorate your cottage',act:()=>openPanel('house')};
     if(o)return{label:`🏡 ${o.name}'s Cottage · ${o.cfg.d.length+(o.cfg.l?1:0)} decorations`,act:()=>toast(`🏡 ${o.name}'s cottage. Nice lights!`)};
     return{label:mh?'🏡 Move your cottage to this plot (free, keeps decorations)':'🏡 Move into this cottage (free)',act:()=>claimPlot(h.i)}}return null});
@@ -2717,7 +2886,7 @@ EXTRA_PANELS.house=c=>{const h=myHouse();if(!h){c.innerHTML='<h2>No cottage</h2>
     const pic=d.t==='lights'?`<div class="lsw">${d.sw.split(',').map((c2,i)=>`<i style="background:${c2};box-shadow:0 0 10px ${c2},0 0 18px ${c2};animation-delay:${i*.18}s"></i>`).join('')}</div>`:th?`<img src="${th}" alt="">`:'';
     const btn=!own?`<button class="btn small gold" data-dbuy="${d.id}" ${SAVE.points<d.p?'disabled':''}>Buy · ${fmt(d.p)} pts</button>`:d.t==='item'?(used?`<button class="btn small" data-dtog="${d.id}">Put away</button>`:`<button class="btn small green" data-dtog="${d.id}">Place it</button>`):used?'<button class="btn small" disabled>In use ✓</button>':`<button class="btn small green" data-duse="${d.id}">Use</button>`;
     return `<div class="dcard ${used?'on':''}"><div class="dimg">${pic}</div><h3>${esc(d.n)}</h3><p>${esc(d.d)}</p><div class="drow"><span class="price">${own?(d.p?'Owned':'Free'):fmt(d.p)+' pts'}</span>${btn}</div></div>`};
-  c.innerHTML=`<div class="chead"><div><h2>🏡 Your Cottage</h2><div class="sub">Plot ${h.p+1} on Holly Lane. Buy a decoration once and you can switch it on or off any time. Everyone on the mountain sees your cottage while you're online.</div></div><span class="pill" style="color:var(--gold)">${fmt(SAVE.points)} pts</span></div>
+  c.innerHTML=`<div class="chead"><div><h2>🏡 Your Cottage</h2><div class="sub">Plot ${h.p+1} on Holly Court. Buy a decoration once and you can switch it on or off any time. Everyone on the mountain sees your cottage while you're online.</div></div><span class="pill" style="color:var(--gold)">${fmt(SAVE.points)} pts</span></div>
    <div class="tabs">${tabs.map(([k,l])=>`<button data-htab="${k}" class="${houseTab===k?'on':''}">${l}</button>`).join('')}</div>
    <div class="dgrid">${houseTab==='lights'?`<div class="dcard ${!h.l?'on':''}"><div class="dimg"><div class="lsw off"><i></i><i></i><i></i><i></i></div></div><h3>No lights</h3><p>Just the warm windows.</p><div class="drow"><span class="price">Free</span>${h.l?'<button class="btn small green" data-duse="">Use</button>':'<button class="btn small" disabled>In use ✓</button>'}</div></div>`:''}${list.map(card).join('')}</div>
    <div class="foot"><span style="margin-right:auto;opacity:.75;font-size:14px">${placed} decoration${placed===1?'':'s'} out · ${SAVE.deco.length} bought</span><button class="btn ${moveOutArm?'red':''}" data-hout>${moveOutArm?'Tap again to move out':'Move out'}</button><button class="btn" data-close>Done</button></div>`};
@@ -2733,7 +2902,7 @@ function updateHouses(dt){houseT-=dt;if(houseT<=0){houseT=1;refreshHouses();cons
 {const b=netExtra;netExtra=()=>{const o=b();hsT-=1;if(hsT<=0){hsT=20;const h=myHouse();o.hs=h?h:0}return o}}
 {const base=world.onmsg;world.onmsg=m=>{base(m);if(m.k==='s'&&m.hs!==undefined){const o=others.get(m.i);if(o)o.hs=m.hs?cleanHS(m.hs):null}}}
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);updateHouses(dt);updateLabels()}}
-MM_SPOTS.push(['🏡','Holly Lane',-90,LANE_Z+10]);
+MM_SPOTS.push(['🏡','Holly Court',COURT.x,COURT.z]);
 Object.assign(window.__fx,{ni:()=>nearestInteract(),PLOTS,HOUSES,DECO,buildCottage,claimPlot,refreshHouses,houseCfgSet,myHouse,decoThumb,LANE_Z});
 /* ================= Accounts + cloud save + shared race leaderboard (Firebase, same project as the arcade) ================= */
 const FB_CFG={apiKey:"AIzaSyC0KmT-dE8_Yi9Qr2Z6Ux2q9XgqQ7XolSk",authDomain:"game-hub-22e2e.firebaseapp.com",projectId:"game-hub-22e2e",storageBucket:"game-hub-22e2e.firebasestorage.app",messagingSenderId:"866870954989",appId:"1:866870954989:web:8349d89126cd3e5a8b35e4"};
@@ -2771,7 +2940,7 @@ async function cloudWrite(force){const u=CLOUD.user;if(!CLOUD.on||!u||CLOUD.load
   catch(e){CLOUD.status='couldn\'t save, will retry';cloudUI()}}
 async function cloudLoadLB(){if(!CLOUD.on)return;const F=CLOUD.F;try{const q=F.query(F.collection(CLOUD.fs,'fp_lb'),F.orderBy('t'),F.limit(20));const r=await F.getDocs(q);
   const rows=[];r.forEach(d=>{const x=d.data();rows.push([String(x.name||''),num(x.t),x.at&&x.at.toMillis?x.at.toMillis():Date.now()])});if(rows.length)mergeLB(rows)}catch(e){}}
-async function cloudPostLB(t){const u=CLOUD.user;if(!CLOUD.on||!u||t<12||t>400)return;const F=CLOUD.F,ref=F.doc(CLOUD.fs,'fp_lb',u.uid);
+async function cloudPostLB(t){const u=CLOUD.user;if(!CLOUD.on||!u||t<25||t>400)return;const F=CLOUD.F,ref=F.doc(CLOUD.fs,'fp_lb',u.uid);
   try{const s=await F.getDoc(ref);if(s.exists()&&num(s.data().t,999)<=t)return;await F.setDoc(ref,{name:cleanName(SAVE.name)||'Skier',t:rnd2(t),at:F.serverTimestamp()});toast('🏁 Saved to the all-time Jingle Race board!')}catch(e){}}
 {const b=finishRace;finishRace=time=>{b(time);if(CLOUD.user)cloudPostLB(time);else if(CLOUD.on)setTimeout(()=>toast('🏁 Sign in on the menu to put your times on the all-time board'),3200)}}
 let cloudT=0,lbT=0;
@@ -2779,6 +2948,102 @@ let cloudT=0,lbT=0;
 addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')cloudWrite(true)});
 cloudInit();
 window.__cloud=CLOUD;window.__cloudFx={cloudLoad,cloudWrite,cloudPostLB};
+/* ================= v10: point bonuses, inventory, gacha result card, launcher map, hill labels ================= */
+// ---------- pet bonus: every pet adds to trick points, rarer pets add more
+const PET_BONUS=[.03,.06,.10,.20];
+function petMult(){const id=SAVE.eq&&SAVE.eq.pet,it=id&&id!=='pet0'&&ITEM[id];return it&&SAVE.owned.includes(id)?1+PET_BONUS[it.rar||0]:1}
+const pctTxt=m=>'+'+Math.round(m*100-100)+'%';
+// ---------- top-right bonus label
+let bonusKey='';
+function updateBonus(){const el=$('bonus');if(!el)return;const eq=curEquip(),gm=RIDE_SLEIGH?1:(eq.st&&eq.st.pts||1),pm=petMult(),b=SAVE.buff,now=Date.now(),bm=b&&b.until>now?b.mult:1,tot=gm*pm*bm;
+  const rows=[];if(gm>1)rows.push(`<div class="br">${SAVE.sport==='board'?'🏂':'⛷️'} ${esc(eq.name)} <b>×${gm.toFixed(2).replace(/0$/,'')}</b></div>`);
+  if(pm>1){const it=ITEM[SAVE.eq.pet];rows.push(`<div class="br">${PET_ICON[it.id]||'🐾'} ${esc(it.name)} <b>${pctTxt(pm)}</b></div>`)}
+  if(bm>1){const s=Math.ceil((b.until-now)/1000);rows.push(`<div class="br">${FOODI[b.id]?.icon||'☕'} Toasty <b>×${bm.toFixed(2).replace(/0$/,'')}</b><span>${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span></div>`)}
+  const html=rows.length?`<div class="bt">✨ Point bonus <b>×${tot.toFixed(2)}</b></div>${rows.join('')}`:`<div class="bt">✨ No point bonus yet</div><div class="none">Gear, pets and cocoa bar treats boost your points</div>`;
+  if(html!==bonusKey){bonusKey=html;el.innerHTML=html}
+  const mm=$('minimap'),tr=$('topright');if(mm&&tr){const y=tr.offsetTop+tr.offsetHeight+16,top=y+'px',sz=clamp(innerHeight-y-150,100,180)+'px';if(mm.style.top!==top)mm.style.top=top;if(mm.style.width!==sz){mm.style.width=sz;mm.style.height=sz}}}
+// ---------- inventory: pets, gear and items in one place (button top right, or press I)
+let invTab='pets';
+const GEAR_CATS=[['ski','⛷️ Skis'],['board','🏂 Snowboards'],['hat','🎅 Hats'],['jacket','🧥 Jackets'],['gog','🥽 Goggles'],['trail','✨ Trails'],['sleigh','🛷 Sleighs']];
+function invSwatch(i){const bg=i.cat==='ski'||i.cat==='board'?`linear-gradient(135deg,${hex(i.col)},${hex(i.col)}88)`:i.pat==='cane'?'repeating-linear-gradient(45deg,#fff 0 8px,#d62839 8px 16px)':i.pal&&i.pal.length?`linear-gradient(90deg,${i.pal.map(hex).join(',')})`:i.col!==undefined?hex(i.col):'#2f4a7a';
+  const ic={ski:'⛷️',board:'🏂',hat:'🎅',jacket:'🧥',gog:'🥽',trail:i.price?'✨':'🚫',sleigh:'🛷',pass:'🎟️'}[i.cat]||'🎁';return `<div class="isw" style="background:${bg}">${ic}</div>`}
+function invCard(i,eq,btn,note){return `<div class="icard ${eq?'eq':''}">${invSwatch(i)}<div class="iin"><h3>${esc(i.name)}</h3><p>${note||esc(i.desc||'')}</p>${btn}</div></div>`}
+EXTRA_PANELS.inv=c=>{const tabs=[['pets','🐾 Pets'],['gear','🎿 Gear'],['items','🎁 Items']];let body='';
+  if(invTab==='pets'){const pets=ITEMS.filter(i=>i.cat==='pet'&&i.id!=='pet0'&&SAVE.owned.includes(i.id)).sort((a,b)=>(b.rar||0)-(a.rar||0));
+    body=pets.length?`<div class="sub" style="margin-bottom:8px">The pet walking with you adds to every trick: Common ${pctTxt(1+PET_BONUS[0])}, Rare ${pctTxt(1+PET_BONUS[1])}, Epic ${pctTxt(1+PET_BONUS[2])}, Legendary ${pctTxt(1+PET_BONUS[3])}.</div><div class="pgrid">${pets.map(i=>{const eq=SAVE.eq.pet===i.id;
+        return petCard(i.id,{note:`Trick points ${pctTxt(1+PET_BONUS[i.rar||0])}`,btn:eq?'<button class="btn small" data-ipet="pet0">Put away</button>':`<button class="btn small green" data-ipet="${i.id}">Walk with</button>`}).replace('pcard',eq?'pcard eq':'pcard')}).join('')}</div>`
+      :`<div class="iempty">No pets yet. Win one at the 🎁 Pet Gacha next to the What To Do sign (5,000 pts a draw).</div>`}
+  else if(invTab==='gear'){body=GEAR_CATS.map(([cat,lab])=>{const own=ITEMS.filter(i=>i.cat===cat&&(SAVE.owned.includes(i.id)||!i.price));if(!own.length)return '';
+      return `<div class="invsec">${lab}</div><div class="igrid">${own.map(i=>{const eq=cat==='sleigh'?SAVE.eq.sleigh===i.id:SAVE.eq[cat]===i.id;const note=i.st&&i.st.pts>1?`Trick points ×${i.st.pts}`:'';
+        return invCard(i,eq,eq?'<button class="btn small" disabled>Equipped</button>':`<button class="btn small green" data-ieq="${i.id}">Equip</button>`,note)}).join('')}</div>`}).join('')}
+  else{const passes=ITEMS.filter(i=>i.cat==='pass'&&SAVE.owned.includes(i.id)),deco=(SAVE.deco||[]).map(id=>typeof DECO_ID!=='undefined'&&DECO_ID[id]).filter(Boolean),h=typeof myHouse==='function'&&myHouse(),b=SAVE.buff,now=Date.now();
+    body=`<div class="invsec">🎟️ Passes</div>${passes.length?`<div class="igrid">${passes.map(i=>invCard(i,false,'<button class="btn small" disabled>Yours for life</button>')).join('')}</div>`:'<div class="iempty">No passes yet. The Snow Launcher pass is in Rudolph\'s Gear shop.</div>'}
+      <div class="invsec">🏡 Cottage</div>${h?`<div class="iempty" style="opacity:.9">You live on plot ${h.p+1} in Holly Court. ${h.d.length+(h.l?1:0)} decorations out.</div>`:'<div class="iempty">No cottage yet. Walk to a free plot in Holly Court behind the lodge and press E.</div>'}
+      ${deco.length?`<div class="igrid">${deco.map(d=>`<div class="icard"><div class="isw" style="background:#3b1d0e">${{paint:'🎨',roof:'🏠',lights:'💡',item:'🎄'}[d.t]||'🎁'}</div><div class="iin"><h3>${esc(d.n)}</h3><p>${esc(d.d)}</p></div></div>`).join('')}</div><div class="sub" style="margin-top:6px">Switch decorations on and off at your cottage door.</div>`:''}
+      <div class="invsec">☕ Treats</div>${b&&b.until>now?`<div class="iempty" style="opacity:.9">${FOODI[b.id]?.icon||'☕'} Toasty ×${b.mult.toFixed(2)} for ${Math.ceil((b.until-now)/60000)} more min</div>`:'<div class="iempty">Nothing active. Treats from the Cocoa Bar in the lodge boost your points for a while.</div>'}`}
+  c.innerHTML=`<div class="chead"><div><h2>🎒 Inventory</h2><div class="sub">Everything you own. Press <span class="kb">I</span> to open or close.</div></div><span class="pill" style="color:var(--gold)">${fmt(SAVE.points)} pts</span></div>
+   <div class="tabs">${tabs.map(([k,l])=>`<button data-itab="${k}" class="${invTab===k?'on':''}">${l}</button>`).join('')}</div>${body}
+   <div class="foot"><button class="btn" data-close>Close</button></div>`};
+$('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(panelKind==='inv'){if(d.itab){invTab=d.itab;renderPanel()}else if(d.ipet){SAVE.eq.pet=d.ipet;save();refreshTagPet&&refreshTagPet();renderPanel()}else if(d.ieq){const it=ITEM[d.ieq];if(it&&(SAVE.owned.includes(it.id)||!it.price)){equip(it);renderPanel()}}}
+  if(panelKind==='gres'){if(d.gwalk){SAVE.eq.pet=d.gwalk;save();refreshTagPet&&refreshTagPet();closePanel()}else if(d.gagain!==undefined){closePanel();gachaDraw()}}});
+function toggleInv(){if(state!=='play')return;if(panelKind==='inv'){closePanel();return}if(panelKind||paused)return;openPanel('inv')}
+$('invbtn').addEventListener('click',e=>{e.stopPropagation();if(paused)togglePause();toggleInv()});
+addEventListener('keydown',e=>{if(e.code!=='KeyI'||typing()||state!=='play'||LM)return;if(panelKind&&panelKind!=='inv')return;e.preventDefault();e.stopImmediatePropagation();toggleInv()},true);
+// ---------- the card that pops up with your gacha prize
+let GRES=null;
+function showGachaCard(it,dupe){GRES={it,dupe};setTimeout(()=>{if(state==='play'&&!panelKind&&!LM)openPanel('gres')},1100)}
+EXTRA_PANELS.gres=c=>{if(!GRES){closePanel();return}const {it,dupe}=GRES,r=RARITY[it.rar||0],eq=SAVE.eq.pet===it.id;
+  c.innerHTML=`<div class="gres"><div class="gbadge" style="color:${r.col}">${r.name}</div>
+   <div class="gpic" style="background:radial-gradient(circle at 50% 58%,${r.col}aa,#0e1a30 70%);box-shadow:0 0 0 3px ${r.col},0 0 40px ${r.col}88">${petImg(it.id,190)}</div>
+   <h2>${esc(it.name)}</h2><div class="gdesc">${esc(it.desc||'')}</div>
+   <div class="gnew" style="color:${dupe?'#9fe0ff':'#7dff9a'}">${dupe?`Already in your collection · +${fmt(DUPE_BACK)} pts back`:'✨ NEW! Added to your inventory'}</div>
+   <div class="gperk">Walking with it: trick points ${pctTxt(1+PET_BONUS[it.rar||0])}</div></div>
+   <div class="foot" style="justify-content:center">${eq?'<button class="btn" disabled>🐾 Walking with you</button>':`<button class="btn green" data-gwalk="${it.id}">🐾 Walk with it</button>`}<button class="btn gold" data-gagain ${SAVE.points<GACHA_COST?'disabled':''}>🎁 Draw again · ${fmt(GACHA_COST)}</button><button class="btn" data-close>Close</button></div>`};
+// ---------- Snow Launcher map: the camera flies up to a top view of the mountain and you click where to land
+let LM=null;const lmBox=document.createElement('div');lmBox.id='lmap';lmBox.className='hidden';document.body.appendChild(lmBox);
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,_lmv=V3();
+function lmTopPose(){let s=0,n=0;for(let z=-120;z<=1440;z+=40){s+=groundH(0,z);n++}const cy=s/n,cz=640,tilt=.16,fov=34,hf=Math.atan(Math.tan(fov*Math.PI/360)*camera.aspect),D=Math.max(880/Math.tan(hf),330/Math.tan(fov*Math.PI/360));
+  return{p:[-D*Math.sin(tilt),cy+D*Math.cos(tilt),cz],t:[0,cy,cz],fov}}
+function openLaunchMap(){if(LM)return;if(document.pointerLockElement){chatUnlock=true;document.exitPointerLock()}keys.clear();
+  const dir=camera.getWorldDirection(V3());const p0=camera.position.toArray(),t0=camera.position.clone().addScaledVector(dir,60).toArray();
+  LM={phase:'in',t:0,ts:performance.now(),p0,t0,fov0:camera.fov,fog:[mtn.fog.near,mtn.fog.far],top:lmTopPose(),pick:-1};document.body.classList.add('lmap-on');lmBox.classList.remove('hidden');
+  lmBox.innerHTML=`<div class="lmhead"><h2>❄ Snow Launcher</h2><div>Click a spot on the mountain to blast off there · <span class="kb">Esc</span> to cancel</div><button class="btn small" data-lmx>Cancel</button></div>`+
+    LAUNCH_DEST.map((d,i)=>{const sp=d.n.indexOf(' ');return `<button class="lmlab" data-lm="${i}" style="animation-delay:${i*.08}s"><span class="li">${d.n.slice(0,sp)}</span><b>${esc(d.n.slice(sp+1))}</b><small>${esc(d.d)}</small></button>`}).join('')+
+    `<div class="lmlab here" data-here><b>📍 You are here</b><small>Snow Launcher</small></div>`;
+  lmBox.querySelectorAll('.lmlab').forEach(b=>b.style.display='none')}
+function closeLaunchMap(pick){if(!LM||LM.phase==='out')return;LM.phase='out';LM.t=0;LM.ts=performance.now();LM.pick=pick;lmBox.classList.add('hidden')}
+lmBox.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;if(b.dataset.lmx!==undefined)closeLaunchMap(-1);else if(b.dataset.lm!==undefined)closeLaunchMap(+b.dataset.lm)});
+addEventListener('keydown',e=>{if(!LM)return;e.preventDefault();e.stopImmediatePropagation();if(e.code==='Escape')closeLaunchMap(-1)},true);
+function lmPose(k){const A=LM.top,ek=ease(k),lift=Math.sin(ek*Math.PI)*120;const p=LM.p0.map((v,i)=>v+(A.p[i]-v)*ek),t=LM.t0.map((v,i)=>v+(A.t[i]-v)*ek);p[1]+=lift;return{p,t,fov:LM.fov0+(A.fov-LM.fov0)*ek,fog:ek,k:ek}}
+function applyLmPose(q){camera.up.set(q.k,1-q.k,0).normalize();window.__camO={p:q.p,t:q.t};if(camera.fov!==q.fov){camera.fov=q.fov;camera.updateProjectionMatrix()}const f=Math.pow(q.fog,2);mtn.fog.near=LM.fog[0]+(9000-LM.fog[0])*f;mtn.fog.far=LM.fog[1]+(30000-LM.fog[1])*f}
+function updateLaunchMap(dt){if(!LM)return;keys.clear();LM.t=(performance.now()-LM.ts)/1000;
+  if(state!=='play'){endLaunchMap();return}
+  if(LM.phase==='in'){const k=Math.min(1,LM.t/1.7);applyLmPose(lmPose(k));if(k>=1){LM.phase='map';lmBox.classList.remove('hidden');lmBox.querySelectorAll('.lmlab').forEach(b=>b.style.display='')}}
+  else if(LM.phase==='map'){applyLmPose(lmPose(1));camera.updateMatrixWorld();
+    const L=[...lmBox.querySelectorAll('.lmlab')].map(b=>{let x,z;if(b.dataset.here!==undefined){x=LAUNCH.x;z=LAUNCH.z}else[x,z]=LAUNCH_DEST[+b.dataset.lm].p();_lmv.set(x,groundH(x,z)+4,z).project(camera);
+      return{b,x:(_lmv.x+1)/2*innerWidth,y:(1-_lmv.y)/2*innerHeight,w:b.offsetWidth+8,h:b.offsetHeight+6,pl:14}});
+    // keep labels from covering each other: lift the one that sits higher on screen and stretch its pin
+    for(let it=0;it<12;it++)for(const a of L)for(const c of L){if(a===c)continue;const ax=a.x,ay=a.y-a.pl-22,cy=c.y-c.pl-22;if(Math.abs(ax-c.x)<(a.w+c.w)/2&&Math.abs(ay-cy)<(a.h+c.h)/2&&(ay<cy||(ay===cy&&a.x<c.x))){const up=((a.h+c.h)/2-Math.abs(ay-cy))+2;if(a.y-a.pl-up-a.h-8>6)a.pl+=up;else a.x+=(a.x<=c.x?-1:1)*((a.w+c.w)/2-Math.abs(ax-c.x)+2)}}
+    for(const l of L){l.b.style.left=l.x+'px';l.b.style.top=(l.y-l.pl-8)+'px';l.b.style.setProperty('--pl',l.pl+'px')}}
+  else{const k=Math.min(1,LM.t/1.3);applyLmPose(lmPose(1-k));if(k>=1){const pick=LM.pick;endLaunchMap();if(pick>=0)aimLaunch(pick)}}}
+function endLaunchMap(){if(!LM)return;window.__camO=null;camera.up.set(0,1,0);camera.fov=LM.fov0;camera.updateProjectionMatrix();mtn.fog.near=LM.fog[0];mtn.fog.far=LM.fog[1];lmBox.classList.add('hidden');document.body.classList.remove('lmap-on');LM=null;
+  if(state==='play'&&!panelKind&&!paused){try{const r=renderer.domElement.requestPointerLock();r&&r.catch&&r.catch(()=>{})}catch{}}}
+startLaunch=function(){if(!SAVE.owned.includes('pass1')){if(SAVE.points>=10000)buyItem('pass1');else toast('🎟️ The Snow Launcher pass costs 10,000 pts. You need '+fmt(10000-SAVE.points)+' more.');return}
+  if(P.mode!=='walk'&&P.mode!=='ride')return;openLaunchMap()};
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);updateLaunchMap(dt);updateBonus()}}
+// ---------- floating labels for every hill, like the village attractions
+{const tops=[];const L0=LIFTS[0],L1=LIFTS[1];
+ glowTitle('⛰ The Summit','North Pole Express top · every run starts here',L0.top.x+16,L0.top.z+10,{h:9,col:'#9fe0ff',w:12});
+ glowTitle('🧝 Elf Quad Top','Mid-mountain · Jingle Jumps & the race hill',L1.top.x+14,L1.top.z+8,{h:8,col:'#7dff9a',w:11});
+ glowTitle('🏁 Jingle Race Run','Competitive hill · race the gates to the village',mainX(RACE.startZ-45),RACE.startZ-45,{h:12,col:'#ffd54d',w:13});
+ glowTitle('🏁 Jingle Race Run','Competitive hill · race finish',mainX(ZB-110)+26,ZB-110,{h:12,col:'#ffd54d',w:12});
+ glowTitle("❄ Dasher's Drop",'Steep run · Superpipe halfway down',leftX(95),95,{h:10,col:'#ff8fd0',w:12});
+ glowTitle("❄ Dasher's Drop",'Steep run · Superpipe',leftX(ZB-110),ZB-110,{h:10,col:'#ff8fd0',w:11});
+ glowTitle("🦌 Prancer's Path",'Gentle cruiser · leads to Jingle Jumps',rightX(95),95,{h:10,col:'#ffb36b',w:12});
+ glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z0-14,{h:11,col:'#c77dff',w:12});
+ glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z1+30,{h:10,col:'#c77dff',w:11})}
+Object.assign(window.__fx,{petMult,openLaunchMap,closeLaunchMap,showGachaCard,toggleInv,lm:()=>LM,updateBonus});
 
 /* ================= Camera ================= */
 let curCrouch=0;
