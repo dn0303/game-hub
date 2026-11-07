@@ -2768,7 +2768,7 @@ function buildCottage(cfg,name,{thumb=false}={}){const g=new THREE.Group();const
     const t2=t.clone();t2.rotation.y=-sx*Math.PI/2;t2.position.x=sx*CW/2*.999;g.add(t2)}
   const sl=(CD/2+COV)/Math.cos(CA),rl=CW+2*COV;
   for(const s of [-1,1]){const cz=s*(CD/2+COV)/2,cy=CWT+CRH-(CD/2+COV)*Math.tan(CA)/2;const r=sh(mesh(new THREE.BoxGeometry(rl,.16,sl),roofM,0,cy+.08,cz,g));r.rotation.x=s*CA;
-    const sn=sh(mesh(new THREE.BoxGeometry(rl-.15,.14,sl*.86),snowM,0,cy+.08+Math.cos(CA)*.15,cz-s*sl*.06+s*Math.sin(CA)*.15,g));sn.rotation.x=s*CA;
+    const sn=sh(mesh(new THREE.BoxGeometry(rl-.15,.14,sl*.86),snowM,0,cy+.08+Math.cos(CA)*.2,cz-s*sl*.06+s*Math.sin(CA)*.2,g));sn.rotation.x=s*CA;
     const fa=mesh(new THREE.BoxGeometry(rl+.04,.2,.08),trimM,0,CWT-COV*Math.tan(CA)-.02,s*(CD/2+COV+.02),g)}
   mesh(new THREE.CylinderGeometry(.16,.16,rl-.1,10),snowM,0,CWT+CRH+.2,0,g).rotation.z=Math.PI/2;
   for(const sx of [-1,1])for(const s of [-1,1]){const b=mesh(new THREE.BoxGeometry(.1,.2,sl+.05),trimM,sx*(CW/2+COV),CWT+CRH-(CD/2+COV)*Math.tan(CA)/2+.02,s*(CD/2+COV)/2,g);b.rotation.x=s*CA}
@@ -2788,7 +2788,7 @@ function buildCottage(cfg,name,{thumb=false}={}){const g=new THREE.Group();const
   sh(mesh(new THREE.BoxGeometry(7,.14,2.2),deckM,0,CFH-.07,CD/2+1.1,g));mesh(new THREE.BoxGeometry(7,CFH-.14,2.1),M({color:0x5a4030,roughness:.9}),0,(CFH-.14)/2,CD/2+1.1,g);
   for(const [i,h] of [[0,.36],[1,.18]])mesh(new THREE.BoxGeometry(1.6,h,.36),deckM,0,h/2,CD/2+2.38+i*.36,g);
   for(const x of [-3.3,-1,1,3.3])sh(mesh(new THREE.BoxGeometry(.16,2.6,.16),trimM,x,CFH+1.3,CD/2+2.05,g));
-  {const pr=sh(mesh(new THREE.BoxGeometry(7.4,.12,2.5),roofM,0,CFH+2.72,CD/2+1.15,g));pr.rotation.x=.2;const ps=mesh(new THREE.BoxGeometry(7.3,.1,2.2),snowM,0,CFH+2.82,CD/2+1.1,g);ps.rotation.x=.2}
+  {const pr=sh(mesh(new THREE.BoxGeometry(7.4,.12,2.5),roofM,0,CFH+2.72,CD/2+1.15,g));pr.rotation.x=.2;const ps=mesh(new THREE.BoxGeometry(7.3,.1,2.2),snowM,0,CFH+2.86,CD/2+1.1,g);ps.rotation.x=.2}
   for(const s of [-1,1]){mesh(new THREE.BoxGeometry(2.3,.08,.08),trimM,s*2.15,CFH+.9,CD/2+2.05,g);const n=9,bi=new THREE.InstancedMesh(new THREE.BoxGeometry(.05,.82,.05),trimM,n);for(let i=0;i<n;i++)bi.setMatrixAt(i,new THREE.Matrix4().makeTranslation(s*(1.1+i*.24),CFH+.45,CD/2+2.05));g.add(bi)}
   // front walk, mailbox, name sign
   {const w=mesh(new THREE.PlaneGeometry(1.5,4.6),M({map:pathTex,roughness:.9}),0,.04,CD/2+5.05,g);w.rotation.x=-Math.PI/2;w.receiveShadow=true}
