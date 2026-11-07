@@ -443,7 +443,7 @@ function groomMask(x,z){
   return g}
 function baseH(x,z){
   let h=prof(z);const ax=Math.abs(x);const vill=smooth(ZB-60,ZB,z);const ac=Math.min(ax,250);
-  {const pw=1-smooth(38,52,Math.hypot(x-72,z-1478));h+=ac*ac*.00025*(1-.9*vill)*(1-pw)+72*72*.000025*pw}
+  {const pw=1-smooth(40,54,Math.hypot(x-72,z-1478));h+=ac*ac*.00025*(1-.9*vill)*(1-pw)+72*72*.000025*pw}
   // open country beyond the resort: rolling forested hills instead of walls
   const out=Math.max(ax-238,0)+Math.max(z-1600,0)+Math.max(-70-z,0)*1.4;
   if(out>0){h+=out*.03*(ax>250?1:.5)*(1-vill*.3)+16*(1-Math.exp(-out/35))+70*(1-Math.exp(-out/260))+(10*Math.sin(x*.009+z*.004)*Math.cos(z*.007-x*.003)+5*Math.sin(x*.023+z*.019))*smooth(0,80,out)+(ax>250?(ax-250)*(ac*.0005*(1-.9*vill)):0)}
@@ -461,7 +461,7 @@ const KICKERS=[],RAILS=[];
 // snow bumps scattered down the runs: little kickers that pop you into the air
 {let s=777;const r=()=>{s=(s*16807)%2147483647;return(s-1)/2147483646};
  const put=(x,z)=>{const h=.8+r()*.7;KICKERS.push({x,z,h,L:4.5+h*2.2,w:5+r()*1.5,bump:1})};
- for(let z=150;z<ZB-80;z+=55+r()*35)put(mainX(z)+(r()-.5)*50,z);
+ for(let z=150;z<ZB-80;z+=55+r()*35){r();r();r()}   // middle (race) run: no bumps, keep the random sequence for the others
  for(let z=150;z<ZB-80;z+=70+r()*40){if(z>PIPE.z0-60&&z<PIPE.z1+40)continue;put(leftX(z)+(r()-.5)*36,z)}
  for(let z=150;z<PARK.z0-40;z+=70+r()*30)put(rightX(z)+(r()-.5)*30,z)}
 const KGRID=new Map,KCELL=20;for(const k of KICKERS)for(let c=Math.floor((k.z-k.L)/KCELL);c<=Math.floor(k.z/KCELL);c++){if(!KGRID.has(c))KGRID.set(c,[]);KGRID.get(c).push(k)}
@@ -700,7 +700,7 @@ const netTime=()=>Date.now()/1000%100000;
 
 /* ---------- base village ---------- */
 const COLLIDERS=[]; // axis-aligned boxes on the mountain {x0,x1,z0,z1}
-const LODGE={x:-100,z:1462,w:40,d:20,ry:-Math.PI/4},SHOP=null,XTREE={x:-22,z:1502};
+const LODGE={x:-70,z:1455,w:40,d:20,ry:0},SHOP=null,XTREE={x:-22,z:1502};
 // lodge-local (x,z) to world, for the rotated lodge
 const lodgeW=(lx,lz,B=LODGE)=>{const c=Math.cos(B.ry||0),s=Math.sin(B.ry||0);return[B.x+lx*c+lz*s,B.z-lx*s+lz*c]};
 const logTex=canvasTex(128,128,(g,W,H)=>{for(let i=0;i<8;i++){const y=i*16;const gr=g.createLinearGradient(0,y,0,y+16);gr.addColorStop(0,'#8a5530');gr.addColorStop(.5,'#a8693c');gr.addColorStop(1,'#5e3518');g.fillStyle=gr;g.fillRect(0,y,W,16)}},[3,1]);
@@ -855,14 +855,14 @@ function updateFireworks(dt){fwNext-=dt;if(fwNext<=0){fwNext=.7+Math.random()*1.
 
 /* ================= New village spots: pond, snowman yard, firework workshop, race + leaderboard ================= */
 const ZONES=[];
-const POND={x:72,z:1478,r:36},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
+const POND={x:72,z:1478,r:38},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
 const GIANT={x:-70,z:1400},DROP={x:-70,z:1400,r:7.2};
 const RACE={startZ:72,finZ:1300,gates:[],R:3.3};
 for(let i=0;i<20;i++){const z=128+i*58;RACE.gates.push({z,x:mainX(z)+(i%2?5.5:-5.5)})}
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
 // Roblox-style floating name tags over each attraction (no physical signboards)
 const FLOAT_LABELS=[];
-function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null,near=48}={}){const gy=y??groundH(x,z);sub=null;
+function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null,near=85,keepSub=false,gate=null}={}){const gy=y??groundH(x,z);if(!keepSub)sub=null;
   const sp=txt.indexOf(' '),icon=sp>0&&/[^\x00-\x7F]/.test(txt.slice(0,sp))?txt.slice(0,sp):'',name=icon?txt.slice(sp+1):txt;
   const title=name.toLowerCase().replace(/(^|[\s&·'-])([a-z])/g,(m,a,b)=>a+b.toUpperCase()).replace(/'S\b/g,"'s");
   const W=1024,H=sub?280:190,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
@@ -871,10 +871,10 @@ function glowTitle(txt,sub,x,z,{h=7,col='#ffd54d',w=9,y=null,near=48}={}){const 
   if(sub){let ss=50;g.font=`700 ${ss}px Fredoka, sans-serif`;while(g.measureText(sub).width>W-60&&ss>24){ss-=2;g.font=`700 ${ss}px Fredoka, sans-serif`}g.lineWidth=12;g.strokeStyle='rgba(8,12,28,.9)';g.strokeText(sub,W/2,218);g.fillStyle=col;g.fillText(sub,W/2,218)}
   const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,toneMapped:false,fog:false}));const base=Math.max(6,Math.min(11,w*.8));
-  s.userData={base,asp:H/W,y0:gy+h+.6,ph:FLOAT_LABELS.length*1.3,near};s.position.set(x,s.userData.y0,z);s.scale.set(base,base*H/W,1);s.renderOrder=5;mtn.add(s);FLOAT_LABELS.push(s);return s}
+  s.userData={base,asp:H/W,y0:gy+h+.6,ph:FLOAT_LABELS.length*1.3,near,gate};s.position.set(x,s.userData.y0,z);s.scale.set(base,base*H/W,1);s.renderOrder=5;mtn.add(s);FLOAT_LABELS.push(s);return s}
 const _lv=new THREE.Vector3();
-function updateLabels(){for(const s of FLOAT_LABELS){const u=s.userData;s.getWorldPosition(_lv);const d=_lv.distanceTo(camera.position),k=Math.max(.8,Math.min(2.6,d/19)),n=u.near,far=n*1.45;
-  s.scale.set(u.base*k,u.base*k*u.asp,1);s.position.y=u.y0+Math.sin(T*1.4+u.ph)*.18;s.material.opacity=d>far?0:d>n?(far-d)/(far-n):1;s.visible=d<far}}
+function updateLabels(){for(const s of FLOAT_LABELS){const u=s.userData;s.getWorldPosition(_lv);const d=_lv.distanceTo(camera.position),n=u.near,k=Math.max(.8,Math.min(2.6*Math.max(1,n/110),d/19)),far=n*1.45;
+  s.scale.set(u.base*k,u.base*k*u.asp,1);s.position.y=u.y0+Math.sin(T*1.4+u.ph)*.18;s.material.opacity=d>far?0:d>n?(far-d)/(far-n):1;s.visible=d<far&&(!u.gate||u.gate())}}
 function onIce(x,z,pad=0){return Math.hypot(x-POND.x,z-POND.z)<POND.r-pad}
 const vpostM=M({color:0x4a2a12,roughness:.85});
 // ----- Snowflake Pond (ice skating)
@@ -2008,7 +2008,7 @@ function gsMerge(c,rows){c=num(c);if(c<GS.c||!Array.isArray(rows))return 0;let a
   for(const r of rows){if(!Array.isArray(r)||typeof r[0]!=='string'||r[0].length>24)continue;const a=clamp(num(r[1])|0,1,60),t=num(r[2]);if(GS.list.length>=120||GS.list.some(x=>x[0]===r[0]))continue;GS.list.push([r[0],a,t]);added+=a}
   if(added)try{localStorage.setItem('frostypeaks_gs',JSON.stringify(GS))}catch{}return added}
 const giant=new THREE.Group(),giantBalls=[0,1,2].map(i=>{const m=new THREE.Mesh(lumpyGeo(1,4,.07,21+i*3.1),snowRealM);m.castShadow=true;m.receiveShadow=true;m.visible=false;giant.add(m);return m}),giantDeco=new THREE.Group();
-giant.add(giantDeco);giant.position.set(GIANT.x,groundH(GIANT.x,GIANT.z),GIANT.z);giant.rotation.y=Math.atan2(-10-GIANT.x,1428-GIANT.z);mtn.add(giant);
+giant.add(giantDeco);giant.position.set(GIANT.x,groundH(GIANT.x,GIANT.z),GIANT.z);giant.rotation.y=0;mtn.add(giant);
 {const [bg,,bm]=GPARTS.L[3];const base=new THREE.Mesh(bg,snowRealM);base.applyMatrix4(bm);base.receiveShadow=true;giant.add(base);
  for(const [geo,c,m,mat] of GPARTS.L.slice(4)){const x=new THREE.Mesh(geo,mat||M({color:c,roughness:c===0x1a1a1c?.45:.7}));x.applyMatrix4(m);x.castShadow=true;giantDeco.add(x)}giantDeco.visible=false}
 const gsCv=document.createElement('canvas');gsCv.width=512;gsCv.height=110;const gsTex=new THREE.CanvasTexture(gsCv);gsTex.colorSpace=THREE.SRGBColorSpace;
@@ -2038,7 +2038,7 @@ let race=null,prevZ=null;
 function updateRace(dt){const riding=state==='play'&&P.loc==='mtn'&&['ride','air','grind','crash'].includes(P.mode);const z=P.pos.z,pz=prevZ;prevZ=riding?z:null;const bar=$('racebar');
   if(!riding||pz===null){if(race&&!riding){race=null;loopsReset();bar.classList.add('hidden')}return}
   if(!race){if(pz<RACE.startZ&&z>=RACE.startZ&&Math.abs(P.pos.x-mainX(RACE.startZ))<16){race={t0:T,next:0,miss:0};toast('🏁 Jingle Race started! Ride through all '+RACE.gates.length+' glowing loops.')}else return}
-  while(race.next<RACE.gates.length&&z>=RACE.gates[race.next].z){const G=RACE.gates[race.next];if(Math.abs(P.pos.x-G.x)>RACE.R+.5){race.miss++;toast('Missed loop '+(race.next+1)+'! +3 seconds')}race.next++}
+  while(race.next<RACE.gates.length&&z>=RACE.gates[race.next].z){const G=RACE.gates[race.next];if(Math.abs(P.pos.x-G.x)>RACE.R+.5){race.miss++;toast('Missed loop '+(race.next+1)+'! +3 seconds')}else{const sp=Math.hypot(P.vel.x,P.vel.z);if(sp>1){const add=Math.min(7,Math.max(0,34-sp*.15));P.vel.x*=1+add/sp;P.vel.z*=1+add/sp}P.ringBoostT=.6;hint('⚡ Boost!',.6)}race.next++}
   RACE.gates.forEach((G,i)=>{if(!G.m)return;const on=i===race.next,s=on?1.12+Math.sin(T*7)*.08:1;G.m.scale.setScalar(s);G.m.children[0].material.color.setHex(i<race.next?0x7dff9a:0xffd84a)});
   const el=T-race.t0;
   if(pz<RACE.finZ&&z>=RACE.finZ){const time=el+race.miss*3;race=null;loopsReset();bar.classList.add('hidden');finishRace(time);return}
@@ -2058,11 +2058,11 @@ function updateSync(dt){if(others.size>lastOthers)syncSoon=1+Math.random()*2;las
   syncT-=dt;if(syncT<=0){syncT=14+Math.random()*6;if(world.connected&&others.size)sendSync()}}
 // ---------- ice skating
 function skateStep(dt,mx,mz){P.skate=true;const v=P.vel;v.y=0;const push=!!(mx||mz);
-  if(push){v.x+=mx*7.5*dt;v.z+=mz*7.5*dt}const fr=Math.exp(-(push?.3:.55)*dt);v.x*=fr;v.z*=fr;let s=Math.hypot(v.x,v.z);const mxs=held('ShiftLeft','ShiftRight')?10:7.5;if(s>mxs){v.x*=mxs/s;v.z*=mxs/s;s=mxs}
-  if(s>.4&&camS.mode!=='first')P.yaw=angLerp(P.yaw,Math.atan2(v.x,v.z),1-Math.exp(-5*dt));
+  const mxs=held('ShiftLeft','ShiftRight')?10:7.5;if(push){const k=1-Math.exp(-2.6*dt);v.x+=(mx*mxs-v.x)*k;v.z+=(mz*mxs-v.z)*k}else{const fr=Math.exp(-1.1*dt);v.x*=fr;v.z*=fr}let s=Math.hypot(v.x,v.z);if(s>mxs){v.x*=mxs/s;v.z*=mxs/s;s=mxs}
+  if(s>.4&&camS.mode!=='first')P.yaw=angLerp(P.yaw,Math.atan2(v.x,v.z),1-Math.exp(-9*dt));
   const ph0=P.walkPhase;P.walkPhase+=dt*(1.2+s*.5);if(push&&s>.8&&Math.floor(P.walkPhase/Math.PI)!==Math.floor(ph0/Math.PI))sfx.skate();
   P.pos.x+=v.x*dt;P.pos.z+=v.z*dt;const dx=P.pos.x-POND.x,dz=P.pos.z-POND.z,d=Math.hypot(dx,dz)||1,lim=POND.r-.45;
-  if(d>lim){const nx=dx/d,nz=dz/d;if(mx*nx+mz*nz>.5){v.set(0,0,0);P.skate=false}else{P.pos.x=POND.x+nx*lim;P.pos.z=POND.z+nz*lim;const vn=v.x*nx+v.z*nz;if(vn>0){v.x-=1.6*vn*nx;v.z-=1.6*vn*nz}}}
+  if(d>lim){const nx=dx/d,nz=dz/d;if(mx*nx+mz*nz>.3){v.set(0,0,0);P.skate=false;P.pos.x=POND.x+nx*(POND.r+.2);P.pos.z=POND.z+nz*(POND.r+.2)}else{P.pos.x=POND.x+nx*lim;P.pos.z=POND.z+nz*lim;const vn=v.x*nx+v.z*nz;if(vn>0){v.x-=1.6*vn*nx;v.z-=1.6*vn*nz}}}
   P.pos.y=groundH(P.pos.x,P.pos.z)+.07}
 // ---------- pets
 const PETS=new Map();
@@ -2366,7 +2366,7 @@ EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn')return null;
 function updateExtras2(dt){updateGacha(dt);updateSnowballs(dt);if(P.mode==='launch'&&state==='play'&&Math.random()<.9)trailEmit(P.pos.x,P.pos.y,P.pos.z,['#ffffff','#dff3ff','#9fe0ff'],4)}
 Object.assign(window.__fx,{GACHA,LAUNCH,gachaDraw,gachaRoll,throwSnowball,startLaunch,SBALLS,spawnSnowball,updateSnowballs,V3,sbHitT,myId,petMesh,mtn,groundH});
 /* ================= Snowflake Pond: ice hockey (east half) + ice fishing (west half) ================= */
-const RINK={x:POND.x+19,z:POND.z,hw:11,hl:16,R:3.6},RGATE=2.3,GL=12.4,GW=1.3,GH=1.3,GD=1.2,PUCK_R=.2,GOAL_PTS=30;
+const RINK={x:POND.x+17,z:POND.z,hw:13,hl:19.5,R:3.6},RGATE=2.8,GL=15.2,GW=1.8,GH=1.5,GD=1.4,PUCK_R=.26,GOAL_PTS=30;
 function rinkSD(x,z){const qx=Math.abs(x-RINK.x)-(RINK.hw-RINK.R),qz=Math.abs(z-RINK.z)-(RINK.hl-RINK.R);return Math.hypot(Math.max(qx,0),Math.max(qz,0))+Math.min(Math.max(qx,qz),0)-RINK.R}
 function rinkN(x,z){const e=.02,nx=rinkSD(x+e,z)-rinkSD(x-e,z),nz=rinkSD(x,z+e)-rinkSD(x,z-e),l=Math.hypot(nx,nz)||1;return[nx/l,nz/l]}
 const inRink=(x,z,m=0)=>rinkSD(x,z)<-m;
@@ -2425,7 +2425,7 @@ function drawRinkBoard(){const g=rinkBoard.getContext('2d'),W=1024,H=320;g.fillS
 drawRinkBoard();
 // ---------- puck + stick
 const PK={p:V3(RINK.x,0,RINK.z),v:V3(),last:null,lastT:-9,frozen:0,sendT:-9,cool:0,swing:0};
-const puckM=mesh(new THREE.CylinderGeometry(PUCK_R,PUCK_R,.09,20),M({color:0x111214,roughness:.35}),RINK.x,RGY+.13,RINK.z,mtn);puckM.castShadow=true;
+const puckM=mesh(new THREE.CylinderGeometry(PUCK_R,PUCK_R,.12,20),M({color:0x111214,roughness:.35}),RINK.x,RGY+.13,RINK.z,mtn);puckM.castShadow=true;
 function stickMesh(){const g=new THREE.Group(),wood=M({color:0xc89a5a,roughness:.55}),tape=M({color:0x15161a,roughness:.8}),d=V3(.06,-.92,.62),L=d.length();d.normalize();
   const sh=mesh(new THREE.BoxGeometry(.04,L,.03),wood,0,0,0,g);sh.position.copy(d).multiplyScalar(L/2);sh.quaternion.setFromUnitVectors(UP,d);
   mesh(new THREE.BoxGeometry(.05,.16,.04),tape,0,0,0,g).quaternion.copy(sh.quaternion);
@@ -2467,7 +2467,7 @@ function rinkBlock(px,pz,pos,vel,r){
 function updateHockey(dt){PK.cool=Math.max(0,PK.cool-dt);puckStep(dt);
   const mine=hockeyMine();myStick.visible=mine;PK.swing=Math.max(0,PK.swing-dt);myStick.rotation.x=PK.swing>0?-Math.sin(PK.swing/.35*Math.PI)*.9:0;
   if(mine&&PK.frozen<=0&&PK.cool<=0){bladePos(_bpk);const d=Math.hypot(PK.p.x-_bpk.x,PK.p.z-_bpk.z);
-    if(d<.6){PK.v.set(P.vel.x+(_bpk.x-PK.p.x)*9,0,P.vel.z+(_bpk.z-PK.p.z)*9);puckTouch(false)}}
+    if(d<.85){PK.v.set(P.vel.x+(_bpk.x-PK.p.x)*9,0,P.vel.z+(_bpk.z-PK.p.z)*9);puckTouch(false)}}
   if(PK.last===myId&&T-PK.sendT>.3&&T-PK.lastT<6&&(PK.v.x||PK.v.z))puckSend();
   puckM.position.set(PK.p.x,groundH(PK.p.x,PK.p.z)+.13,PK.p.z);puckM.rotation.y+=Math.hypot(PK.v.x,PK.v.z)*dt*.6;
   for(const L of goalLamps){L.t=Math.max(0,L.t-dt);L.lamp.material.emissiveIntensity=L.t>0?2.5+Math.sin(T*18)*1.5:.15;L.lamp.rotation.y+=L.t>0?dt*8:0}
@@ -2521,7 +2521,7 @@ function reelIn(){const F=P.fish;if(!F)return;if(F.st!=='bite'){F.t=0;F.bite=3+M
   F.st='wait';F.t=0;F.bite=4+Math.random()*6;save()}
 function endFish(){P.fish=null;myRod.visible=false;fishLine.visible=false}
 {const b=standUp;standUp=()=>{endFish();b()}}
-{const b=nearestInteract;nearestInteract=()=>{if(P.fish&&P.mode==='sit')return P.fish.st==='bite'?{label:'❗ BITE! Press E to reel it in',act:reelIn}:{label:'🎣 Fishing… press E when the flag pops (walk to get up)',act:reelIn};return b()}}
+{const b=nearestInteract;nearestInteract=()=>{if(P.fish&&P.mode==='sit')return P.fish.st==='bite'?{label:'❗ BITE! Press E to reel it in',act:reelIn}:{label:'🎣 Fishing… press E when the flag pops (walk to get up)',act:reelIn};const r=b();if(r)return r;if(P.loc==='mtn'&&P.mode==='walk'&&!P.lift){let bi=-1,bd=2.6;HOLES.forEach((h,i)=>{const d=Math.hypot(P.pos.x-h.x,P.pos.z-h.z);if(d<bd){bd=d;bi=i}});if(bi>=0)return{label:holeBusy(bi)?'🎣 Someone is fishing here':'🎣 Press E to sit and fish',act:()=>startFishing(bi)}}return null}}
 {const b=locName;locName=()=>P.fish?'🎣 Ice fishing on Snowflake Pond':P.loc==='mtn'&&P.mode==='walk'&&inRink(P.pos.x,P.pos.z)?'🏒 Frosty Cup Rink':b()}
 const _tp=V3();
 function updateFishing(dt){const F=P.fish;if(F&&(P.mode!=='sit'||P.loc!=='mtn'||state!=='play'))endFish();
@@ -2855,7 +2855,8 @@ const HOUSES=PLOTS.map((p,i)=>({...p,i,g:null,key:'',owner:null,marker:null,col:
  ZONES.push(...PLOTS.map(p=>({x:p.x,z:p.z,r:12})));
  for(const h of HOUSES){const m=new THREE.Group(),gy=groundH(h.x,h.z);m.position.set(h.x,gy,h.z);m.rotation.y=h.ry;mtn.add(m);h.marker=m;const rib=M({color:0xd62839,roughness:.6}),st=M({color:0x8a6040});
    for(const sx of [-1,1])for(const sz of [-1,1])mesh(new THREE.BoxGeometry(.08,.6,.08),st,sx*CW/2,.3,sz*CD/2,m);for(const sz of [-1,1])mesh(new THREE.BoxGeometry(CW,.03,.03),rib,0,.5,sz*CD/2,m);for(const sx of [-1,1])mesh(new THREE.BoxGeometry(.03,.03,CD),rib,sx*CW/2,.5,0,m);
-   const lb=glowTitle('🏡 Free Cottage','Walk up and press E to move in',h.x,h.z,{h:3.2,col:'#ffd54d',w:7});mtn.remove(lb);m.add(lb);lb.position.set(0,lb.userData.y0=3.8,0)}}
+   const onPlot=()=>{if(P.loc!=='mtn')return false;const dx=P.pos.x-h.x,dz=P.pos.z-h.z,c=Math.cos(h.ry),s=Math.sin(h.ry),lx=dx*c-dz*s,lz=dx*s+dz*c;return Math.abs(lx)<CW/2+.4&&Math.abs(lz)<CD/2+.4};h.onPlot=onPlot;
+   const lb=glowTitle('🏡 Free Cottage','Press E to move in · it\'s free!',h.x,h.z,{h:3.2,col:'#ffd54d',w:10,keepSub:true,gate:onPlot});mtn.remove(lb);m.add(lb);lb.position.set(0,lb.userData.y0=3.8,0)}}
 buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
 const plotFront=(h,d=CD/2+3)=>{const [dx,dz]=plotDir(h);return[h.x+dx*d,h.z+dz*d]};
 function plotOwners(){const own=new Array(PLOTS.length).fill(null),cand=[];const mh=myHouse();if(mh)cand.push({id:myId,name:SAVE.name||'You',cfg:mh});
@@ -2872,7 +2873,7 @@ function refreshHouses(){const own=plotOwners(),mh=myHouse();
 function claimPlot(i){const mh=myHouse();SAVE.house=mh?{...mh,p:i}:{p:i,c:Date.now(),w:'paint0',r:'roof0',l:'',d:[]};save();hsT=0;refreshHouses();
   bigPop('🏡',mh?'Moved to a new plot!':'Welcome home!',mh?'Your decorations came with you':'Walk up to your door and press E to decorate','#ffb36b')}
 function houseCfgSet(f){const h=myHouse();if(!h)return;f(h);SAVE.house=h;save();hsT=0;refreshHouses()}
-EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn'||P.mode!=='walk')return null;for(const h of HOUSES){const [fx,fz]=plotFront(h);const [gx,gz]=plotFront(h,CD/2+5.5);if(Math.hypot(P.pos.x-fx,P.pos.z-fz)>4.2&&Math.hypot(P.pos.x-gx,P.pos.z-gz)>3)continue;
+EXTRA_INTERACT.push(sp=>{if(P.loc!=='mtn'||P.mode!=='walk')return null;for(const h of HOUSES){const [fx,fz]=plotFront(h);const [gx,gz]=plotFront(h,CD/2+5.5);if(Math.hypot(P.pos.x-fx,P.pos.z-fz)>4.2&&Math.hypot(P.pos.x-gx,P.pos.z-gz)>3&&!(!h.owner&&h.onPlot&&h.onPlot()))continue;
     const o=h.owner,mh=myHouse();if(o&&o.id===myId)return{label:'🏡 Decorate your cottage',act:()=>openPanel('house')};
     if(o)return{label:`🏡 ${o.name}'s Cottage · ${o.cfg.d.length+(o.cfg.l?1:0)} decorations`,act:()=>toast(`🏡 ${o.name}'s cottage. Nice lights!`)};
     return{label:mh?'🏡 Move your cottage to this plot (free, keeps decorations)':'🏡 Move into this cottage (free)',act:()=>claimPlot(h.i)}}return null});
@@ -3037,15 +3038,15 @@ startLaunch=function(){if(!SAVE.owned.includes('pass1')){if(SAVE.points>=10000)b
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);updateLaunchMap(dt);updateBonus()}}
 // ---------- floating labels for every hill, like the village attractions
 {const tops=[];const L0=LIFTS[0],L1=LIFTS[1];
- glowTitle('⛰ The Summit','North Pole Express top · every run starts here',L0.top.x+16,L0.top.z+10,{near:110,h:9,col:'#9fe0ff',w:12});
- glowTitle('🧝 Elf Quad Top','Mid-mountain · Jingle Jumps & the race hill',L1.top.x+14,L1.top.z+8,{near:110,h:8,col:'#7dff9a',w:11});
- glowTitle('🏁 Jingle Race Run','Competitive hill · race the gates to the village',mainX(RACE.startZ-45),RACE.startZ-45,{near:110,h:12,col:'#ffd54d',w:13});
- glowTitle('🏁 Jingle Race Run','Competitive hill · race finish',mainX(ZB-110)+26,ZB-110,{near:110,h:12,col:'#ffd54d',w:12});
- glowTitle("❄ Dasher's Drop",'Steep run · Superpipe halfway down',leftX(95),95,{near:110,h:10,col:'#ff8fd0',w:12});
- glowTitle("❄ Dasher's Drop",'Steep run · Superpipe',leftX(ZB-110),ZB-110,{near:110,h:10,col:'#ff8fd0',w:11});
- glowTitle("🦌 Prancer's Path",'Gentle cruiser · leads to Jingle Jumps',rightX(95),95,{near:110,h:10,col:'#ffb36b',w:12});
- glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z0-14,{near:110,h:11,col:'#c77dff',w:12});
- glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z1+30,{near:110,h:10,col:'#c77dff',w:11})}
+ glowTitle('⛰ The Summit','North Pole Express top · every run starts here',L0.top.x+16,L0.top.z+10,{near:150,h:9,col:'#9fe0ff',w:12});
+ glowTitle('🧝 Elf Quad Top','Mid-mountain · Jingle Jumps & the race hill',L1.top.x+14,L1.top.z+8,{near:150,h:8,col:'#7dff9a',w:11});
+ glowTitle('🏁 Jingle Race Run','Competitive hill · race the gates to the village',mainX(RACE.startZ-45),RACE.startZ-45,{near:230,h:12,col:'#ffd54d',w:13});
+ glowTitle('🏁 Jingle Race Run','Competitive hill · race finish',mainX(ZB-110)+26,ZB-110,{near:230,h:12,col:'#ffd54d',w:12});
+ glowTitle("❄ Dasher's Drop",'Steep run · Superpipe halfway down',leftX(95),95,{near:230,h:10,col:'#ff8fd0',w:12});
+ glowTitle("❄ Dasher's Drop",'Steep run · Superpipe',leftX(ZB-110),ZB-110,{near:230,h:10,col:'#ff8fd0',w:11});
+ glowTitle("🦌 Prancer's Path",'Gentle cruiser · leads to Jingle Jumps',rightX(95),95,{near:230,h:10,col:'#ffb36b',w:12});
+ glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z0-14,{near:150,h:11,col:'#c77dff',w:12});
+ glowTitle('🛹 Jingle Jumps Park','Kickers, rails and big air',(PARK.x0+PARK.x1)/2,PARK.z1+30,{near:150,h:10,col:'#c77dff',w:11})}
 Object.assign(window.__fx,{petMult,openLaunchMap,closeLaunchMap,showGachaCard,toggleInv,lm:()=>LM,updateBonus});
 // ---------- glowing lines at the summit that split the three runs
 {const segs=[[z=>(leftX(z)+mainX(z))/2,0x6fe0ff],[z=>(mainX(z)+rightX(z))/2,0xff8fd0]],z0=24,z1=112;
@@ -3058,11 +3059,11 @@ Object.assign(window.__fx,{petMult,openLaunchMap,closeLaunchMap,showGachaCard,to
 // ---------- performance: don't draw small things that are far away (the whole village from the summit, run props from the village)
 const CULL=[];
 {const box=new THREE.Box3(),sp=new THREE.Sphere();mtn.updateMatrixWorld(true);
- for(const o of mtn.children){if(o.isPoints||o.isLight||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c:sp.center.clone(),r:sp.radius,far:false})}}
+ for(const o of mtn.children){if(o.isPoints||o.isLight||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c0:sp.center.clone(),p0:o.position.clone(),c:sp.center.clone(),r:sp.radius,far:false})}}
 let cullT=0;
 function setFar(e,far){e.far=far;e.o.traverse(c=>{if(!c.isLight)c.layers.set(far?2:0)})}
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);cullT-=dt;if(cullT>0)return;cullT=.3;const cp=camera.position,lim=LM?1e9:state==='play'?560:1e9;
-  for(const e of CULL){const far=cp.distanceTo(e.c)-e.r>lim;if(far!==e.far)setFar(e,far)}}}
+  for(const e of CULL){if(e.o===me.root||e.o.parent!==mtn){if(e.far)setFar(e,false);continue}e.c.copy(e.c0).add(e.o.position).sub(e.p0);const far=cp.distanceTo(e.c)-e.r>lim;if(far!==e.far)setFar(e,far)}}}
 Object.assign(window.__fx,{CULL,renderer});
 
 /* ================= Camera ================= */
