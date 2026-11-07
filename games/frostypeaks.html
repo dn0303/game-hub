@@ -881,9 +881,11 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
 {ZONES.push({x:POND.x,z:POND.z,r:POND.r+4});const gy=groundH(POND.x,POND.z);
  const iceTex=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#bfe3f7';g.fillRect(0,0,W,H);g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;for(let i=0;i<70;i++){g.beginPath();const x=Math.random()*W,y=Math.random()*H,a=Math.random()*6.3,l=20+Math.random()*60;g.moveTo(x,y);g.quadraticCurveTo(x+Math.cos(a+.6)*l*.5,y+Math.sin(a+.6)*l*.5,x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}},[3,3]);
  const geo=new THREE.CircleGeometry(POND.r,120,0);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++){const x=pa.getX(i)+POND.x,z=pa.getZ(i)+POND.z;pa.setY(i,groundH(x,z)+.07)}geo.computeVertexNormals();
- const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x0e2234,emissiveIntensity:.2}));ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
+ const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x16304a,emissiveIntensity:.35}));ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
  const rimM=M({color:0xf8fbff,roughness:.8});for(let i=0;i<130;i++){const a=i/130*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+.4),z=POND.z+Math.sin(a)*(POND.r+.4);const s=mesh(new THREE.SphereGeometry(.7+((i*7)%3)*.15,10,8),rimM,x,groundH(x,z)-.2,z,mtn);s.scale.set(1.3,.45,1.3)}
- glowTitle('⛸ SNOWFLAKE POND','Skating · ice hockey · ice fishing',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
+  for(let i=0;i<20;i++){const a=i/20*Math.PI*2+.2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.07,.09,3,8),vpostM,x,y+1.5,z,mtn);addGlow(x,y+3.1,z,0xffd08a);addPool(x,z,5,0xffb060,.08)}
+ for(let i=0;i<200;i++){const a=i/200*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2);addBulb(x,groundH(x,z)+2.75-Math.abs(Math.sin(a*4))*.4,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
+ addPool(POND.x,POND.z,POND.r*1.1,0x88c8ff,.08);glowTitle('⛸ SNOWFLAKE POND','Skating · ice hockey · ice fishing',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
 }
 // ----- Snowman Yard
 {ZONES.push({x:YARD.x,z:YARD.z,r:YARD.r-4});
@@ -1136,10 +1138,10 @@ function makeAvatar(){
   A.jacketM=M({color:0xd62839});A.lensM=M({color:0xbfd6e6,metalness:.6,roughness:.15});
   // chibi proportions: big round head, short chubby body, stubby limbs
   const hips=A.hips=new THREE.Group();hips.position.y=.68;body.add(hips);
-  mesh(new THREE.SphereGeometry(.2,16,12),pantsM,0,.02,0,hips).scale.set(1.15,.8,.95);
+  A.fpHide=[];{const hs=mesh(new THREE.SphereGeometry(.2,16,12),pantsM,0,.02,0,hips);hs.scale.set(1.15,.8,.95);A.fpHide.push(hs)}
   const chest=A.chest=new THREE.Group();chest.position.y=.04;hips.add(chest);
-  const torso=mesh(capsule(.25,.12),A.jacketM,0,.23,0,chest);torso.scale.set(1.12,1,.95);torso.castShadow=true;
-  mesh(new THREE.TorusGeometry(.2,.05,8,20),M({color:0xffffff,roughness:.9}),0,.44,0,chest).rotation.x=Math.PI/2;
+  const torso=mesh(capsule(.25,.12),A.jacketM,0,.23,0,chest);torso.scale.set(1.12,1,.95);torso.castShadow=true;A.fpHide.push(torso);
+  {const ring=mesh(new THREE.TorusGeometry(.2,.05,8,20),M({color:0xffffff,roughness:.9}),0,.44,0,chest);ring.rotation.x=Math.PI/2;A.fpHide.push(ring)}
   const head=A.head=new THREE.Group();head.position.y=.5;chest.add(head);
   A.headMesh=new THREE.Group();head.add(A.headMesh);
   const hm=mesh(new THREE.SphereGeometry(.22,20,16),skinM,0,.2,0,A.headMesh);hm.castShadow=true;
@@ -1149,8 +1151,8 @@ function makeAvatar(){
   A.collar=mesh(new THREE.CylinderGeometry(.14,.17,.07,14),A.jacketM,0,-.01,0,head);
   A.gog=new THREE.Group();A.gog.position.set(0,.33,0);A.gog.rotation.x=-.35;head.add(A.gog);mesh(new THREE.BoxGeometry(.3,.09,.06),A.lensM,0,0,.19,A.gog);mesh(new THREE.TorusGeometry(.205,.014,4,24),blackM,0,0,0,A.gog).rotation.x=Math.PI/2;
   A.hatSlot=new THREE.Group();A.hatSlot.position.y=.26;A.hatSlot.scale.setScalar(1.4);head.add(A.hatSlot);
-  A.arms=[];for(const s of [-1,1]){const sh=new THREE.Group();sh.position.set(s*.29,.36,0);chest.add(sh);const up=mesh(capsule(.08,.1),A.jacketM,0,-.1,0,sh);up.castShadow=true;
-    const el=new THREE.Group();el.position.y=-.19;sh.add(el);mesh(capsule(.072,.08),A.jacketM,0,-.08,0,el);const hand=new THREE.Group();hand.position.y=-.18;el.add(hand);mesh(new THREE.SphereGeometry(.08,10,8),gloveM,0,0,0,hand);
+  A.arms=[];for(const s of [-1,1]){const sh=new THREE.Group();sh.position.set(s*.29,.36,0);chest.add(sh);const up=mesh(capsule(.08,.1),A.jacketM,0,-.1,0,sh);up.castShadow=true;A.fpHide.push(up);
+    const el=new THREE.Group();el.position.y=-.19;sh.add(el);A.fpHide.push(mesh(capsule(.072,.08),A.jacketM,0,-.08,0,el));const hand=new THREE.Group();hand.position.y=-.18;el.add(hand);mesh(new THREE.SphereGeometry(.08,10,8),gloveM,0,0,0,hand);
     const pole=mesh(new THREE.CylinderGeometry(.012,.012,.95,6),M({color:0xc0c6d0,metalness:.7}),0,-.34,.1,hand);pole.rotation.x=.25;mesh(new THREE.CylinderGeometry(.05,.05,.01,10),blackM,0,-.42,0,pole);
     A.arms.push({sh,el,hand,pole})}
   A.held=new THREE.Group();A.arms[1].hand.add(A.held);A.held.position.set(0,-.04,.07);
@@ -2384,7 +2386,7 @@ let goalLamps=[],rinkBoard,rinkBoardTex,rinkTally={n:0,last:''};
      g.beginPath();g.arc(X(sx*5),Z(sz*2.9),.25*pxm,0,7);g.fill()}
    for(const s of [-1,1]){g.fillStyle='rgba(90,170,255,.45)';g.beginPath();g.arc(X(0),Z(s*GL),1.8*pxm,s>0?Math.PI:0,s>0?Math.PI*2:Math.PI);g.fill();g.strokeStyle='#d62839';g.lineWidth=.06*pxm;g.stroke()}
    g.font=`700 ${1.6*pxm}px Fredoka, sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(214,40,57,.55)';g.save();g.translate(X(0),Z(0));g.fillText('❄ FROSTY CUP ❄',0,-1.6*pxm);g.restore()});
- const geo=new THREE.PlaneGeometry(W,L,22,32);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++)pa.setY(i,groundH(pa.getX(i)+RINK.x,pa.getZ(i)+RINK.z)+.085);geo.computeVertexNormals();
+ const geo=new THREE.PlaneGeometry(W,L,22,32);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++)pa.setY(i,groundH(pa.getX(i)+RINK.x,pa.getZ(i)+RINK.z)+.11);geo.computeVertexNormals();
  const mk=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:tex,transparent:true,roughness:.15,metalness:.1,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));mk.position.set(RINK.x,0,RINK.z);mk.receiveShadow=true;mtn.add(mk);
  // perimeter of the rounded rectangle, cut into short segments
  const pts=[],R=RINK.R,cx=RINK.hw-R,cz=RINK.hl-R;for(const [sx,sz,a0] of [[1,1,0],[-1,1,Math.PI/2],[-1,-1,Math.PI],[1,-1,Math.PI*1.5]])for(let k=0;k<=8;k++){const a=a0+k/8*Math.PI/2;pts.push([sx*cx+Math.cos(a)*R,sz*cz+Math.sin(a)*R])}
@@ -3077,10 +3079,10 @@ function updateCamera(dt){
     if((INDOOR()||P.mode==='walk')){camS.lookYaw=0}
     _e.set(camS.lookPitch,Math.PI+camS.lookYaw,0);_tq.setFromEuler(_e);camera.quaternion.copy(_hq).multiply(_tq);
     // keep the horizon level on the ground (head bob from terrain is enough)
-    camera.position.copy(_cp).add(_v.set(0,.24,0));_f.set(0,0,-.12).applyQuaternion(camera.quaternion);camera.position.add(_f);
-    for(const m of [me.headMesh,me.hatSlot,me.gog,me.collar])m.visible=false;if(me.tag)me.tag.visible=false;if(me.bubble)me.bubble.visible=false;
+    camera.position.copy(_cp).add(_v.set(0,.4,0));_f.set(0,0,-.16).applyQuaternion(camera.quaternion);camera.position.add(_f);
+    for(const m of [me.headMesh,me.hatSlot,me.gog,me.collar,...me.fpHide])m.visible=false;if(me.tag)me.tag.visible=false;if(me.bubble)me.bubble.visible=false;
     return}
-  for(const m of [me.headMesh,me.hatSlot,me.gog,me.collar])m.visible=true;if(me.tag)me.tag.visible=true;if(me.bubble)me.bubble.visible=true;
+  for(const m of [me.headMesh,me.hatSlot,me.gog,me.collar,...me.fpHide])m.visible=true;if(me.tag)me.tag.visible=true;if(me.bubble)me.bubble.visible=true;
   let tyaw;const hv=Math.hypot(P.vel.x,P.vel.z);
   if(freeCam())tyaw=camS.yaw;
   else if(P.mode==='lift'||P.mode==='liftwait')tyaw=P.yaw;
