@@ -66,7 +66,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == uid && fpLbOk();
       allow update: if request.auth != null && request.auth.uid == uid && fpLbOk()
-        && request.resource.data.t < resource.data.t;
+        && (request.resource.data.t < resource.data.t
+            || resource.data.at < timestamp.date(2026, 11, 8));
     }
     function fpLbOk() {
       let d = request.resource.data;
@@ -74,6 +75,38 @@ service cloud.firestore {
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 16
         && d.t is number && d.t >= 12 && d.t <= 400
         && d.at == request.time;
+    }
+      // ---------- Frosty Peaks: Gingerbread Hall (one showcased cookie per account) + likes
+    match /fp_cookies/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid && fpCookieOk()
+        && request.resource.data.likes == 0;
+      allow update: if request.auth != null && (
+        (request.auth.uid == uid && fpCookieOk() && request.resource.data.likes == 0
+          && request.resource.data.v > resource.data.v)
+        || (request.auth.uid != uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+          && request.resource.data.likes == resource.data.likes + 1
+          && !exists(/databases/$(database)/documents/fp_cookie_likes/$(uid + '_' + string(resource.data.v) + '_' + request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/fp_cookie_likes/$(uid + '_' + string(resource.data.v) + '_' + request.auth.uid))));
+    }
+    function fpCookieOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'img', 'v', 'likes', 'at'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 16
+        && d.img is string && d.img.size() < 200000
+        && d.v is int && d.v >= 1 && d.likes is int
+        && d.at == request.time;
+    }
+    match /fp_cookie_likes/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['c', 'v', 'by'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.c != request.auth.uid
+        && id == request.resource.data.c + '_' + string(request.resource.data.v) + '_' + request.auth.uid
+        && getAfter(/databases/$(database)/documents/fp_cookies/$(request.resource.data.c)).data.likes
+           == get(/databases/$(database)/documents/fp_cookies/$(request.resource.data.c)).data.likes + 1;
     }
   }
 }
