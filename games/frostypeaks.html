@@ -3185,14 +3185,14 @@ const SB={ammo:0,scoopT:0,score:{round:-1,s:[0,0]},joined:-1,awarded:-1,lastHit:
  MM_SPOTS.push(['❄','Snowball Arena',AR.x,AR.z])}
 // ---------- forts: roll snow (like the snowman), then set it down as a packed snow block; blocks stack up to 3 high
 const FORTS=[],fortGeo=(()=>{const g=lumpyGeo(1,4,.06,13),p=g.attributes.position;for(let i=0;i<p.count;i++){const y=p.getY(i);p.setY(i,y<0?y*.04:y)}g.computeVertexNormals();return g})();let fortEpoch=arEpoch();
-function addFort(f){if(FORTS.length>120)return;const sx=f.r*3,sy=f.r*2.1,sz=f.r*1.35,m=new THREE.Mesh(fortGeo,snowRealM);m.scale.set(sx,sy,sz);m.position.set(f.x,f.y+.02,f.z);m.rotation.y=f.ry;m.castShadow=true;m.receiveShadow=true;mtn.add(m);
+function addFort(f){if(FORTS.length>120)return;const sx=f.r*1.9,sy=f.r*2.8,sz=f.r*1.2,m=new THREE.Mesh(fortGeo,snowRealM);m.scale.set(sx,sy,sz);m.position.set(f.x,f.y+.02,f.z);m.rotation.y=f.ry;m.castShadow=true;m.receiveShadow=true;mtn.add(m);
   const c=oBox(f.x,f.z,sx*.9,sz*.85,f.ry);c.y1=f.y+sy*.95;COLLIDERS.push(c);FORTS.push({...f,m,c,top:f.y+sy*.9,sx,sz,lv:f.lv||0});trailEmit(f.x,f.y+sy,f.z,['#ffffff','#eef6ff','#cfe6ff'],26)}
 function clearForts(){for(const F of FORTS){mtn.remove(F.m);const k=COLLIDERS.indexOf(F.c);if(k>=0)COLLIDERS.splice(k,1);trailEmit(F.x,F.top-.3,F.z,['#ffffff','#eef6ff'],10)}FORTS.length=0}
 function fortBelow(x,z){let best=null;for(const F of FORTS){const dx=x-F.x,dz=z-F.z,c=Math.cos(F.ry),s=Math.sin(F.ry),lx=dx*c-dz*s,lz=dx*s+dz*c;if(Math.abs(lx)<F.sx*.85&&Math.abs(lz)<F.sz*.95&&(!best||F.top>best.top))best=F}return best}
 function placeFort(){const R=P.roll;if(!R)return;if(!inArena(myBall.position.x,myBall.position.z,1.2)){toast('❄ Build your fort inside the arena walls');return}
   if(R.r<.38){toast('❄ Roll it a little bigger first, so it makes a proper block');return}
-  const r=Math.min(R.r,1.05),bp=V3(P.pos.x+Math.sin(P.yaw)*(r*1.35+1.1),0,P.pos.z+Math.cos(P.yaw)*(r*1.35+1.1)),B=fortBelow(bp.x,bp.z);let x=bp.x,z=bp.z,y=groundH(x,z),lv=0,ry=P.yaw;
-  if(B){if(B.lv>=1){toast('❄ That stack is as high as it goes');return}x=B.x+(x-B.x)*.25;z=B.z+(z-B.z)*.25;y=B.top-.25;lv=B.lv+1;ry=B.ry}
+  const r=Math.min(R.r,1.05),bp=V3(P.pos.x+Math.sin(P.yaw)*(r*1.2+1.1),0,P.pos.z+Math.cos(P.yaw)*(r*1.2+1.1)),B=fortBelow(bp.x,bp.z);let x=bp.x,z=bp.z,y=groundH(x,z),lv=0,ry=P.yaw;
+  if(B){toast('❄ Fort blocks can\'t be stacked. Set it down next to the other one.');return}
   dropRoll();const f={x:rnd2(x),z:rnd2(z),y:rnd2(y),ry:rnd2(ry),r:rnd2(r),lv,e:fortEpoch};addFort(f);world.send({k:'fort',...f});SB.joined=arClock().round}
 // ---------- scooping snow for ammo
 function scoop(){if(SB.ammo>=AR_MAX||SB.scoopT>0)return;SB.scoopT=.45;me.throwT=.45;trailEmit(P.pos.x+Math.sin(P.yaw)*.5,P.pos.y+.1,P.pos.z+Math.cos(P.yaw)*.5,['#ffffff','#eef6ff','#dfeeff'],14)}
@@ -3221,7 +3221,7 @@ function onMyHit(id){const o=others.get(id),{round,t}=arClock(),play=t<AR_PLAY;
   world.send({k:'sbh',t:id,n:SAVE.name});if(T-SB.outsideToastT>8){SB.outsideToastT=T;toast('❄ Hit! Snowball hits only score points in the Snowball Arena')}}
 {const base=world.onmsg;world.onmsg=m=>{
   if(m.k==='sbh'&&m.a!=null){const a=num(m.a),tm=num(m.tm);if(a===arClock().round)arAddHit(a,tm)}
-  if(m.k==='fort'){const f={x:num(m.x),z:num(m.z),y:num(m.y),ry:num(m.ry),r:clamp(num(m.r),.3,1.1),lv:clamp(num(m.lv)|0,0,1),e:num(m.e)};if(f.e===fortEpoch&&inArena(f.x,f.z,-1))addFort(f);return}
+  if(m.k==='fort'){const f={x:num(m.x),z:num(m.z),y:num(m.y),ry:num(m.ry),r:clamp(num(m.r),.3,1.1),lv:0,e:num(m.e)};if(f.e===fortEpoch&&inArena(f.x,f.z,-1))addFort(f);return}
   return base(m)}}
 // ---------- getting hit: frost creeps in around the edges of the screen
 const frostEl=(()=>{const W=960,H=540,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
@@ -3269,8 +3269,13 @@ let arHudT=0;
 {const b=nearestInteract;nearestInteract=()=>{if(state==='play'&&P.loc==='mtn'&&P.mode==='walk'&&inArena(P.pos.x,P.pos.z)){
     if(P.roll)return{label:'❄ Set down your fort block',act:placeFort};if(SB.ammo<AR_MAX)return{label:`❄ Scoop up snow (${SB.ammo}/${AR_MAX})`,act:scoop}}return b()}}
 addEventListener('keydown',e=>{if(e.code!=='KeyF'||e.repeat||state!=='play'||panelKind||P.loc!=='mtn'||P.mode!=='walk'||!inArena(P.pos.x,P.pos.z))return;if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
-  if(P.roll)placeFort();else{startRoll();hint('❄ Walk around to roll the snow bigger, then press <b>F</b> to set it down as a fort block. Set one on top of another to stack it 2 high.',5)}});
+  if(P.roll)placeFort();else{startRoll();hint('❄ Walk around to roll the snow bigger, then press <b>F</b> to set it down as a fort block. Line blocks up side by side to make a wall.',5)}});
 Object.assign(window.__fx,{inArena,arClock,teamOf,SB,FORTS,addFort,clearForts,placeFort,scoop,aimPoint,frostHit,onMyHit});
+
+// ---------- no skis, boards or sleighs on the pond or in the arena
+const noGearZone=()=>P.loc==='mtn'&&(inArena(P.pos.x,P.pos.z,-3)||Math.hypot(P.pos.x-POND.x,P.pos.z-POND.z)<POND.r+4);
+{const b=setOnFoot;setOnFoot=(on,sport)=>{if(!on&&noGearZone()){toast(inArena(P.pos.x,P.pos.z,-3)?'❄ No skis, boards or sleighs in the Snowball Arena':'⛸ No skis, boards or sleighs on the pond. Just skate!');return}return b(on,sport)}}
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);if(state==='play'&&P.mode==='ride'&&!P.lift&&noGearZone()){setOnFoot(true);if(P.mode==='walk')toast(inArena(P.pos.x,P.pos.z,-3)?'❄ Gear off for the Snowball Arena':'⛸ Gear off for the pond')}}}
 
 /* ================= Camera ================= */
 let curCrouch=0;
