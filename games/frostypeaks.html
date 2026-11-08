@@ -65,6 +65,12 @@ input{font-family:inherit}
 .bigpop{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%) scale(.6);text-align:center;pointer-events:none;animation:bpin .45s cubic-bezier(.2,1.6,.4,1) forwards;text-shadow:0 4px 18px rgba(0,0,0,.55)}
 .bigpop .bi{font-size:96px;line-height:1.1}.bigpop .bn{font-size:38px;font-weight:700}.bigpop .bs{font-size:18px;margin-top:4px}.bigpop.out{transition:opacity .6s;opacity:0}
 @keyframes bpin{to{transform:translate(-50%,-50%) scale(1)}}
+#frost{position:absolute;inset:0;pointer-events:none;opacity:0;background-size:100% 100%;z-index:5;mix-blend-mode:screen}
+#arhud{position:absolute;left:14px;top:14px;background:rgba(10,18,40,.72);border:2px solid rgba(160,220,255,.45);border-radius:16px;padding:8px 18px;font:700 18px Fredoka,sans-serif;color:#fff;text-align:center;display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:center;max-width:430px}
+#arhud .ar-t{font-size:22px;color:#ffe9a8;min-width:60px}#arhud .ar-sub{flex-basis:100%;font-size:13px;font-weight:600;opacity:.85;margin-top:-6px}#arhud b{font-size:22px}
+#arammo{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);background:rgba(10,18,40,.7);border-radius:14px;padding:7px 14px;font:600 14px Fredoka,sans-serif;color:#eaf4ff;white-space:nowrap}
+#arammo kbd{background:#ffffff22;border-radius:5px;padding:1px 6px;font:700 12px Fredoka,sans-serif}.ar-dots{display:inline-flex;gap:4px;vertical-align:middle;margin-right:6px}.ar-dots i{width:12px;height:12px;border-radius:50%;background:#ffffff26;border:1px solid #ffffff55}.ar-dots i.on{background:#fff;box-shadow:0 0 6px #bfe8ff}
+#xhair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none}#xhair:before,#xhair:after{content:'';position:absolute;background:#fff;box-shadow:0 0 3px #000a;border-radius:2px}#xhair:before{left:10px;top:2px;width:2px;height:18px}#xhair:after{top:10px;left:2px;width:18px;height:2px}
 #splat{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.95) 0 12%,rgba(240,248,255,.7) 22%,rgba(255,255,255,0) 45%)}#splat.on{animation:splat 1.4s ease-out}
 @keyframes splat{0%{opacity:1}100%{opacity:0}}
 .odds{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.odds span{border:1px solid;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600}
@@ -612,14 +618,16 @@ for(let x=-300;x<=300;x+=7.5)for(let z=70;z<=ZB+10;z+=7.5){
 // decorative trees in village / summit edges
 for(let i=0;i<70;i++){const a=srand()*Math.PI*2;const x=(srand()<.5?-1:1)*(200+srand()*40),z=ZB+20+srand()*150,sc=.8+srand()*.6;if(Math.hypot(x-160,z-1466)>52)TREES.push({x,z,s:sc,y:groundH(x,z)})}
 for(const t of TREES){const k=Math.floor(t.x/TCELL)+','+Math.floor(t.z/TCELL);if(!TGRID.has(k))TGRID.set(k,[]);TGRID.get(k).push(t)}
-{const im=new THREE.InstancedMesh(treeGeo,M({vertexColors:true,roughness:.9}),TREES.length);const m4=new THREE.Matrix4();
- TREES.forEach((t,i)=>{im.setMatrixAt(i,mtx(t.x,t.y-.2,t.z,srand()*6,t.s*(1.2+((i*7)%5)*.12)))});im.castShadow=true;im.receiveShadow=true;mtn.add(im)}
+{const tm=M({vertexColors:true,roughness:.9}),cells=new Map();
+ TREES.forEach((t,i)=>{const k=Math.floor(t.x/120)+','+Math.floor(t.z/120);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(mtx(t.x,t.y-.2,t.z,srand()*6,t.s*(1.2+((i*7)%5)*.12)))});
+ for(const list of cells.values()){const im=new THREE.InstancedMesh(treeGeo,tm,list.length);list.forEach((m,i)=>im.setMatrixAt(i,m));im.computeBoundingSphere();im.castShadow=true;im.receiveShadow=true;mtn.add(im)}}
 function treeNear(x,z,r){const cx=Math.floor(x/TCELL),cz=Math.floor(z/TCELL);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const a=TGRID.get((cx+i)+','+(cz+j));if(!a)continue;for(const t of a){const d=Math.hypot(t.x-x,t.z-z);if(d<r*t.s+.1)return t}}return null}
 // open country: forests on the rolling hills beyond the rope line (scenery only)
 {const list=[];const r=()=>srand();for(let i=0;i<9000;i++){const x=(r()*2-1)*1450,z=Z0-1000+r()*(Z1-Z0+2200);const ax=Math.abs(x);
    if(ax<262&&z>-85&&z<1620)continue;const dens=.55+.35*Math.sin(x*.004+z*.003)*Math.cos(z*.005-x*.002);if(r()>dens)continue;list.push([x,z,.9+r()*1.1])}
  const lo=mergeColored([[new THREE.ConeGeometry(2.3,3.2,6,1,true),0x1d4d32,mtx(0,2,0)],[new THREE.ConeGeometry(1.6,2.6,6,1,true),0x1d4d32,mtx(0,3.5,0)],[new THREE.ConeGeometry(.95,1.9,6,1,true),0xf4f8ff,mtx(0,4.6,0)]]);
- const im=new THREE.InstancedMesh(lo,M({vertexColors:true,roughness:.9,side:THREE.DoubleSide}),list.length);list.forEach(([x,z,s],i)=>im.setMatrixAt(i,mtx(x,baseH(x,z)-.3,z,r()*6,s*1.5)));im.castShadow=false;mtn.add(im)}
+ const lm=M({vertexColors:true,roughness:.9,side:THREE.DoubleSide}),cells=new Map();list.forEach(([x,z,s])=>{const k=Math.floor(x/300)+','+Math.floor(z/300);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(mtx(x,baseH(x,z)-.3,z,r()*6,s*1.5))});
+ for(const ms of cells.values()){const im=new THREE.InstancedMesh(lo,lm,ms.length);ms.forEach((m,i)=>im.setMatrixAt(i,m));im.computeBoundingSphere();im.castShadow=false;mtn.add(im)}}
 
 /* ---------- park: kickers, rails, halfpipe deck flags ---------- */
 {const snowM=M({color:0xf8fbff,roughness:.75}),lipM=M({color:0x2f7bff,roughness:.6}),bumpLipM=new THREE.MeshStandardMaterial({color:0xff3344,emissive:0xff2030,emissiveIntensity:.6});
@@ -871,7 +879,7 @@ function updateFireworks(dt){fwNext-=dt;if(fwNext<=0){fwNext=.7+Math.random()*1.
 
 /* ================= New village spots: pond, snowman yard, firework workshop, race + leaderboard ================= */
 const ZONES=[];
-const POND={x:72,z:1478,r:38},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
+const ARENA={x:-112,z:1521,hw:22,hd:23},POND={x:72,z:1478,r:38},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
 const GIANT={x:-70,z:1400},DROP={x:-70,z:1400,r:7.2};
 const RACE={startZ:72,finZ:1300,gates:[],R:3.3};
 for(let i=0;i<20;i++){const z=128+i*58;RACE.gates.push({z,x:mainX(z)+(i%2?5.5:-5.5)})}
@@ -980,7 +988,8 @@ const ringPts=(cx,cz,R,n,j=0)=>{const a=[];for(let i=0;i<n;i++){const t=i/n*Math
 const MAIN=addRoute([[-123,1427],[-96,1430.5],[-67,1426.5],[-39,1429.5],[-11,1427],[16,1430],[44,1426.6],[70,1428.4],[96,1426.5]],4.2);
 const msZ=x=>{let b=MAIN.pts[0];for(const p of MAIN.pts)if(Math.abs(p[0]-x)<Math.abs(b[0]-x))b=p;return b[1]};
 const spur=(x,rest,w=3.1,o)=>addRoute([[x,msZ(x)],...rest],w,o);
-spur(-114,[[-116,1410],[-121,1396]]);                 // Snow Launcher
+spur(-114,[[-116,1410],[-121,1396]]);
+spur(-123,[[-122,1450],[-117,1478],[ARENA.x,ARENA.z-ARENA.hd-1.5]],3.2);   // Snowball Arena                 // Snow Launcher
 spur(-98,[[-97,1403],[-101,1384]]);                   // North Pole Express
 spur(-64,[[-63.6,1422],[-65,1416.5]],3,{deco:false}); // Snowman Yard
 spur(-40,[[-38,1405],[-41,1390],[-45,1381]]);          // race board
@@ -1020,7 +1029,7 @@ ZONES.push({x:XTREE.x,z:XTREE.z,r:TRING+7},{x:COURT.x,z:COURT.z,r:COURT.HR+10},{
 // ---------- things that line the walks: hedges, little pines, street lamps, candy-cane lamps, benches
 const BENCHES=[];
 {let rs=4242;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
- const avoid=[[XTREE.x,XTREE.z,20.5],[LODGE.x,LODGE.z,23],[...lodgeW(0,-LODGE.d/2-6),7],[POND.x,POND.z,POND.r+4],[-124,1386,8],[GACHA_AT.x,GACHA_AT.z,6.5],[PLAZA.x,PLAZA.z,10],[-30,1372,5],[-20,1400,4],[-47,1374,6],[YARD.x,YARD.z,YARD.r-2],[WORKSHOP.x,WORKSHOP.z,8],
+ const avoid=[[ARENA.x,ARENA.z,34],[XTREE.x,XTREE.z,20.5],[LODGE.x,LODGE.z,23],[...lodgeW(0,-LODGE.d/2-6),7],[POND.x,POND.z,POND.r+4],[-124,1386,8],[GACHA_AT.x,GACHA_AT.z,6.5],[PLAZA.x,PLAZA.z,10],[-30,1372,5],[-20,1400,4],[-47,1374,6],[YARD.x,YARD.z,YARD.r-2],[WORKSHOP.x,WORKSHOP.z,8],
    ...LIFTDEF.map(L=>[L.x+3,L.zb+4,9]),...COURT_PLOTS.map(p=>{const [dx,dz]=plotDir(p);return[p.x+dx*3,p.z+dz*3,10]})];
  const clear=(x,z,r)=>{if(onPath(x,z,r+.35))return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;
    if(COLLIDERS.some(c=>x>c.x0-r-.5&&x<c.x1+r+.5&&z>c.z0-r-.5&&z<c.z1+r+.5))return false;for(const b of BENCHES)if(Math.hypot(b.x-x,b.z-z)<r+1.4)return false;return true};
@@ -1084,7 +1093,7 @@ const BENCHES=[];
  const onRun=(x,z)=>Math.abs(x-mainX(z))<36||Math.abs(x-leftX(z))<26||(z<PARK.z0+20&&Math.abs(x-rightX(z))<22)||(x>PARK.x0-8&&x<PARK.x1+8&&z>PARK.z0-30&&z<PARK.z1+30)||(z>PIPE.z0-30&&z<PIPE.z1+30&&Math.abs(x-PIPE.x)<30);
  const inLift=(x,z)=>LIFTDEF.some(L=>z>L.zt-40&&z<L.zb+40&&x>L.x-10&&x<L.x+15);
  const blocked=(x,z,r)=>COLLIDERS.some(c=>x>c.x0-r&&x<c.x1+r&&z>c.z0-r&&z<c.z1+r);
- function free(x,z,r){if(Math.abs(x)>290||z<Z0+20||z>Z1-20)return false;if(Math.abs(x)>ropeX(z)-4-r||z>ROPE_ZE-4)return false;if(onPath(x,z,r+.8))return false;if(z<ZB-30&&onRun(x,z))return false;if(inLift(x,z))return false;
+ function free(x,z,r){if(Math.abs(x-ARENA.x)<ARENA.hw+4+r&&Math.abs(z-ARENA.z)<ARENA.hd+4+r)return false;if(Math.abs(x)>290||z<Z0+20||z>Z1-20)return false;if(Math.abs(x)>ropeX(z)-4-r||z>ROPE_ZE-4)return false;if(onPath(x,z,r+.8))return false;if(z<ZB-30&&onRun(x,z))return false;if(inLift(x,z))return false;
    if(blocked(x,z,r+2)||treeNear(x,z,r+1.5))return false;if(ZONES.some(q=>Math.hypot(x-q.x,z-q.z)<q.r+r)||Math.abs(z-RACE.startZ)<8||Math.abs(z-RACE.finZ)<8)return false;if(Math.hypot(x+30,z-1392)<12||Math.hypot(x-PLAZA.x,z-PLAZA.z)<12||Math.hypot(x-XTREE.x,z-XTREE.z)<17)return false;
    if(z>ZB-50&&Math.abs(x-mainX(ZB-50))<20&&z<ZB+5)return false;
    for(const d of DECO)if(Math.hypot(d.x-x,d.z-z)<r+d.r+2)return false;return true}
@@ -2275,14 +2284,13 @@ function throwSnowball(){if(!canThrow()||sbCool>0)return;sbCool=.45;camera.getWo
 function spawnSnowball(p,v,from){if(SBALLS.length>60){const o=SBALLS.shift();mtn.remove(o.m);sbPool.push(o.m)}const m=sbMesh();m.position.copy(p);SBALLS.push({m,v,from,t:0})}
 function sbPuff(x,y,z,n=22){trailEmit(x,y,z,['#ffffff','#eef6ff','#cfe6ff'],n)}
 function updateSnowballs(dt){sbCool=Math.max(0,sbCool-dt);if(me.throwT>0)me.throwT-=dt;
-  for(let i=SBALLS.length-1;i>=0;i--){const b=SBALLS[i],p=b.m.position;b.t+=dt;b.v.y-=12*dt;p.addScaledVector(b.v,dt);let hit=null,hitId=null;
+  for(let i=SBALLS.length-1;i>=0;i--){const b=SBALLS[i],p=b.m.position;b.t+=dt;b.v.y-=9*dt;p.addScaledVector(b.v,dt);let hit=null,hitId=null;
     const cand=[];if(b.from!==myId&&P.loc==='mtn')cand.push([myId,P.pos]);for(const [id,o] of others)if(id!==b.from&&o.loc==='mtn')cand.push([id,o.pos]);
     for(const [id,q] of cand){if(p.y>q.y+.15&&p.y<q.y+1.9&&Math.hypot(p.x-q.x,p.z-q.z)<.55){hit=q;hitId=id;break}}
     const gh=groundH(p.x,p.z);let done=b.t>4||p.y<gh;
-    if(!done)for(const c of COLLIDERS)if(p.x>c.x0&&p.x<c.x1&&p.z>c.z0&&p.z<c.z1&&p.y<gh+6){done=true;break}
+    if(!done)for(const c of COLLIDERS)if(p.x>c.x0&&p.x<c.x1&&p.z>c.z0&&p.z<c.z1&&p.y<(c.y1??gh+6)){done=true;break}
     if(hit||done){sbPuff(p.x,p.y,p.z,hit?34:16);mtn.remove(b.m);sbPool.push(b.m);SBALLS.splice(i,1);
-      if(hit&&b.from===myId&&hitId!==myId){const o=others.get(hitId),last=sbHitT.get(hitId)||-99;world.send({k:'sbh',t:hitId,n:SAVE.name});
-        if(T-last>3){sbHitT.set(hitId,T);addPoints(200);showTrick('❄ Direct hit on '+(o?o.name:'someone')+'!',200)}else toast('❄ Hit! (points every 3 seconds per player)')}}}}
+      if(hit&&b.from===myId&&hitId!==myId)onMyHit(hitId)}}}
 function gotHit(by){toast('❄ '+(by||'Someone')+' hit you with a snowball!');const d=$('splat');d.classList.remove('on');void d.offsetWidth;d.classList.add('on')}
 document.addEventListener('mousedown',e=>{if(e.button===0&&document.pointerLockElement)throwSnowball()});
 addEventListener('keydown',e=>{if(e.code==='KeyQ'&&!e.repeat)throwSnowball()});
@@ -2325,7 +2333,7 @@ function stepLaunch(dt){const Lc=P.launch;Lc.t+=dt;
   if(u>=1){P.launch=null;P.mode='ride';P.pos.y=groundH(P.pos.x,P.pos.z);P.vel.set(0,0,0);const ny=0;P.visYaw=wrapA((P.visYaw||0)+P.yaw-ny);P.yaw=ny;camS.yaw=0;P.lastAlt=P.pos.y;sfx.land(.8);toast('❄ Landed at '+Lc.name+'! Ride down when you\'re ready.')}}
 
 // ---------- realistic candy decor in the empty village spots
-{const DE=[];const avoid=[[LODGE.x,LODGE.z,26],[PLAZA.x,PLAZA.z,14],[XTREE.x,XTREE.z,18],[POND.x,POND.z,POND.r+6],[YARD.x,YARD.z,YARD.r+2],[WORKSHOP.x,WORKSHOP.z,10],[LBPOS.x,LBPOS.z,8],[GACHA.x,GACHA.z,9],[LAUNCH.x,LAUNCH.z,10],[-30,1372,10],[-20,1400,5]];
+{const DE=[];const avoid=[[ARENA.x,ARENA.z,34],[LODGE.x,LODGE.z,26],[PLAZA.x,PLAZA.z,14],[XTREE.x,XTREE.z,18],[POND.x,POND.z,POND.r+6],[YARD.x,YARD.z,YARD.r+2],[WORKSHOP.x,WORKSHOP.z,10],[LBPOS.x,LBPOS.z,8],[GACHA.x,GACHA.z,9],[LAUNCH.x,LAUNCH.z,10],[-30,1372,10],[-20,1400,5]];
  const ok=(x,z,r)=>{if(Math.abs(x)>ropeX(z)-6||z<1352||z>1494||onPath(x,z,r+.8))return false;for(const [ax,az,ar] of avoid)if(Math.hypot(x-ax,z-az)<ar+r)return false;for(const L of LIFTS)if(Math.abs(x-L.x-2.5)<9+r&&z>L.zb-60&&z<L.zb+14)return false;
    if(COLLIDERS.some(c=>x>c.x0-r-1&&x<c.x1+r+1&&z>c.z0-r-1&&z<c.z1+r+1))return false;if(Math.abs(x-mainX(1340))<16&&z<1372)return false;for(const d of DE)if(Math.hypot(d.x-x,d.z-z)<d.r+r+2)return false;return true};
  let rs=77;const rnd=()=>{rs=(rs*16807)%2147483647;return(rs-1)/2147483646};
@@ -3147,6 +3155,123 @@ function staticMerge(root,{anim=null,filter=null,cell=0}={}){
     window.__fx.smMerged=n}}}
 Object.assign(window.__fx,{staticMerge});
 
+/* ================= Snowball Arena: teams, timed rounds, scooped ammo, rolled snow forts ================= */
+const AR=ARENA,AR_CYCLE=150,AR_PLAY=120,AR_MAX=6,AR_HIT_PTS=100,AR_WIN_PTS=500;
+function inArena(x,z,pad=0){return Math.abs(x-ARENA.x)<ARENA.hw-pad&&Math.abs(z-ARENA.z)<ARENA.hd-pad}
+const arNow=()=>Date.now()/1000,arClock=()=>{const s=arNow();return{round:Math.floor(s/AR_CYCLE),t:s%AR_CYCLE}};
+const arEpoch=()=>Math.floor((arNow()-AR_PLAY)/AR_CYCLE);   // forts live from the end of one game to the end of the next
+function teamOf(id,round){let h=2166136261;const s=String(id)+':'+round;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0)%2}  // 0 red, 1 green
+const TEAM=[{n:'Red',c:'#ff4d5e',hex:0xff4d5e,e:'🔴'},{n:'Green',c:'#4dff88',hex:0x4dff88,e:'🟢'}];
+const SB={ammo:0,scoopT:0,score:{round:-1,s:[0,0]},joined:-1,awarded:-1,lastHit:new Map(),outsideToastT:-99};
+// ---------- the arena: packed snow walls (same lumpy snow as the giant snowman), two gates, team banners
+{const gy=groundH(AR.x,AR.z),wallG=lumpyGeo(1,2,.09,7),blocks=[];
+ const side=(x0,z0,x1,z1,gate)=>{const L=Math.hypot(x1-x0,z1-z0),n=Math.round(L/2.1),ry=Math.atan2(x1-x0,z1-z0)+Math.PI/2;
+   for(let i=0;i<n;i++){const t=(i+.5)/n,x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;if(gate&&Math.hypot(x-gate[0],z-gate[1])<3.6)continue;
+     for(let row=0;row<2;row++){const y=groundH(x,z),j=(i*7+row*3)%5;blocks.push(mtx(x+(row?.5:0)*Math.cos(ry),y+.35+row*.62,z,ry+(j-2)*.05,1));blocks[blocks.length-1].sc=[1.12+j*.04,.48-row*.06,.62]}}};
+ const X0=AR.x-AR.hw,X1=AR.x+AR.hw,Z0=AR.z-AR.hd,Z1=AR.z+AR.hd;
+ side(X0,Z0,X1,Z0,[AR.x,Z0]);side(X1,Z0,X1,Z1,[X1,AR.z]);side(X1,Z1,X0,Z1,null);side(X0,Z1,X0,Z0,null);
+ const im=new THREE.InstancedMesh(wallG,snowRealM,blocks.length),_s=new THREE.Vector3(),_p=new THREE.Vector3(),_q=new THREE.Quaternion();
+ blocks.forEach((m,i)=>{m.decompose(_p,_q,_s);m.compose(_p,_q,_s.set(...m.sc));im.setMatrixAt(i,m)});im.computeBoundingSphere();im.castShadow=true;im.receiveShadow=true;mtn.add(im);
+ // wall colliders (low, so snowballs fly over the top)
+ const wy=gy+1.25,T=.7;for(const c of [{x0:X0,x1:AR.x-3.4,z0:Z0-T,z1:Z0+T},{x0:AR.x+3.4,x1:X1,z0:Z0-T,z1:Z0+T},{x0:X1-T,x1:X1+T,z0:Z0,z1:AR.z-3.4},{x0:X1-T,x1:X1+T,z0:AR.z+3.4,z1:Z1},{x0:X0,x1:X1,z0:Z1-T,z1:Z1+T},{x0:X0-T,x1:X0+T,z0:Z0,z1:Z1}]){c.y1=wy;COLLIDERS.push(c)}
+ // gate pillars with lanterns, corner banners in team colours
+ for(const [gx,gz,ry] of [[AR.x,Z0,0],[X1,AR.z,Math.PI/2]])for(const s of [-1,1]){const px=gx+Math.cos(ry)*s*3.9,pz=gz-Math.sin(ry)*s*3.9,py=groundH(px,pz);
+   const p=new THREE.Mesh(wallG,snowRealM);p.scale.set(.8,1.25,.8);p.position.set(px,py+1,pz);p.castShadow=true;mtn.add(p);addBulb(px,py+2.4,pz,0xffe0a0);addGlow(px,py+2.5,pz,0xffd08a)}
+ const flagG=new THREE.PlaneGeometry(1.3,.8),poleG=new THREE.CylinderGeometry(.05,.06,3.6,8),poleM=M({color:0x8a6040});
+ [[X0,Z0,0],[X1,Z0,1],[X1,Z1,1],[X0,Z1,0]].forEach(([x,z,t])=>{const y=groundH(x,z);mesh(poleG,poleM,x,y+1.8,z,mtn);const f=mesh(flagG,new THREE.MeshStandardMaterial({color:TEAM[t].hex,emissive:TEAM[t].hex,emissiveIntensity:.35,side:THREE.DoubleSide}),x+.68,y+3.1,z,mtn);addGlow(x,y+3.7,z,TEAM[t].hex)});
+ addPool(AR.x,AR.z,26,0x9fd0ff,.05);
+ glowTitle('❄ Snowball Arena',null,AR.x,Z0-2,{h:5,col:'#9fe0ff',w:11,near:120});
+ ZONES.push({x:AR.x,z:AR.z,r:30});buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
+ MM_SPOTS.push(['❄','Snowball Arena',AR.x,AR.z])}
+// ---------- forts: roll snow (like the snowman), then set it down as a packed snow block; blocks stack up to 3 high
+const FORTS=[],fortGeo=lumpyGeo(1,3,.07,13);let fortEpoch=arEpoch();
+function addFort(f){if(FORTS.length>120)return;const sx=f.r*1.35,sy=f.r*.66,sz=f.r*.82,m=new THREE.Mesh(fortGeo,snowRealM);m.scale.set(sx,sy,sz);m.position.set(f.x,f.y+sy*.92,f.z);m.rotation.y=f.ry;m.castShadow=true;m.receiveShadow=true;mtn.add(m);
+  const c=oBox(f.x,f.z,sx*.92,sz*.92,f.ry);c.y1=f.y+sy*1.8;COLLIDERS.push(c);FORTS.push({...f,m,c,top:f.y+sy*1.72,sx,sz,lv:f.lv||0});trailEmit(f.x,f.y+sy,f.z,['#ffffff','#eef6ff','#cfe6ff'],26)}
+function clearForts(){for(const F of FORTS){mtn.remove(F.m);const k=COLLIDERS.indexOf(F.c);if(k>=0)COLLIDERS.splice(k,1);trailEmit(F.x,F.top-.3,F.z,['#ffffff','#eef6ff'],10)}FORTS.length=0}
+function fortBelow(x,z){let best=null;for(const F of FORTS){const dx=x-F.x,dz=z-F.z,c=Math.cos(F.ry),s=Math.sin(F.ry),lx=dx*c-dz*s,lz=dx*s+dz*c;if(Math.abs(lx)<F.sx*.85&&Math.abs(lz)<F.sz*.95&&(!best||F.top>best.top))best=F}return best}
+function placeFort(){const R=P.roll;if(!R)return;if(!inArena(myBall.position.x,myBall.position.z,1.2)){toast('❄ Build your fort inside the arena walls');return}
+  if(R.r<.38){toast('❄ Roll it a little bigger first, so it makes a proper block');return}
+  const bp=myBall.position,r=Math.min(R.r,1.05),B=fortBelow(bp.x,bp.z);let x=bp.x,z=bp.z,y=groundH(x,z),lv=0,ry=P.yaw;
+  if(B){if(B.lv>=2){toast('❄ That stack is as high as it goes');return}x=B.x+(x-B.x)*.25;z=B.z+(z-B.z)*.25;y=B.top-.12;lv=B.lv+1;ry=B.ry}
+  dropRoll();const f={x:rnd2(x),z:rnd2(z),y:rnd2(y),ry:rnd2(ry),r:rnd2(r),lv,e:fortEpoch};addFort(f);world.send({k:'fort',...f});SB.joined=arClock().round}
+// ---------- scooping snow for ammo
+function scoop(){if(SB.ammo>=AR_MAX||SB.scoopT>0)return;SB.scoopT=.45;me.throwT=.45;trailEmit(P.pos.x+Math.sin(P.yaw)*.5,P.pos.y+.1,P.pos.z+Math.cos(P.yaw)*.5,['#ffffff','#eef6ff','#dfeeff'],14)}
+// ---------- aiming: the ball lands exactly under the crosshair
+const _aq=new THREE.Vector3(),_ad=new THREE.Vector3(),_ar=new THREE.Vector3();
+function aimPoint(out){camera.getWorldDirection(_ad);const o=camera.position,d0=camS.mode==='first'?.4:Math.max(.5,o.distanceTo(P.pos)-.4);
+  for(let d=d0;d<90;d+=.35){_aq.copy(o).addScaledVector(_ad,d);if(_aq.y<groundH(_aq.x,_aq.z))return out.copy(_aq);
+    for(const [id,q] of others)if(q.loc==='mtn'&&_aq.y>q.pos.y&&_aq.y<q.pos.y+1.9&&Math.hypot(_aq.x-q.pos.x,_aq.z-q.pos.z)<.5)return out.copy(_aq);
+    for(const F of FORTS)if(_aq.y<F.top&&Math.hypot(_aq.x-F.x,_aq.z-F.z)<Math.max(F.sx,F.sz)*.8)return out.copy(_aq);
+    for(const c of COLLIDERS)if(c.y1!=null&&_aq.x>c.x0&&_aq.x<c.x1&&_aq.z>c.z0&&_aq.z<c.z1&&_aq.y<c.y1)return out.copy(_aq)}
+  return out.copy(o).addScaledVector(_ad,90)}
+throwSnowball=function(){if(!canThrow()||sbCool>0||SB.scoopT>0||P.roll)return;const ina=inArena(P.pos.x,P.pos.z);
+  if(ina&&SB.ammo<=0){hint('❄ Out of snow! Press <b>E</b> to scoop some up.',1.6);return}
+  if(ina){SB.ammo--;SB.joined=arClock().round}sbCool=.32;
+  const T=aimPoint(V3());camera.getWorldDirection(_ad);_ar.set(-_ad.z,0,_ad.x).normalize();const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1;
+  const p=V3(P.pos.x,P.pos.y+1.45,P.pos.z).addScaledVector(_ar,.28);p.x+=fx/fl*.45;p.z+=fz/fl*.45;
+  const D=T.clone().sub(p),dist=D.length(),t=clamp(dist/34,.05,2.6),v=D.multiplyScalar(1/t);v.y+=.5*9*t;
+  P.yaw=Math.atan2(fx,fz);me.throwT=.35;spawnSnowball(p,v,myId);world.send({k:'sb',p:[rnd2(p.x),rnd2(p.y),rnd2(p.z)],v:[rnd2(v.x),rnd2(v.y),rnd2(v.z)]})};
+// ---------- hits: points only count inside the arena during a game
+function arAddHit(round,team){if(SB.score.round!==round)SB.score={round,s:[0,0]};if(team===0||team===1)SB.score.s[team]++}
+function onMyHit(id){const o=others.get(id),{round,t}=arClock(),play=t<AR_PLAY;
+  if(play&&o&&inArena(P.pos.x,P.pos.z,-1)&&inArena(o.pos.x,o.pos.z,-1)){const mt=teamOf(myId,round);
+    if(teamOf(id,round)===mt){toast(`❄ ${o.name} is on your team!`);world.send({k:'sbh',t:id,n:SAVE.name});return}
+    world.send({k:'sbh',t:id,n:SAVE.name,a:round,tm:mt});arAddHit(round,mt);SB.joined=round;const last=SB.lastHit.get(id)||-99;
+    if(T-last>1.5){SB.lastHit.set(id,T);addPoints(AR_HIT_PTS);showTrick('❄ Hit '+o.name+'!',AR_HIT_PTS)}else toast('❄ Hit!');return}
+  world.send({k:'sbh',t:id,n:SAVE.name});if(T-SB.outsideToastT>8){SB.outsideToastT=T;toast('❄ Hit! Snowball hits only score points in the Snowball Arena')}}
+{const base=world.onmsg;world.onmsg=m=>{
+  if(m.k==='sbh'&&m.a!=null){const a=num(m.a),tm=num(m.tm);if(a===arClock().round)arAddHit(a,tm)}
+  if(m.k==='fort'){const f={x:num(m.x),z:num(m.z),y:num(m.y),ry:num(m.ry),r:clamp(num(m.r),.3,1.1),lv:clamp(num(m.lv)|0,0,2),e:num(m.e)};if(f.e===fortEpoch&&inArena(f.x,f.z,-1))addFort(f);return}
+  return base(m)}}
+// ---------- getting hit: frost creeps in around the edges of the screen
+const frostEl=(()=>{const W=960,H=540,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const gr=g.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,W*.62);gr.addColorStop(0,'rgba(220,240,255,0)');gr.addColorStop(.55,'rgba(200,230,255,.28)');gr.addColorStop(1,'rgba(235,248,255,.92)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+  const crystal=(x,y,l,a,d)=>{if(d>4||l<4)return;const x2=x+Math.cos(a)*l,y2=y+Math.sin(a)*l;g.beginPath();g.moveTo(x,y);g.lineTo(x2,y2);g.stroke();for(const s of [-1,1])crystal(x+(x2-x)*.55,y+(y2-y)*.55,l*.48,a+s*(.7+Math.random()*.3),d+1);crystal(x2,y2,l*.62,a+(Math.random()-.5)*.5,d+1)};
+  g.strokeStyle='rgba(255,255,255,.75)';g.lineWidth=1.6;g.shadowColor='rgba(170,220,255,.9)';g.shadowBlur=6;
+  for(let i=0;i<70;i++){const e=i%4,u=Math.random(),x=e===0?u*W:e===1?W:e===2?u*W:0,y=e===0?0:e===1?u*H:e===2?H:u*H,a=Math.atan2(H/2-y,W/2-x)+(Math.random()-.5)*.9;crystal(x,y,26+Math.random()*60,a,0)}
+  const d=document.createElement('div');d.id='frost';d.style.backgroundImage=`url(${cv.toDataURL()})`;document.getElementById('hud')?.parentNode.appendChild(d)||document.body.appendChild(d);return d})();
+function frostHit(){const d=frostEl;d.style.transition='none';d.style.opacity='1';void d.offsetWidth;setTimeout(()=>{d.style.transition='opacity 1.9s ease-out';d.style.opacity='0'},420)}
+{const b=gotHit;gotHit=by=>{b(by);frostHit()}}
+// ---------- HUD: team score + timer at the top, ammo at the bottom, a crosshair while you're in the arena
+const arHud=(()=>{const top=document.createElement('div');top.id='arhud';top.className='hidden';const am=document.createElement('div');am.id='arammo';am.className='hidden';const xh=document.createElement('div');xh.id='xhair';xh.className='hidden';
+  const host=document.getElementById('hud')||document.body;host.appendChild(top);host.appendChild(am);host.appendChild(xh);return{top,am,xh,key:''}})();
+// team rings under everyone standing in the arena
+const TRING_G=new THREE.RingGeometry(.48,.62,28),teamRings=new Map();
+function teamRing(key,team,pos){let r=teamRings.get(key);if(!r){r=new THREE.Mesh(TRING_G,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.85,depthWrite:false,toneMapped:false}));r.rotation.x=-Math.PI/2;mtn.add(r);teamRings.set(key,r)}
+  r.material.color.setHex(TEAM[team].hex);r.position.set(pos.x,groundH(pos.x,pos.z)+.06,pos.z);r.visible=true;r.userData.seen=1}
+let arHudT=0;
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);const {round,t}=arClock(),play=t<AR_PLAY;
+  // a new game clears the forts built for the last one
+  const ep=arEpoch();if(ep!==fortEpoch){fortEpoch=ep;if(FORTS.length){clearForts();if(inArena(P.pos.x,P.pos.z,-6))toast('❄ The arena was cleared for a new game. Build a fresh fort!')}}
+  if(SB.score.round!==round)SB.score={round,s:[0,0]};
+  if(SB.scoopT>0){SB.scoopT-=dt;if(SB.scoopT<=0)SB.ammo=Math.min(AR_MAX,SB.ammo+2)}
+  // end of a game: the winning team's players get a bonus
+  if(!play&&SB.awarded!==round&&SB.joined===round){SB.awarded=round;const mt=teamOf(myId,round),[r0,r1]=SB.score.s,mine=mt?r1:r0,theirs=mt?r0:r1;
+    if(mine>theirs){addPoints(AR_WIN_PTS);bigPop('🏆',`${TEAM[mt].n} team wins!`,`${r0} – ${r1} · <b style="color:#ffd54d">+${AR_WIN_PTS} pts</b>`,TEAM[mt].c)}
+    else if(mine===theirs){addPoints(200);bigPop('🤝','Draw!',`${r0} – ${r1} · <b style="color:#ffd54d">+200 pts</b>`,'#bfe8ff')}
+    else bigPop('❄',`${TEAM[1-mt].n} team wins`,`${r0} – ${r1} · better luck next game!`,TEAM[1-mt].c)}
+  const here=state==='play'&&P.loc==='mtn'&&inArena(P.pos.x,P.pos.z,-8),inside=here&&inArena(P.pos.x,P.pos.z);
+  // face where you aim while walking in the arena, like a shooter
+  if(inside&&P.mode==='walk'&&camS.mode!=='first'&&!P.roll)P.yaw=angLerp(P.yaw,camS.yaw+camS.yawOff,1-Math.exp(-14*dt));
+  for(const r of teamRings.values())r.userData.seen=0;
+  if(inside)teamRing('me',teamOf(myId,round),P.pos);for(const [id,o] of others)if(o.loc==='mtn'&&inArena(o.pos.x,o.pos.z))teamRing(id,teamOf(id,round),o.pos);
+  for(const [k,r] of teamRings)if(!r.userData.seen){r.visible=false;if(k!=='me'&&!others.has(k)){mtn.remove(r);r.material.dispose();teamRings.delete(k)}}
+  arHud.xh.classList.toggle('hidden',!(inside&&P.mode==='walk'&&!P.roll&&!panelKind));
+  arHudT-=dt;if(arHudT>0)return;arHudT=.2;
+  arHud.top.classList.toggle('hidden',!here);arHud.am.classList.toggle('hidden',!inside);if(!here)return;
+  const mt=teamOf(myId,round),[r0,r1]=SB.score.s,left=Math.max(0,Math.ceil((play?AR_PLAY:AR_CYCLE)-t)),mmss=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;
+  const top=play?`<span style="color:${TEAM[0].c}">${TEAM[0].e} Red <b>${r0}</b></span><span class="ar-t">${mmss}</span><span style="color:${TEAM[1].c}"><b>${r1}</b> Green ${TEAM[1].e}</span><div class="ar-sub">You're on <b style="color:${TEAM[mt].c}">${TEAM[mt].n}</b> · hit the other team for +${AR_HIT_PTS} · winners get +${AR_WIN_PTS}</div>`
+    :`<span class="ar-t">Next game in ${mmss}</span><div class="ar-sub">Build your fort now! Teams are picked when the game starts.</div>`;
+  const dots=Array.from({length:AR_MAX},(_,i)=>`<i class="${i<SB.ammo?'on':''}"></i>`).join('');
+  const am=P.roll?`<b>Rolling a fort block</b> · walk to make it bigger · <kbd>F</kbd> or <kbd>E</kbd> to set it down`:`<span class="ar-dots">${dots}</span> ${SB.scoopT>0?'Scooping…':SB.ammo?`${SB.ammo} snowball${SB.ammo>1?'s':''}`:'No snow!'} · <kbd>E</kbd> scoop · <kbd>Click</kbd> throw · <kbd>F</kbd> roll a fort block`;
+  const key=top+am;if(key!==arHud.key){arHud.key=key;arHud.top.innerHTML=top;arHud.am.innerHTML=am}}}
+// interact: scoop snow / set down a fort block
+{const b=nearestInteract;nearestInteract=()=>{if(state==='play'&&P.loc==='mtn'&&P.mode==='walk'&&inArena(P.pos.x,P.pos.z)){
+    if(P.roll)return{label:'❄ Set down your fort block',act:placeFort};if(SB.ammo<AR_MAX)return{label:`❄ Scoop up snow (${SB.ammo}/${AR_MAX})`,act:scoop}}return b()}}
+addEventListener('keydown',e=>{if(e.code!=='KeyF'||e.repeat||state!=='play'||panelKind||P.loc!=='mtn'||P.mode!=='walk'||!inArena(P.pos.x,P.pos.z))return;if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+  if(P.roll)placeFort();else{startRoll();hint('❄ Walk around to roll the snow bigger, then press <b>F</b> to set it down as a fort block. Put one on top of another to stack them.',5)}});
+Object.assign(window.__fx,{inArena,arClock,teamOf,SB,FORTS,addFort,clearForts,placeFort,scoop,aimPoint,frostHit,onMyHit});
+
 /* ================= Camera ================= */
 let curCrouch=0;
 const freeCam=()=>INDOOR()||P.mode==='sit'||P.mode==='walk';
@@ -3178,6 +3303,7 @@ function updateCamera(dt){
   _cp.set(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(dist).add(_ct);
   if(P.loc==='mtn'){const gh=groundH(_cp.x,_cp.z)+.7;camS.gh=camS.gh==null||Math.abs(camS.gh-gh)>5?gh:camS.gh+(gh-camS.gh)*(1-Math.exp(-8*dt));if(_cp.y<camS.gh)_cp.y=camS.gh}
   else{const R=ROOMS[P.loc];_cp.x=clamp(_cp.x,(R.X0??-R.W)+.4,(R.X1??R.W)-.4);_cp.z=clamp(_cp.z,-R.D+.4,R.D-.4);_cp.y=clamp(_cp.y,.4,R.H-.4)}
+  if(P.loc==='mtn'&&P.mode==='walk'&&inArena(P.pos.x,P.pos.z,-4)){const rx=-Math.cos(yaw),rz=Math.sin(yaw);_cp.lerp(_ct,.3);_cp.x+=rx*.9;_cp.z+=rz*.9;_ct.x+=rx*.9;_ct.z+=rz*.9;_ct.y+=.25;_cp.y=Math.max(_cp.y,groundH(_cp.x,_cp.z)+.7)}
   camera.position.copy(_cp);camera.lookAt(_ct)}
 
 /* ================= Local avatar pose ================= */
