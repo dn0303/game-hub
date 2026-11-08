@@ -3726,20 +3726,20 @@ const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,dec
    if(st===1){h+=`<div class="lab">Cookie cutter</div><div class="grid">${CK.SHAPES.map(s=>`<button data-shape="${s.id}" class="${BK.shape===s.id?'on':''}"><img src="${thumbs[s.id]}">${s.name}</button>`).join('')}</div>
      <div class="lab">Gingerbread</div><div class="grid">${CK.DOUGHS.map(d=>`<button data-dough="${d.id}" class="${BK.dough===d.id?'on':''}"><span class="sw" style="background:rgb(${d.rgb})"></span>${d.name}</button>`).join('')}</div>
      <div class="tip">This is the raw dough. It puffs up and turns golden brown at the edges when you bake it at the end.</div>
-     <div class="nav"><button class="btn gold" data-bkgo="2">Next: icing →</button></div>`;tipEl.textContent='Right-drag to turn the cookie · scroll to zoom'}
+     <div class="nav"><button class="btn gold" data-bkgo="2">Next: icing →</button></div>`;tipEl.textContent=TT('Drag to turn the cookie · pinch to zoom','Right-drag to turn the cookie · scroll to zoom')}
    else if(st===2){h+=`<div class="lab">Icing colour</div><div class="grid">${CK.ICOLS.map(([n,c])=>`<button data-icol="${c}" class="${BK.icol===c?'on':''}"><span class="sw" style="background:${c==='gold'?'linear-gradient(135deg,#f7dd8a,#b8862a)':c}"></span>${n}</button>`).join('')}</div>
      <div class="lab">Piping tip</div><div class="row">${TIPS.map(([n],i)=>`<button data-tip="${i}" class="${BK.tip===i?'on':''}">${n}</button>`).join('')}</div>
      <div class="row" style="margin-top:8px"><button data-bkerase class="${BK.erase?'on':''}">🧽 Eraser</button><button data-bkundo>↶ Undo</button><button data-bkclear>Clear</button></div>
      <div class="tip">Hold the left mouse button and drag across the cookie to pipe icing. A quick click makes a dot, which is perfect for eyes and buttons. Use the 🧽 Eraser and click or drag over icing to wipe it off.</div>
-     <div class="nav"><button class="btn small" data-bkgo="1">← Dough</button><button class="btn gold" data-bkgo="3">Next: decorate →</button></div>`;tipEl.textContent='Left-drag to pipe · click for a dot · right-drag to turn · scroll to zoom · Ctrl+Z undo'}
+     <div class="nav"><button class="btn small" data-bkgo="1">← Dough</button><button class="btn gold" data-bkgo="3">Next: decorate →</button></div>`;tipEl.textContent=TT('One finger pipes · tap for a dot · two fingers turn and zoom','Left-drag to pipe · click for a dot · right-drag to turn · scroll to zoom · Ctrl+Z undo')}
    else if(st===3){h+=`<div class="lab">Decorations</div><div class="grid">${CK.DECOS.map(d=>`<button data-deco="${d.id}" class="${BK.deco===d.id?'on':''}"><span class="ic">${d.ic}</span>${d.name}</button>`).join('')}</div>
      <div class="row" style="margin-top:8px"><button data-bkerase class="${BK.erase?'on':''}">🧽 Eraser</button><button data-bkundo>↶ Undo</button></div>
      <div class="tip">Click on the cookie to add the decoration. They stick to icing too. The 🧽 Eraser picks them back off.</div>
-     <div class="nav"><button class="btn small" data-bkgo="2">← Icing</button><button class="btn red" data-bkbake>🔥 Bake it!</button></div>`;tipEl.textContent='Click to place · right-drag to turn · scroll to zoom · Ctrl+Z undo'}
+     <div class="nav"><button class="btn small" data-bkgo="2">← Icing</button><button class="btn red" data-bkbake>🔥 Bake it!</button></div>`;tipEl.textContent=TT('Tap to place · two fingers turn and zoom','Click to place · right-drag to turn · scroll to zoom · Ctrl+Z undo')}
    else if(st===4){if(!BK.result)h+=`<div class="lab">In the oven</div><div class="bar"><i id="bkbar"></i></div><div class="tip">Baking at 180°C… the dough is rising and the edges are turning golden.</div>`;
      else{const r=BK.result;h+=`<div class="lab">Fresh out of the oven!</div><img class="res" src="${r.img}"><div class="tip">${r.msg}</div>
        <div class="nav"><button class="btn small" data-bkagain>🍪 Bake another</button><button class="btn gold" data-bkclose>Done</button></div>`}
-     tipEl.textContent='Right-drag to admire it · scroll to zoom'}
+     tipEl.textContent=TT('Drag to admire it · pinch to zoom','Right-drag to admire it · scroll to zoom')}
    side.innerHTML=h}
  side.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
    if(d.bkclose!==undefined){closeBake();return}
@@ -3764,19 +3764,24 @@ const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,dec
    const objs=BK.C.G.children.filter(o=>o!==BK.C.mesh);const h=_rc.intersectObjects(objs,true)[0];if(!h)return false;let o=h.object;while(o.parent&&o.parent!==BK.C.G)o=o.parent;
    const k=BK.undo.findIndex(a=>a.objs.includes(o));if(k<0)return false;undoOne(BK.undo[k]);BK.undo.splice(k,1);return true}
  root.addEventListener('contextmenu',e=>e.preventDefault());
- root.addEventListener('pointerdown',e=>{if(e.target.closest('#bkside')||!BK.C)return;root.setPointerCapture(e.pointerId);
+ root.addEventListener('pointerdown',e=>{if(e.target.closest('#bkside')||!BK.C)return;try{root.setPointerCapture(e.pointerId)}catch{}
+   // phones: a second finger cancels the stroke and turns the gesture into rotate + pinch-zoom
+   if(e.pointerType==='touch'){TP.set(e.pointerId,{x:e.clientX,y:e.clientY});if(TP.size>=2){const S=BK.stroke;if(S){if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose()}BK.stroke=null}BK.erasing=false;const [p,q]=[...TP.values()];BK.drag={two:1,x:(p.x+q.x)/2,y:(p.y+q.y)/2,yaw:BK.orbit.yaw,pitch:BK.orbit.pitch,pd:Math.hypot(p.x-q.x,p.y-q.y)||1,dist:BK.orbit.dist};return}}
    if(e.button===2||e.button===1||BK.step===1||BK.step===4){BK.drag={x:e.clientX,y:e.clientY,yaw:BK.orbit.yaw,pitch:BK.orbit.pitch};return}
    if(BK.erase&&(BK.step===2||BK.step===3)){BK.erasing=true;eraseAt(e);return}
    const s=hit(e);if(!s)return;
    if(BK.step===2){const r=TIPS[BK.tip][1];BK.stroke={pts:[s],r,col:BK.icol,mesh:null,moved:false}}
    else if(BK.step===3){if(BK.undo.length>400){toast('🍪 That cookie is fully loaded!');return}const d=CK.DECOS.find(d=>d.id===BK.deco),objs=d.make(BK.C,s);objs.forEach(o=>BK.C.G.add(o));BK.undo.push({objs})}});
+ const TP=new Map();
  root.addEventListener('pointermove',e=>{if(!BK.C)return;
+   if(TP.has(e.pointerId))TP.set(e.pointerId,{x:e.clientX,y:e.clientY});
+   if(BK.drag&&BK.drag.two){if(TP.size<2)return;const [p,q]=[...TP.values()],D=BK.drag,o=BK.orbit,mx=(p.x+q.x)/2,my=(p.y+q.y)/2;o.yaw=D.yaw-(mx-D.x)*.008;o.pitch=clamp(D.pitch+(my-D.y)*.006,.5,1.5);o.dist=clamp(D.dist*D.pd/(Math.hypot(p.x-q.x,p.y-q.y)||1),2.4,9);return}
    if(BK.drag){const o=BK.orbit;o.yaw=BK.drag.yaw-(e.clientX-BK.drag.x)*.008;o.pitch=clamp(BK.drag.pitch+(e.clientY-BK.drag.y)*.006,.5,1.5);return}
    if(e.target.closest&&e.target.closest('#bkside')){cursor.visible=false;return}
    if(BK.erasing){eraseAt(e)}
    const s=(BK.step===2||BK.step===3)?hit(e):null;cursor.visible=!!s;if(s){const r=BK.step===2?TIPS[BK.tip][1]:.06;cursor.position.copy(s.p).addScaledVector(s.n,.01);cursor.scale.setScalar(r*1.1);cursor.material.color.set(BK.erase?'#ff4060':BK.step===2&&BK.icol!=='gold'?BK.icol:'#ffffff');if(BK.erase)cursor.scale.setScalar(.09)}
    const S=BK.stroke;if(S&&s){const last=S.pts[S.pts.length-1];if(s.p.distanceTo(last.p)>S.r*.45){S.pts.push(s);S.moved=true;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose()}S.mesh=BK.C.addIcing(S.pts,S.r,S.col,false,true)}}});
- const end=e=>{BK.drag=null;BK.erasing=false;const S=BK.stroke;if(!S)return;BK.stroke=null;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose()}
+ const end=e=>{TP.delete(e.pointerId);if(BK.drag&&BK.drag.two&&TP.size){return}BK.drag=null;BK.erasing=false;const S=BK.stroke;if(!S)return;BK.stroke=null;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose()}
    const m=S.pts.length>1?BK.C.addIcing(S.pts,S.r,S.col):BK.C.addIcing([S.pts[0]],S.r,S.col,true);BK.undo.push({objs:[m],ice:1})};
  root.addEventListener('pointerup',end);root.addEventListener('pointercancel',end);
  root.addEventListener('wheel',e=>{e.preventDefault();BK.orbit.dist=clamp(BK.orbit.dist*(1+Math.sign(e.deltaY)*.08),2.4,9)},{passive:false});
@@ -3806,6 +3811,8 @@ const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,dec
  const _rr=renderer.render.bind(renderer);let lastT=performance.now(),keep=null;
  renderer.render=(s,c)=>{if(BK.open&&scene&&s!==scene&&renderer.getRenderTarget()===null){const now=performance.now(),dt=Math.min(.05,(now-lastT)/1000);lastT=now;bkTick(dt);camUpdate();_rr(scene,cam)}else _rr(s,c)};
  function bkTick(dt){bakeTick(dt);for(let i=BK_FX.steam.length-1;i>=0;i--){const s=BK_FX.steam[i],u=s.userData;u.t+=dt;s.position.y+=u.v*dt;s.position.x+=u.dx*dt;s.scale.setScalar(.4+u.t*.6);s.material.opacity=Math.min(1,u.t*2)*Math.max(0,1-u.t/2.4)*.6;if(u.t>2.4){scene.remove(s);s.material.dispose();BK_FX.steam.splice(i,1)}}}
+ window.__ckOpen=()=>openBake();
+ function TT(t,m){return document.body.classList.contains('touch')?t:m}
  function openBake(){if(!scene)setup();if(document.pointerLockElement){chatUnlock=true;document.exitPointerLock()}keys.clear();panelKind='bake';BK.open=true;root.classList.remove('hidden');$('hud').style.visibility='hidden';
    keep={exp:renderer.toneMappingExposure,sh:renderer.shadowMap.enabled};renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=true;
    if(!BK.C||BK.step===4){BK.step=1;BK.result=null;BK.seed=(Math.random()*1e6)|0;newCookie(true)}BK.orbit={yaw:0,pitch:1.02,dist:5.4};lastT=performance.now();ui()}
@@ -4072,6 +4079,108 @@ window.__fpReady=true;$('loading').style.display='none';$('menu').classList.remo
 if(/join=([A-Z0-9]+)/i.test(location.hash)){SAVE.room=RegExp.$1.toUpperCase().slice(0,8);world.start(SAVE.room);refreshMenu()}
 frame();
 window.__fp={P,SAVE,world,others,LIFTS,groundH,keys,camS,get state(){return state},step,boardLift,enterLodge,exitLodge,openPanel};
+
+/* ================= Touch / mobile: on-screen joystick, drag-to-look, action buttons ================= */
+const TOUCH=/[#&]touch\b/.test(location.hash)||(matchMedia('(pointer:coarse)').matches&&!matchMedia('(pointer:fine)').matches);
+if(TOUCH){
+ document.body.classList.add('touch');
+ const css=document.createElement('style');css.textContent=`
+ body.touch{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+ body.touch #keys,body.touch #clicktoplay,body.touch #chathint,body.touch #modebar kbd,body.touch #invbtn kbd,body.touch #online,body.touch #bonus{display:none!important}
+ #tc{position:fixed;inset:0;z-index:12;pointer-events:none;display:none}body.touch.tcon #tc{display:block}
+ #tc .zone{position:absolute;top:0;bottom:0;pointer-events:auto;touch-action:none}#tcL{left:0;width:42%}#tcR{right:0;width:58%}
+ #joy{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.38);display:none;pointer-events:none}
+ #joy i{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+ #joyhint{position:absolute;left:34px;bottom:34px;width:96px;height:96px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);display:grid;place-items:center;font:600 12px Fredoka,sans-serif;color:rgba(255,255,255,.7);text-align:center;pointer-events:none}
+ .tb{position:absolute;pointer-events:auto;touch-action:none;border-radius:50%;background:rgba(14,26,46,.55);border:2px solid rgba(255,255,255,.45);color:#fff;font:700 14px Fredoka,sans-serif;display:grid;place-items:center;text-align:center;line-height:1.05;box-shadow:0 3px 12px rgba(0,0,0,.3)}
+ .tb.dn{background:rgba(110,190,255,.6);transform:scale(.94)}.tb.off{display:none}.tb.dim{opacity:.45}
+ .tb small{display:block;font-size:10px;font-weight:600;opacity:.85}
+ #tbJump{width:80px;height:80px;right:18px;bottom:20px;font-size:24px}
+ #tbE{width:62px;height:62px;right:108px;bottom:22px;font-size:20px}#tbE.go{background:rgba(255,190,60,.7);border-color:#ffe39a}
+ #tbQ{width:58px;height:58px;right:30px;bottom:112px;font-size:22px}
+ #tbF{width:52px;height:52px;right:100px;bottom:100px;font-size:18px}
+ #tbJ{width:58px;height:58px;right:178px;bottom:30px;font-size:13px}#tbK{width:58px;height:58px;right:168px;bottom:100px;font-size:13px}
+ #tcTop{position:absolute;left:10px;top:10px;display:flex;gap:6px;pointer-events:none}
+ .ts{pointer-events:auto;touch-action:none;width:42px;height:42px;border-radius:12px;background:rgba(14,26,46,.6);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:20px;display:grid;place-items:center}
+ body.touch #prompt{pointer-events:auto;bottom:auto;top:54px;font-size:15px;padding:6px 12px}
+ body.touch #locname{top:16px;left:auto;right:50%;transform:none;margin-right:-30%;font-size:13px;opacity:.85}
+ body.touch #modebar{bottom:6px;padding:3px;gap:2px}body.touch #modebar button{font-size:12.5px;padding:5px 9px}
+ body.touch #speedo{right:auto;left:50%;transform:translateX(-50%);bottom:46px;text-align:center}body.touch #speedo b{font-size:26px}body.touch #speedo span,body.touch #speedo div{font-size:11px}
+ body.touch #topright{right:10px;top:8px;gap:4px}body.touch #pts{font-size:17px;padding:3px 11px}body.touch #invbtn{font-size:12px;padding:4px 10px}
+ body.touch #musbtn{display:none}
+ body.touch #minimap{width:92px!important;height:92px!important;right:12px}
+ body.touch #hint{top:96px;font-size:12.5px;white-space:normal;max-width:70vw;text-align:center}
+ body.touch #toast{top:58px;font-size:13px;max-width:80vw;text-align:center}
+ body.touch #trick{top:16%}body.touch #trickname{font-size:22px}body.touch #trickpts{font-size:18px}
+ body.touch #chatlog{left:10px;bottom:150px;font-size:12px;max-height:22vh;width:min(340px,42vw)}
+ body.touch #chatbox{left:50%;transform:translateX(-50%);top:8px;bottom:auto;width:min(520px,90vw);z-index:15}
+ body.touch #tablist{top:56px;min-width:0;width:min(360px,90vw)}
+ body.touch .screen{padding:6px}body.touch .card{padding:12px 14px;max-height:calc(100vh - 12px);border-radius:14px;-webkit-overflow-scrolling:touch}
+ body.touch .card h2{font-size:22px}body.touch .card .sub{margin-bottom:8px;font-size:13px}
+ body.touch .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}body.touch .item{padding:8px}body.touch .item h3{font-size:14px}body.touch .item p{font-size:12px;min-height:0}
+ body.touch .set{grid-template-columns:110px 1fr 36px;gap:6px;margin:5px 0;font-size:13px}
+ body.touch .tabs button{padding:6px 10px;font-size:13px}
+ body.touch #speccard{transform:scale(.8);transform-origin:top right}
+ #rot{position:fixed;inset:0;z-index:60;background:#0d1a2e;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:600 20px Fredoka,sans-serif;text-align:center;padding:30px}
+ #rot b{font-size:64px;animation:rotp 1.6s ease-in-out infinite}@keyframes rotp{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+ @media (orientation:portrait){body.touch.playing #rot{display:flex}}
+ body.touch #bake,body.touch #bake canvas{touch-action:none}body.touch #bkside{width:236px;right:6px;top:6px;bottom:6px;padding:10px;font-size:13px;border-radius:14px}
+ @media (max-height:460px){body.touch .mcard{padding:14px 18px 12px;gap:6px}body.touch #menu .logo{font-size:38px}body.touch .mdesc,body.touch .mfeat{display:none}body.touch #menu{padding:8px}}
+ `;document.head.appendChild(css);
+ const tc=document.createElement('div');tc.id='tc';tc.innerHTML=`<div class="zone" id="tcL"><div id="joyhint">move<br>here</div></div><div class="zone" id="tcR"></div><div id="joy"><i></i></div>
+  <div id="tcTop"><div class="ts" data-k="Escape">☰</div><div class="ts" data-k="Enter">💬</div><div class="ts" data-k="KeyV">👁</div><div class="ts" data-tab="1">👥</div></div>
+  <div class="tb" id="tbJump" data-h="Space">⤒<small>jump</small></div><div class="tb dim" id="tbE" data-k="KeyE">E<small>use</small></div>
+  <div class="tb" id="tbQ" data-k="KeyQ">❄<small>throw</small></div><div class="tb" id="tbF" data-k="KeyF">F</div>
+  <div class="tb off" id="tbJ" data-h="KeyJ">grab<small>1</small></div><div class="tb off" id="tbK" data-h="KeyK">grab<small>2</small></div>`;
+ document.body.appendChild(tc);
+ // stop the phone from turning taps into clicks on whatever opens underneath (e.g. the pause backdrop)
+ for(const el of [tc,$('prompt')])for(const t of ['touchstart','touchend'])el.addEventListener(t,e=>e.preventDefault(),{passive:false});
+ const rot=document.createElement('div');rot.id='rot';rot.innerHTML='<b>📱</b>Turn your phone sideways to play';document.body.appendChild(rot);
+ const kev=(type,code)=>dispatchEvent(new KeyboardEvent(type,{code,key:code==='Enter'?'Enter':code==='Escape'?'Escape':code,bubbles:true,cancelable:true}));
+ const held=new Set();function hold(code,on){if(on===held.has(code))return;if(on){held.add(code);kev('keydown',code)}else{held.delete(code);kev('keyup',code)}}
+ function tap(code){kev('keydown',code);setTimeout(()=>kev('keyup',code),60)}
+ // joystick (appears where the left thumb lands)
+ const joy=$('joy'),knob=joy.firstChild,J={id:null,ox:0,oy:0};
+ function setDir(x,y){hold('KeyW',y<-.38);hold('KeyS',y>.38);hold('KeyA',x<-.38);hold('KeyD',x>.38)}
+ $('tcL').addEventListener('pointerdown',e=>{if(J.id!==null)return;e.preventDefault();sfx.init();J.id=e.pointerId;try{$("tcL").setPointerCapture(e.pointerId)}catch{}J.ox=e.clientX;J.oy=e.clientY;joy.style.left=J.ox+'px';joy.style.top=J.oy+'px';joy.style.display='block';knob.style.transform='';$('joyhint').style.display='none'});
+ $('tcL').addEventListener('pointermove',e=>{if(e.pointerId!==J.id)return;let dx=e.clientX-J.ox,dy=e.clientY-J.oy;const d=Math.hypot(dx,dy),R=52;if(d>R){dx*=R/d;dy*=R/d}knob.style.transform=`translate(${dx}px,${dy}px)`;setDir(dx/R,dy/R)});
+ const jEnd=e=>{if(e.pointerId!==J.id)return;J.id=null;joy.style.display='none';setDir(0,0)};$('tcL').addEventListener('pointerup',jEnd);$('tcL').addEventListener('pointercancel',jEnd);
+ // drag to look (same maths as the mouse, a bit faster)
+ function look(mx,my){const s=.0022*SAVE.set.sens*1.7,inv=SAVE.set.invert?-1:1;camS.lastMouse=T;
+  if(camS.mode==='first'){if(INDOOR()||P.mode==='walk')P.yaw-=mx*s;else camS.lookYaw=clamp(camS.lookYaw-mx*s,-1.9,1.9);camS.lookPitch=clamp(camS.lookPitch-my*s*inv,-1.3,1.3)}
+  else{if(freeCam())camS.yaw-=mx*s;else camS.yawOff-=mx*s;camS.pitchOff=clamp(camS.pitchOff+my*s*inv,-.55,1)}}
+ const L={id:null,x:0,y:0};
+ $('tcR').addEventListener('pointerdown',e=>{if(L.id!==null)return;e.preventDefault();sfx.init();L.id=e.pointerId;try{$("tcR").setPointerCapture(e.pointerId)}catch{}L.x=e.clientX;L.y=e.clientY});
+ $('tcR').addEventListener('pointermove',e=>{if(e.pointerId!==L.id)return;const dx=e.clientX-L.x,dy=e.clientY-L.y;L.x=e.clientX;L.y=e.clientY;if(Math.abs(dx)<150&&Math.abs(dy)<150)look(dx,dy)});
+ const lEnd=e=>{if(e.pointerId===L.id)L.id=null};$('tcR').addEventListener('pointerup',lEnd);$('tcR').addEventListener('pointercancel',lEnd);
+ // buttons
+ let tabOn=false;
+ tc.querySelectorAll('.tb,.ts').forEach(b=>{
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();sfx.init();b.classList.add('dn');try{b.setPointerCapture(e.pointerId)}catch{}
+   if(b.dataset.h)hold(b.dataset.h,true);else if(b.dataset.tab){tabOn=!tabOn;kev(tabOn?'keydown':'keyup','Tab')}else tap(b.dataset.k)});
+  const up=()=>{b.classList.remove('dn');if(b.dataset.h)hold(b.dataset.h,false)};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)});
+ $('prompt').addEventListener('pointerdown',e=>{e.preventDefault();tap('KeyE')});
+ function releaseAll(){for(const c of [...held])hold(c,false);J.id=null;L.id=null;joy.style.display='none';tc.querySelectorAll('.dn').forEach(b=>b.classList.remove('dn'));if(tabOn){tabOn=false;kev('keyup','Tab')}}
+ // chat: the phone keyboard has no Escape, so leaving the box closes it
+ $('chatin').addEventListener('blur',()=>setTimeout(()=>{if(!$('chatbox').classList.contains('hidden')&&document.activeElement!==$('chatin'))closeChat()},200));
+ // phones start on low graphics (they can still pick another in Settings)
+ if(!SAVE.set.mob){SAVE.set.mob=1;SAVE.set.quality='low';save();applyQuality()}
+ // go fullscreen + landscape when play starts (Android; iPhone ignores it)
+ $('m_play').addEventListener('click',()=>{try{const d=document.documentElement,r=d.requestFullscreen?d.requestFullscreen({navigationUI:'hide'}):d.webkitRequestFullscreen&&d.webkitRequestFullscreen();r&&r.then&&r.then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})).catch(()=>{})}catch{}
+  setTimeout(()=>{if(state==='play')hint('Left thumb moves · drag the right side to look · ⤒ jumps · E uses things',8)},1400)},true);
+ // per-frame: show controls only while playing, and keep held keys alive after menus clear them
+ let wasOn=false;
+ (function tick(){requestAnimationFrame(tick);
+  const on=state==='play'&&!paused&&!panelKind&&$('chatbox').classList.contains('hidden')&&!(typeof BK!=='undefined'&&BK.open)&&!document.body.classList.contains('lmap-on');
+  document.body.classList.toggle('playing',state==='play');
+  if(on!==wasOn){wasOn=on;document.body.classList.toggle('tcon',on);if(!on)releaseAll()}
+  if(!on)return;for(const c of held)if(!keys.has(c))keys.add(c);
+  const mtnWalk=P.loc==='mtn'&&P.mode==='walk',air=!!P.air;
+  $('tbQ').classList.toggle('off',!mtnWalk);$('tbF').classList.toggle('off',P.loc!=='mtn'||air);
+  $('tbJ').classList.toggle('off',!air);$('tbK').classList.toggle('off',!air);
+  const can=!$('prompt').classList.contains('hidden')||(P.lift&&P.lift.hold);$('tbE').classList.toggle('dim',!can);$('tbE').classList.toggle('go',!!can)})();
+ if(window.__fp)__fp.touch={hold,tap,look,setDir};
+}
 </script>
 </body>
 </html>
