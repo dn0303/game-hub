@@ -3490,7 +3490,7 @@ function makeCookie({shape='man',dough=DOUGHS[0],seed=1,N=150,TS=1024,raw=false}
  C.surf=(x,z)=>{_rc.set(_v1.set(x,3,z),_dn);_rc.far=10;const hits=C.icings.length?_rc.intersectObjects(C.icings,false):[];const ch=C.heightAt(x,z);
    if(hits.length&&hits[0].point.y>ch){const nn=hits[0].face.normal.clone().transformDirection(hits[0].object.matrixWorld);nn.y=Math.max(nn.y,.25);return{p:hits[0].point.clone(),n:nn.normalize()}}
    if(ch<=0.004)return null;const e=.012,nx=C.heightAt(x-e,z)-C.heightAt(x+e,z),nz=C.heightAt(x,z-e)-C.heightAt(x,z+e);return{p:new THREE.Vector3(x,ch,z),n:new THREE.Vector3(nx,2*e,nz).normalize()}};
- C.addIcing=(pts,r,col,dot)=>{const g=icingGeo(dot?pts:smoothPts(pts,r),dot?r*1.4:r,dot?.7:.82);const m=new THREE.Mesh(g,icingMat(col));m.castShadow=m.receiveShadow=true;G.add(m);C.icings.push(m);return m};
+ C.addIcing=(pts,r,col,dot,live)=>{const g=icingGeo(dot?pts:smoothPts(pts,r),dot?r*1.4:r,dot?.7:.82);const m=new THREE.Mesh(g,icingMat(col));m.castShadow=m.receiveShadow=true;G.add(m);if(!live)C.icings.push(m);return m};
  C.dispose=()=>{G.traverse(o=>{if(o.geometry&&o.geometry!==_shared)o.geometry.dispose()});t.map.dispose();t.nrm.dispose();mat.dispose()};
  return C}
 const _rc=new THREE.Raycaster(),_dn=new THREE.Vector3(0,-1,0),_v1=new THREE.Vector3(),_shared={};
@@ -3709,12 +3709,12 @@ const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,dec
      <div class="nav"><button class="btn gold" data-bkgo="2">Next: icing →</button></div>`;tipEl.textContent='Right-drag to turn the cookie · scroll to zoom'}
    else if(st===2){h+=`<div class="lab">Icing colour</div><div class="grid">${CK.ICOLS.map(([n,c])=>`<button data-icol="${c}" class="${BK.icol===c?'on':''}"><span class="sw" style="background:${c==='gold'?'linear-gradient(135deg,#f7dd8a,#b8862a)':c}"></span>${n}</button>`).join('')}</div>
      <div class="lab">Piping tip</div><div class="row">${TIPS.map(([n],i)=>`<button data-tip="${i}" class="${BK.tip===i?'on':''}">${n}</button>`).join('')}</div>
-     <div class="row" style="margin-top:8px"><button data-bkundo>↶ Undo</button><button data-bkclear>Clear icing</button></div>
-     <div class="tip">Hold the left mouse button and drag across the cookie to pipe icing. A quick click makes a dot, which is perfect for eyes and buttons.</div>
+     <div class="row" style="margin-top:8px"><button data-bkerase class="${BK.erase?'on':''}">🧽 Eraser</button><button data-bkundo>↶ Undo</button><button data-bkclear>Clear</button></div>
+     <div class="tip">Hold the left mouse button and drag across the cookie to pipe icing. A quick click makes a dot, which is perfect for eyes and buttons. Use the 🧽 Eraser and click or drag over icing to wipe it off.</div>
      <div class="nav"><button class="btn small" data-bkgo="1">← Dough</button><button class="btn gold" data-bkgo="3">Next: decorate →</button></div>`;tipEl.textContent='Left-drag to pipe · click for a dot · right-drag to turn · scroll to zoom · Ctrl+Z undo'}
    else if(st===3){h+=`<div class="lab">Decorations</div><div class="grid">${CK.DECOS.map(d=>`<button data-deco="${d.id}" class="${BK.deco===d.id?'on':''}"><span class="ic">${d.ic}</span>${d.name}</button>`).join('')}</div>
-     <div class="row" style="margin-top:8px"><button data-bkundo>↶ Undo</button></div>
-     <div class="tip">Click on the cookie to add the decoration. They stick to icing too.</div>
+     <div class="row" style="margin-top:8px"><button data-bkerase class="${BK.erase?'on':''}">🧽 Eraser</button><button data-bkundo>↶ Undo</button></div>
+     <div class="tip">Click on the cookie to add the decoration. They stick to icing too. The 🧽 Eraser picks them back off.</div>
      <div class="nav"><button class="btn small" data-bkgo="2">← Icing</button><button class="btn red" data-bkbake>🔥 Bake it!</button></div>`;tipEl.textContent='Click to place · right-drag to turn · scroll to zoom · Ctrl+Z undo'}
    else if(st===4){if(!BK.result)h+=`<div class="lab">In the oven</div><div class="bar"><i id="bkbar"></i></div><div class="tip">Baking at 180°C… the dough is rising and the edges are turning golden.</div>`;
      else{const r=BK.result;h+=`<div class="lab">Fresh out of the oven!</div><img class="res" src="${r.img}"><div class="tip">${r.msg}</div>
@@ -3725,10 +3725,11 @@ const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,dec
    if(d.bkclose!==undefined){closeBake();return}
    if(d.shape){if(BK.shape!==d.shape){BK.shape=d.shape;newCookie(true)}ui()}
    else if(d.dough){if(BK.dough!==d.dough){BK.dough=d.dough;newCookie(true)}ui()}
-   else if(d.icol){BK.icol=d.icol;ui()}else if(d.tip){BK.tip=+d.tip;ui()}else if(d.deco){BK.deco=d.deco;ui()}
+   else if(d.icol){BK.icol=d.icol;BK.erase=false;ui()}else if(d.tip){BK.tip=+d.tip;BK.erase=false;ui()}else if(d.deco){BK.deco=d.deco;BK.erase=false;ui()}
    else if(d.bkundo!==undefined)undo();
+   else if(d.bkerase!==undefined){BK.erase=!BK.erase;ui()}
    else if(d.bkclear!==undefined){for(const a of [...BK.undo].reverse())if(a.ice)undoOne(a);BK.undo=BK.undo.filter(a=>!a.ice)}
-   else if(d.bkgo){const to=+d.bkgo;if(to===1&&BK.undo.length){toast('🍪 Picking a new cutter or dough starts a fresh cookie')}BK.step=to;ui()}
+   else if(d.bkgo){const to=+d.bkgo;BK.erase=false;if(to===1&&BK.undo.length){toast('🍪 Picking a new cutter or dough starts a fresh cookie')}BK.step=to;ui()}
    else if(d.bkbake!==undefined)startBake();
    else if(d.bkagain!==undefined){BK.result=null;BK.step=1;BK.seed=(Math.random()*1e6)|0;BK.C.G.scale.y=1;newCookie(true);ui()}});
  function undoOne(a){for(const o of a.objs){BK.C.G.remove(o);const k=BK.C.icings.indexOf(o);if(k>=0)BK.C.icings.splice(k,1);o.traverse?.(q=>{if(q.isInstancedMesh)q.dispose()});if(a.ice)o.geometry.dispose()}}
@@ -3736,20 +3737,26 @@ const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,dec
  // mouse
  const _rc=new THREE.Raycaster(),_ndc=new THREE.Vector2();
  function hit(e){const r=renderer.domElement.getBoundingClientRect();_ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);_rc.setFromCamera(_ndc,cam);
-   const h=_rc.intersectObjects([BK.C.mesh,...BK.C.icings],false)[0];if(!h)return null;const s=BK.C.surf(h.point.x,h.point.z);if(s&&Math.abs(s.p.y-h.point.y)<.08)return s;
-   const n=h.face.normal.clone().transformDirection(h.object.matrixWorld);n.y=Math.max(n.y,.3);return{p:h.point.clone(),n:n.normalize()}}
+   const h=_rc.intersectObjects([BK.C.mesh,...BK.C.icings],false)[0];if(!h)return null;let s=BK.C.surf(h.point.x,h.point.z);
+   if(!(s&&Math.abs(s.p.y-h.point.y)<.08)){const n=h.face.normal.clone().transformDirection(h.object.matrixWorld);n.y=Math.max(n.y,.3);s={p:h.point.clone(),n:n.normalize()}}
+   const top=BK.C.heightAt(s.p.x,s.p.z)+.09;if(s.p.y>top){s.p.y=top;s.n.set(0,1,0)}return s}
+ function eraseAt(e){const r=renderer.domElement.getBoundingClientRect();_ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);_rc.setFromCamera(_ndc,cam);
+   const objs=BK.C.G.children.filter(o=>o!==BK.C.mesh);const h=_rc.intersectObjects(objs,true)[0];if(!h)return false;let o=h.object;while(o.parent&&o.parent!==BK.C.G)o=o.parent;
+   const k=BK.undo.findIndex(a=>a.objs.includes(o));if(k<0)return false;undoOne(BK.undo[k]);BK.undo.splice(k,1);return true}
  root.addEventListener('contextmenu',e=>e.preventDefault());
  root.addEventListener('pointerdown',e=>{if(e.target.closest('#bkside')||!BK.C)return;root.setPointerCapture(e.pointerId);
    if(e.button===2||e.button===1||BK.step===1||BK.step===4){BK.drag={x:e.clientX,y:e.clientY,yaw:BK.orbit.yaw,pitch:BK.orbit.pitch};return}
+   if(BK.erase&&(BK.step===2||BK.step===3)){BK.erasing=true;eraseAt(e);return}
    const s=hit(e);if(!s)return;
    if(BK.step===2){const r=TIPS[BK.tip][1];BK.stroke={pts:[s],r,col:BK.icol,mesh:null,moved:false}}
    else if(BK.step===3){if(BK.undo.length>400){toast('🍪 That cookie is fully loaded!');return}const d=CK.DECOS.find(d=>d.id===BK.deco),objs=d.make(BK.C,s);objs.forEach(o=>BK.C.G.add(o));BK.undo.push({objs})}});
  root.addEventListener('pointermove',e=>{if(!BK.C)return;
    if(BK.drag){const o=BK.orbit;o.yaw=BK.drag.yaw-(e.clientX-BK.drag.x)*.008;o.pitch=clamp(BK.drag.pitch+(e.clientY-BK.drag.y)*.006,.5,1.5);return}
    if(e.target.closest&&e.target.closest('#bkside')){cursor.visible=false;return}
-   const s=(BK.step===2||BK.step===3)?hit(e):null;cursor.visible=!!s;if(s){const r=BK.step===2?TIPS[BK.tip][1]:.06;cursor.position.copy(s.p).addScaledVector(s.n,.01);cursor.scale.setScalar(r*1.1);cursor.material.color.set(BK.step===2&&BK.icol!=='gold'?BK.icol:'#ffffff')}
-   const S=BK.stroke;if(S&&s){const last=S.pts[S.pts.length-1];if(s.p.distanceTo(last.p)>S.r*.45){S.pts.push(s);S.moved=true;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose();BK.C.icings.splice(BK.C.icings.indexOf(S.mesh),1)}S.mesh=BK.C.addIcing(S.pts,S.r,S.col)}}});
- const end=e=>{BK.drag=null;const S=BK.stroke;if(!S)return;BK.stroke=null;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose();BK.C.icings.splice(BK.C.icings.indexOf(S.mesh),1)}
+   if(BK.erasing){eraseAt(e)}
+   const s=(BK.step===2||BK.step===3)?hit(e):null;cursor.visible=!!s;if(s){const r=BK.step===2?TIPS[BK.tip][1]:.06;cursor.position.copy(s.p).addScaledVector(s.n,.01);cursor.scale.setScalar(r*1.1);cursor.material.color.set(BK.erase?'#ff4060':BK.step===2&&BK.icol!=='gold'?BK.icol:'#ffffff');if(BK.erase)cursor.scale.setScalar(.09)}
+   const S=BK.stroke;if(S&&s){const last=S.pts[S.pts.length-1];if(s.p.distanceTo(last.p)>S.r*.45){S.pts.push(s);S.moved=true;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose()}S.mesh=BK.C.addIcing(S.pts,S.r,S.col,false,true)}}});
+ const end=e=>{BK.drag=null;BK.erasing=false;const S=BK.stroke;if(!S)return;BK.stroke=null;if(S.mesh){BK.C.G.remove(S.mesh);S.mesh.geometry.dispose()}
    const m=S.pts.length>1?BK.C.addIcing(S.pts,S.r,S.col):BK.C.addIcing([S.pts[0]],S.r,S.col,true);BK.undo.push({objs:[m],ice:1})};
  root.addEventListener('pointerup',end);root.addEventListener('pointercancel',end);
  root.addEventListener('wheel',e=>{e.preventDefault();BK.orbit.dist=clamp(BK.orbit.dist*(1+Math.sign(e.deltaY)*.08),2.4,9)},{passive:false});
