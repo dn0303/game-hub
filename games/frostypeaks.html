@@ -812,7 +812,7 @@ for(const [x,z] of [[-60,1380],[0,1380],[60,1380],[-130,1385],[-210,1400],[40,14
 const PRESENTS=[];
 {const gc=[0xd62839,0x1f9d55,0x2f7bff,0xffc934,0xa46bff,0xff7ad9];const rib=M({color:0xfff6d0,metalness:.3,roughness:.4});
  for(let i=0;i<36;i++){let x,z;const t=srand();z=110+srand()*1150;const which=srand();x=which<.5?mainX(z)+(srand()-.5)*70:which<.75?leftX(z)+(srand()-.5)*44:(z<PARK.z0?rightX(z)+(srand()-.5)*40:lerp(PARK.x0,PARK.x1,srand()));
-   if(treeNear(x,z,3))continue;const g=new THREE.Group();const s=.8;const box=mesh(new THREE.BoxGeometry(s,s,s),M({color:gc[i%6],roughness:.5}),0,0,0,g);box.castShadow=true;
+   if(which<.5||treeNear(x,z,3))continue;const g=new THREE.Group();const s=.8;const box=mesh(new THREE.BoxGeometry(s,s,s),M({color:gc[i%6],roughness:.5}),0,0,0,g);box.castShadow=true;
    mesh(new THREE.BoxGeometry(s*1.02,s*1.02,s*.2),rib,0,0,0,g);mesh(new THREE.BoxGeometry(s*.2,s*1.02,s*1.02),rib,0,0,0,g);const bow=mesh(new THREE.TorusGeometry(.16,.05,6,12),rib,0,s*.6,0,g);
    g.position.set(x,groundH(x,z)+.8,z);mtn.add(g);PRESENTS.push({g,x,z,y:g.position.y,taken:0})}}
 
@@ -882,7 +882,7 @@ const ZONES=[];
 const ARENA={x:-112,z:1521,hw:22,hd:23},POND={x:72,z:1478,r:38},YARD={x:-64,z:1394,r:20},WORKSHOP={x:12,z:1412},LBPOS={x:-47,z:1374};
 const GIANT={x:-70,z:1400},DROP={x:-70,z:1400,r:7.2};
 const RACE={startZ:72,finZ:1300,gates:[],R:3.3};
-for(let i=0;i<20;i++){const z=128+i*58;RACE.gates.push({z,x:mainX(z)+(i%2?5.5:-5.5)})}
+for(let i=0;i<20;i++){const z=128+i*58;RACE.gates.push({z,x:mainX(z)+(i%2?5.5:-5.5),mv:i%4===2})}for(const G of RACE.gates){G.x0=G.x}
 function twoSided(lines,w,h,opts){const g=new THREE.Group();const a=signPlane(lines,w,h,opts),b=signPlane(lines,w,h,opts);a.position.z=.03;b.rotation.y=Math.PI;b.position.z=-.03;g.add(a,b);return g}
 // Roblox-style floating name tags over each attraction (no physical signboards)
 const FLOAT_LABELS=[];
@@ -949,7 +949,7 @@ function drawLeaderboard(rows){const g=LB_CV.getContext('2d'),W=512,H=640;g.fill
  arch(RACE.startZ,'🏁 START · JINGLE RACE',0x7dff9a);arch(RACE.finZ,'🏁 FINISH',0xff5d73);
  // glowing yellow loops to ride through
  const ringG=new THREE.TorusGeometry(RACE.R,.2,10,48),ringM=new THREE.MeshBasicMaterial({color:0xffd84a,toneMapped:false}),haloM=new THREE.MeshBasicMaterial({color:0xffc020,transparent:true,opacity:.28,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}),haloG=new THREE.TorusGeometry(RACE.R,.6,8,48);
- RACE.gates.forEach(G=>{const y=groundH(G.x,G.z)+RACE.R+.15,g=new THREE.Group();g.position.set(G.x,y,G.z);mtn.add(g);mesh(ringG,ringM.clone(),0,0,0,g);mesh(haloG,haloM.clone(),0,0,0,g);G.m=g;
+ RACE.gates.forEach(G=>{const y=groundH(G.x,G.z)+RACE.R+.15,g=new THREE.Group();g.position.set(G.x,y,G.z);mtn.add(g);mesh(ringG,ringM.clone(),0,0,0,g);mesh(haloG,haloM.clone(),0,0,0,g);G.m=g;if(G.mv)return;
    for(let k=0;k<10;k++){const a=k/10*Math.PI*2;addBulb(G.x+Math.cos(a)*RACE.R,y+Math.sin(a)*RACE.R,G.z,0xffd84a)}addPool(G.x,G.z,4.5,0xffc040)})}
 // ----- village signpost
 {const x=-20,z=1400,y=groundH(x,z);const s=twoSided([['WHAT TO DO',.45,'#ffc934'],['🎁 Pet Gacha → right here',.3],['🏠 Cocoa Lodge & Gear → west, by the Snowman Yard',.27],['⛸ Pond, hockey & fishing → east along Main Street',.27],['🎄 Great Tree & Holly Court cottages → south',.27],['🏁 Jingle Race → summit of the middle hill',.27]],4.6,3.4,{bg:'#3b1d0e'});
@@ -1901,8 +1901,8 @@ function openChat(){if(state!=='play')return;$('chatbox').classList.remove('hidd
 let chatUnlock=false;
 function closeChat(){$('chatbox').classList.add('hidden');$('chatin').value='';$('chatin').blur();$('chatlog').classList.add('fade')}
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){const t=$('chatin').value.replace(/\s+/g,' ').trim().slice(0,120);
-  if(/^\/snowman$/i.test(t)){if(typeof CLOUD!=='undefined'&&CLOUD.user&&!CLOUD.admin){chatSys('🧪 /snowman only works for guests and arcade admins');closeChat();return}const need=GS_GOAL-gsTotal();if(need<=0)chatSys('☃ The giant snowman is already finished');else{const rows=[];for(let left=need;left>0;left-=60)rows.push([myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),Math.min(60,left),Date.now()]);gsMerge(GS.c,rows);world.send({k:'gs',c:GS.c,r:rows});chatSys('🧪 Giant snowman finished instantly')}closeChat();return}
-  {const mm=t.match(/^\/points\s+(\d{1,8})$/i);if(mm){if(typeof CLOUD!=='undefined'&&CLOUD.user&&!CLOUD.admin){chatSys('🧪 /points only works for guests and arcade admins');closeChat();return}const n=Math.min(+mm[1],typeof CLOUD!=='undefined'&&CLOUD.user?1000000:1e8);SAVE.points+=n;saveT=1;save();chatSys('🧪 Test command: +'+fmt(n)+' pts');closeChat();return}}
+  if(/^\/snowman$/i.test(t)){if(!isOwner()){chatSys('🧪 That command is only for the game owner');closeChat();return}const need=GS_GOAL-gsTotal();if(need<=0)chatSys('☃ The giant snowman is already finished');else{const rows=[];for(let left=need;left>0;left-=60)rows.push([myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),Math.min(60,left),Date.now()]);gsMerge(GS.c,rows);world.send({k:'gs',c:GS.c,r:rows});chatSys('🧪 Giant snowman finished instantly')}closeChat();return}
+  {const mm=t.match(/^\/points\s+(\d{1,8})$/i);if(mm){if(!isOwner()){chatSys('🧪 That command is only for the game owner');closeChat();return}const n=Math.min(+mm[1],1e8);SAVE.points+=n;saveT=1;save();chatSys('🧪 Test command: +'+fmt(n)+' pts');closeChat();return}}
   if(t&&performance.now()-lastChat>900){lastChat=performance.now();say(me,t);chatLine(SAVE.name,t);world.send({k:'c',t})}closeChat()}else if(e.key==='Escape')closeChat()});
 $('chatlog').classList.add('fade');
 
@@ -1997,6 +1997,8 @@ function equip(it){if(it.cat==='pass')return;if(it.cat==='sleigh'){SAVE.eq.sleig
 function refreshTag(){const lv=levelOf(SAVE.earned);if(me.lv!==lv||me.nm!==SAVE.name){if(me.lv&&lv>me.lv&&state==='play'){toast('⭐ Level up! You\'re now level '+lv);sfx.chime(4)}me.lv=lv;me.nm=SAVE.name;setName(me,SAVE.name,true,lv)}}
 function applyLook(){setLook(me,{sport:SAVE.sport,eq:curEquip().id,hat:SAVE.eq.hat,jacket:SAVE.eq.jacket,gog:SAVE.eq.gog})}
 
+function isOwner(){return typeof CLOUD!=='undefined'&&!!CLOUD.user&&CLOUD.user.emailVerified!==false&&String(CLOUD.user.email||'').toLowerCase()==='daenii066@gmail.com'}
+
 /* ================= Village features: snowmen, race, skating, trails, pets, drawn fireworks ================= */
 const rnd2=v=>Math.round(v*100)/100;
 // ---------- snowballs & shared snowmen
@@ -2054,10 +2056,12 @@ function depositBall(){const R=P.roll,a=clamp(Math.round(R.r*R.r*45),1,60),wasDo
   const row=[myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),a,Date.now()];gsMerge(GS.c,[row]);world.send({k:'gs',c:GS.c,r:[row]});const fin=gsTotal()>=GS_GOAL,pts=ballPts(R.r)+(fin?1500:0);addPoints(pts);showTrick(fin?'☃ Giant Snowman finished!':'☃ Snow added to the giant!',pts);
   const pc=Math.min(100,Math.floor(gsTotal()/GS_GOAL*100));if(fin){toast('☃ You finished the giant snowman! +'+pts+' points');chatSys('☃ The giant snowman in the Snowman Yard is finished!')}else toast(`❄ +${a} snow added. The giant snowman is ${pc}% built. +${pts} points`)}
 // ---------- Jingle Race + leaderboard
-const LB_RESET=Date.UTC(2026,10,8,2,0);let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb3')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
+const LB_RESET=Date.UTC(2026,10,8,19,30);let LB=[];try{LB=JSON.parse(localStorage.getItem('frostypeaks_lb4')||'[]').filter(r=>Array.isArray(r))}catch{LB=[]}
 function mergeLB(rows){let ch=false;for(const r of rows){if(!Array.isArray(r))continue;const n=cleanName(String(r[0]||'')),t=num(r[1]),d=num(r[2]);if(!n||t<25||t>400||d<LB_RESET)continue;
-    const k=LB.findIndex(x=>x[0].toLowerCase()===n.toLowerCase());if(k<0){LB.push([n,rnd2(t),d]);ch=true}else if(t<LB[k][1]-.004){LB[k]=[n,rnd2(t),d];ch=true}}
-  if(ch){LB.sort((a,b)=>a[1]-b[1]);LB=LB.slice(0,20);try{localStorage.setItem('frostypeaks_lb3',JSON.stringify(LB))}catch{}drawLeaderboard(LB);if(panelKind==='race')renderPanel()}return ch}
+    const id=typeof r[3]==='string'&&/^u:[\w-]{6,40}$/.test(r[3])?r[3]:null,key=x=>x[3]||('n:'+x[0].toLowerCase()),me=id||('n:'+n.toLowerCase());
+    // signed-in players keep one row per Google account, whatever name they use; it only changes when they beat their time
+    const k=LB.findIndex(x=>key(x)===me);const row=id?[n,rnd2(t),d,id]:[n,rnd2(t),d];if(k<0){LB.push(row);ch=true}else if(t<LB[k][1]-.004){LB[k]=row;ch=true}}
+  if(ch){LB.sort((a,b)=>a[1]-b[1]);LB=LB.slice(0,20);try{localStorage.setItem('frostypeaks_lb4',JSON.stringify(LB))}catch{}drawLeaderboard(LB);if(panelKind==='race')renderPanel()}return ch}
 drawLeaderboard(LB);
 let race=null,prevZ=null;
 function updateRace(dt){const riding=state==='play'&&P.loc==='mtn'&&['ride','air','grind','crash'].includes(P.mode);const z=P.pos.z,pz=prevZ;prevZ=riding?z:null;const bar=$('racebar');
@@ -2071,8 +2075,8 @@ function updateRace(dt){const riding=state==='play'&&P.loc==='mtn'&&['ride','air
   bar.classList.remove('hidden');bar.textContent=`⏱ ${el.toFixed(1)}s · loop ${race.next}/${RACE.gates.length}`+(race.miss?` · +${race.miss*3}s penalty`:'')}
 function loopsReset(){for(const G of RACE.gates)if(G.m){G.m.scale.setScalar(1);G.m.children[0].material.color.setHex(0xffd84a)}}
 function finishRace(time){const pb=!SAVE.raceBest||time<SAVE.raceBest;if(pb)SAVE.raceBest=rnd2(time);addPoints(100+(pb?150:0));save();
-  toast(`🏁 Finished in ${time.toFixed(2)}s!`+(pb?' New personal best! +250 points':' +100 points'));const row=[SAVE.name,rnd2(time),Date.now()];mergeLB([row]);world.send({k:'lb',r:row});
-  const rank=LB.findIndex(r=>r[0]===SAVE.name)+1;if(rank&&rank<=10)chatSys(`🏁 You're #${rank} on the Jingle Race leaderboard`)}
+  toast(`🏁 Finished in ${time.toFixed(2)}s!`+(pb?' New personal best! +250 points':' +100 points'));const uid=typeof CLOUD!=='undefined'&&CLOUD.user?'u:'+CLOUD.user.uid:null,row=uid?[SAVE.name,rnd2(time),Date.now(),uid]:[SAVE.name,rnd2(time),Date.now()];mergeLB([row]);world.send({k:'lb',r:row});
+  const rank=LB.findIndex(r=>uid?r[3]===uid:r[0]===SAVE.name)+1;if(rank&&rank<=10)chatSys(`🏁 You're #${rank} on the Jingle Race leaderboard`)}
 EXTRA_PANELS.race=c=>{c.innerHTML=`<div class="chead"><div><h2>🏁 Jingle Race</h2><div class="sub">Ride the Elf Quad up, then come down Candy Cane Lane and pass under the START banner. Go through all 8 gates (each miss adds 3 seconds) and cross the FINISH banner just above the village.</div></div></div>
    <table class="lbt">${LB.slice(0,10).map((r,i)=>`<tr${r[0]===SAVE.name?' class="me"':''}><td>${i+1}.</td><td>${esc(r[0])}</td><td>${r[1].toFixed(2)}s</td></tr>`).join('')||'<tr><td>No times yet. Be the first!</td></tr>'}</table>
    <div class="sub" style="margin-top:10px">Your best: <b>${SAVE.raceBest?SAVE.raceBest.toFixed(2)+'s':'none yet'}</b>. Finishing earns 100 points, and a new personal best earns 150 more.</div><div class="foot"><button class="btn" data-close>Got it</button></div>`};
@@ -2100,7 +2104,13 @@ function updatePet(key,id,pos,yaw,scene,speed,dt,onLift=false,root=null,riding=f
   const tx=pos.x-Math.sin(yaw)*1.5-Math.cos(yaw)*.9,tz=pos.z-Math.cos(yaw)*1.5+Math.sin(yaw)*.9;
   if(p.obj.parent!==scene){scene.add(p.obj);p.pos.set(tx,0,tz)}
   if(Math.hypot(tx-p.pos.x,tz-p.pos.z)>14)p.pos.set(tx,0,tz);
-  const ox=p.pos.x,oz=p.pos.z,k=1-Math.exp(-(riding?9:5.5)*dt);p.pos.x+=(tx-p.pos.x)*k;p.pos.z+=(tz-p.pos.z)*k;{const dx=p.pos.x-tx,dz=p.pos.z-tz,d=Math.hypot(dx,dz),mx=riding?4:1.6;if(d>mx){p.pos.x=tx+dx/d*mx;p.pos.z=tz+dz/d*mx}}const mv=Math.hypot(p.pos.x-ox,p.pos.z-oz)/Math.max(dt,1e-3);
+  const ox=p.pos.x,oz=p.pos.z;
+  if(riding){p.w=null;const k=1-Math.exp(-9*dt);p.pos.x+=(tx-p.pos.x)*k;p.pos.z+=(tz-p.pos.z)*k;const dx=p.pos.x-tx,dz=p.pos.z-tz,d=Math.hypot(dx,dz);if(d>4){p.pos.x=tx+dx/d*4;p.pos.z=tz+dz/d*4}}
+  else{// on foot the pet wanders around you on its own, not pinned to a spot that turns with the camera
+    if(!p.w)p.w={x:p.pos.x,z:p.pos.z,t:0};const W=p.w;W.t-=dt;const dO=Math.hypot(W.x-pos.x,W.z-pos.z),dp=Math.hypot(p.pos.x-pos.x,p.pos.z-pos.z);
+    if(dO>3.4||dO<1.1||W.t<=0){const a=Math.atan2(p.pos.x-pos.x,p.pos.z-pos.z)+(Math.random()-.5)*(dp<3?2.4:1.2),r=1.5+Math.random()*1.6;W.x=pos.x+Math.sin(a)*r;W.z=pos.z+Math.cos(a)*r;W.t=2.5+Math.random()*4.5}
+    const dx=W.x-p.pos.x,dz=W.z-p.pos.z,d=Math.hypot(dx,dz),sp=Math.min(Math.max(7,speed*1.4),d*1.6+(dp>3.5?speed+1:0));if(d>.06){const st=Math.min(d,sp*dt);p.pos.x+=dx/d*st;p.pos.z+=dz/d*st}
+    if(dp>6){const k=(dp-6)/dp;p.pos.x+=(pos.x-p.pos.x)*k;p.pos.z+=(pos.z-p.pos.z)*k}}const mv=Math.hypot(p.pos.x-ox,p.pos.z-oz)/Math.max(dt,1e-3);
   if(mv>.3)p.yaw=angLerp(p.yaw,Math.atan2(p.pos.x-ox,p.pos.z-oz),1-Math.exp(-8*dt));else p.yaw=angLerp(p.yaw,Math.atan2(pos.x-p.pos.x,pos.z-p.pos.z),1-Math.exp(-2*dt));
   const out=scene===mtn,gy=out?groundH(p.pos.x,p.pos.z):0,slide=out&&riding,fly=p.obj.userData.fly?1.1+Math.sin(p.ph*.5)*.15:0;p.ph+=dt*(4+Math.min(mv,8)*2.2);
   p.obj.position.set(p.pos.x,gy+fly+(!fly&&!slide&&mv>.3?Math.abs(Math.sin(p.ph))*.14:0),p.pos.z);p.obj.rotation.y=p.yaw;
@@ -2971,7 +2981,7 @@ async function cloudWrite(force){const u=CLOUD.user;if(!CLOUD.on||!u||CLOUD.load
   try{await F.setDoc(F.doc(CLOUD.fs,'fp_saves',u.uid),{s:js,points:Math.max(0,Math.floor(SAVE.points)),earned:Math.max(0,Math.floor(SAVE.earned||0)),name:cleanName(SAVE.name)||'Skier',at:F.serverTimestamp()});CLOUD.lastJSON=js;if(CLOUD.status){CLOUD.status='';cloudUI()}}
   catch(e){CLOUD.status='couldn\'t save, will retry';cloudUI()}}
 async function cloudLoadLB(){if(!CLOUD.on)return;const F=CLOUD.F;try{const q=F.query(F.collection(CLOUD.fs,'fp_lb'),F.orderBy('t'),F.limit(60));const r=await F.getDocs(q);
-  const rows=[];r.forEach(d=>{const x=d.data();rows.push([String(x.name||''),num(x.t),x.at&&x.at.toMillis?x.at.toMillis():Date.now()])});if(rows.length)mergeLB(rows)}catch(e){}}
+  const rows=[];r.forEach(d=>{const x=d.data();rows.push([String(x.name||''),num(x.t),x.at&&x.at.toMillis?x.at.toMillis():Date.now(),'u:'+d.id])});if(rows.length)mergeLB(rows)}catch(e){}}
 async function cloudPostLB(t){const u=CLOUD.user;if(!CLOUD.on||!u||t<25||t>400)return;const F=CLOUD.F,ref=F.doc(CLOUD.fs,'fp_lb',u.uid);
   try{const s=await F.getDoc(ref);if(s.exists()&&num(s.data().t,999)<=t&&!(s.data().at&&s.data().at.toMillis&&s.data().at.toMillis()<LB_RESET))return;await F.setDoc(ref,{name:cleanName(SAVE.name)||'Skier',t:rnd2(t),at:F.serverTimestamp()});toast('🏁 Saved to the all-time Jingle Race board!')}catch(e){}}
 {const b=finishRace;finishRace=time=>{b(time);if(CLOUD.user)cloudPostLB(time);else if(CLOUD.on)setTimeout(()=>toast('🏁 Sign in on the menu to put your times on the all-time board'),3200)}}
@@ -3277,7 +3287,7 @@ const noGearZone=()=>P.loc==='mtn'&&(inArena(P.pos.x,P.pos.z,-3)||Math.hypot(P.p
 {const b=setOnFoot;setOnFoot=(on,sport)=>{if(!on&&noGearZone()){toast(inArena(P.pos.x,P.pos.z,-3)?'❄ No skis, boards or sleighs in the Snowball Arena':'⛸ No skis, boards or sleighs on the pond. Just skate!');return}return b(on,sport)}}
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);if(state==='play'&&P.mode==='ride'&&!P.lift&&noGearZone()){setOnFoot(true);if(P.mode==='walk')toast(inArena(P.pos.x,P.pos.z,-3)?'❄ Gear off for the Snowball Arena':'⛸ Gear off for the pond')}}}
 // ---------- race board fresh start (personal best too, once)
-try{if(!localStorage.getItem('fp_lbreset3')){localStorage.setItem('fp_lbreset3','1');SAVE.raceBest=0;save()}}catch{}
+try{if(!localStorage.getItem('fp_lbreset4')){localStorage.setItem('fp_lbreset4','1');SAVE.raceBest=0;save()}}catch{}
 // ---------- arena decor: corner trees, snowmen at the gates, lanterns and pennants on the walls, spectator benches, a few snow mounds for cover
 {const X0=AR.x-AR.hw,X1=AR.x+AR.hw,Z0=AR.z-AR.hd,Z1=AR.z+AR.hd,treeM=M({vertexColors:true,roughness:.9}),wood=M({color:0x7a4e2c,roughness:.85}),dark=M({color:0x2a2a2a,roughness:.6});
  for(const [x,z] of [[X0-3,Z0-3],[X1+3,Z0-3],[X1+3,Z1+3],[X0-3,Z1+3]]){const y=groundH(x,z),t=new THREE.Mesh(treeGeo,treeM);t.position.set(x,y-.2,z);t.scale.setScalar(2.1);t.castShadow=true;mtn.add(t);COLLIDERS.push({x0:x-1.3,x1:x+1.3,z0:z-1.3,z1:z+1.3});
@@ -3840,6 +3850,28 @@ $('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');i
   pose(bkBaker,{anim:6,time:T});if(T-HALL.t>60&&P.pos.x>LW-6)hallRefresh()}}
 hallApply();
 window.__ck={CK,BK,HALL,hallRefresh,hallApply,likeCookie,HALL_SLOTS,BK_STATIONS};
+/* ================= Jingle Race: sliding loops + bright hazard barriers on the middle run ================= */
+const RACE_HZ=[];
+{const stripe=canvasTex(256,64,(g,W,H)=>{g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.fillStyle='#e0142c';for(let x=-64;x<W+64;x+=64){g.beginPath();g.moveTo(x,0);g.lineTo(x+32,0);g.lineTo(x+64,H);g.lineTo(x+32,H);g.fill()}g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,0,W,4);g.fillRect(0,H-4,W,4)});
+ const blocked=(x,z)=>COLLIDERS.some(c=>x>c.x0-3&&x<c.x1+3&&z>c.z0-2&&z<c.z1+2);
+ for(let i=0;i<RACE.gates.length-1;i+=2){const z=(RACE.gates[i].z+RACE.gates[i+1].z)/2,x=mainX(z)+((i/2)%2?-1.6:1.6);if(blocked(x,z))continue;RACE_HZ.push({x,z,y:groundH(x,z)})}
+ const n=RACE_HZ.length,mk=(geo,mat)=>{const im=new THREE.InstancedMesh(geo,mat,n);im.castShadow=true;mtn.add(im);return im};
+ const board=mk(new THREE.BoxGeometry(4.6,1,.28),new THREE.MeshStandardMaterial({map:stripe,roughness:.5,emissive:0x400008,emissiveIntensity:.4}));
+ const board2=mk(new THREE.BoxGeometry(4.6,.5,.26),new THREE.MeshStandardMaterial({map:stripe,roughness:.5}));
+ const post=mk(new THREE.CylinderGeometry(.14,.16,2.3,10),M({map:caneTex,roughness:.4}));const post2=mk(new THREE.CylinderGeometry(.14,.16,2.3,10),M({map:caneTex,roughness:.4}));
+ const beaconM=new THREE.MeshStandardMaterial({color:0xff2030,emissive:0xff1020,emissiveIntensity:2.5,roughness:.3});const bea=mk(new THREE.SphereGeometry(.24,14,10),beaconM),bea2=mk(new THREE.SphereGeometry(.24,14,10),beaconM);
+ const snow=mk(new THREE.BoxGeometry(5.2,.5,1.3),M({color:0xf4f8ff,roughness:.95}));
+ const signT=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#ffc21a';g.beginPath();g.moveTo(128,12);g.lineTo(246,236);g.lineTo(10,236);g.closePath();g.fill();g.lineWidth=14;g.strokeStyle='#1a1a1a';g.lineJoin='round';g.stroke();g.fillStyle='#1a1a1a';g.font='900 150px Arial';g.textAlign='center';g.fillText('!',128,212)});
+ const sign=mk(new THREE.PlaneGeometry(1.3,1.3),new THREE.MeshStandardMaterial({map:signT,transparent:true,alphaTest:.5,side:THREE.DoubleSide,emissive:0x664400,emissiveIntensity:.5}));
+ RACE_HZ.forEach((h,i)=>{const {x,z,y}=h;board.setMatrixAt(i,mtx(x,y+1.45,z));board2.setMatrixAt(i,mtx(x,y+.6,z));post.setMatrixAt(i,mtx(x-2.35,y+1.15,z));post2.setMatrixAt(i,mtx(x+2.35,y+1.15,z));
+   bea.setMatrixAt(i,mtx(x-2.35,y+2.45,z));bea2.setMatrixAt(i,mtx(x+2.35,y+2.45,z));snow.setMatrixAt(i,mtx(x,y+.05,z));sign.setMatrixAt(i,mtx(x,y+2.55,z-.05));
+   COLLIDERS.push({x0:x-2.5,x1:x+2.5,z0:z-.4,z1:z+.4,y1:y+2});addPool(x,z-3,6,0xff3040)});
+ for(const im of [board,board2,post,post2,bea,bea2,snow,sign]){im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere()}
+ buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
+ // sliding loops + blinking beacons
+ const _now=()=>typeof netTime==='function'?netTime():T;
+ const b=updateExtras2;updateExtras2=dt=>{b(dt);const nt=_now();beaconM.emissiveIntensity=Math.sin(T*7)>0?3:.25;
+   for(const G of RACE.gates){if(!G.mv||!G.m)continue;G.x=G.x0+Math.sin(nt*1.05+G.z*.013)*5;G.m.position.x=G.x;G.m.position.y=groundH(G.x,G.z)+RACE.R+.15}}}
 
 /* ================= Camera ================= */
 let curCrouch=0;
