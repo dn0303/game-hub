@@ -1901,6 +1901,7 @@ function openChat(){if(state!=='play')return;$('chatbox').classList.remove('hidd
 let chatUnlock=false;
 function closeChat(){$('chatbox').classList.add('hidden');$('chatin').value='';$('chatin').blur();$('chatlog').classList.add('fade')}
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){const t=$('chatin').value.replace(/\s+/g,' ').trim().slice(0,120);
+  if(/^\/(delrecord|deleterecord|lbdelete)$/i.test(t)){if(!isOwner()){chatSys('🧪 That command is only for the game owner');closeChat();return}deleteMyLB();closeChat();return}
   if(/^\/snowman$/i.test(t)){if(!isOwner()){chatSys('🧪 That command is only for the game owner');closeChat();return}const need=GS_GOAL-gsTotal();if(need<=0)chatSys('☃ The giant snowman is already finished');else{const rows=[];for(let left=need;left>0;left-=60)rows.push([myId.slice(0,6)+(++gsSeq).toString(36)+Date.now().toString(36).slice(-3),Math.min(60,left),Date.now()]);gsMerge(GS.c,rows);world.send({k:'gs',c:GS.c,r:rows});chatSys('🧪 Giant snowman finished instantly')}closeChat();return}
   {const mm=t.match(/^\/points\s+(\d{1,8})$/i);if(mm){if(!isOwner()){chatSys('🧪 That command is only for the game owner');closeChat();return}const n=Math.min(+mm[1],1e8);SAVE.points+=n;saveT=1;save();chatSys('🧪 Test command: +'+fmt(n)+' pts');closeChat();return}}
   if(t&&performance.now()-lastChat>900){lastChat=performance.now();say(me,t);chatLine(SAVE.name,t);world.send({k:'c',t})}closeChat()}else if(e.key==='Escape')closeChat()});
@@ -2982,7 +2983,15 @@ async function cloudWrite(force){const u=CLOUD.user;if(!CLOUD.on||!u||CLOUD.load
   try{await F.setDoc(F.doc(CLOUD.fs,'fp_saves',u.uid),{s:js,points:Math.max(0,Math.floor(SAVE.points)),earned:Math.max(0,Math.floor(SAVE.earned||0)),name:cleanName(SAVE.name)||'Skier',at:F.serverTimestamp()});CLOUD.lastJSON=js;if(CLOUD.status){CLOUD.status='';cloudUI()}}
   catch(e){CLOUD.status='couldn\'t save, will retry';cloudUI()}}
 async function cloudLoadLB(){if(!CLOUD.on)return;const F=CLOUD.F;try{const q=F.query(F.collection(CLOUD.fs,'fp_lb'),F.orderBy('t'),F.limit(60));const r=await F.getDocs(q);
-  const rows=[];r.forEach(d=>{const x=d.data();rows.push([String(x.name||''),num(x.t),x.at&&x.at.toMillis?x.at.toMillis():Date.now(),'u:'+d.id])});if(rows.length)mergeLB(rows)}catch(e){}}
+  const rows=[];r.forEach(d=>{const x=d.data();rows.push([String(x.name||''),num(x.t),x.at&&x.at.toMillis?x.at.toMillis():Date.now(),'u:'+d.id])});if(rows.length)mergeLB(rows);
+  // the cloud is the source of truth for signed-in rows: drop any that were deleted there
+  if(r.size<60){const ids=new Set(rows.map(x=>x[3])),n0=LB.length;LB=LB.filter(x=>!x[3]||ids.has(x[3]));if(LB.length!==n0)lbSaveDraw()}}catch(e){}}
+function lbSaveDraw(){try{localStorage.setItem('frostypeaks_lb4',JSON.stringify(LB))}catch{}drawLeaderboard(LB);if(panelKind==='race')renderPanel()}
+async function deleteMyLB(){const u=CLOUD.user,id=u?'u:'+u.uid:null,nm=cleanName(SAVE.name||'').toLowerCase(),n0=LB.length;
+  LB=LB.filter(x=>!(id&&x[3]===id)&&!(!x[3]&&nm&&x[0].toLowerCase()===nm));SAVE.raceBest=0;save();lbSaveDraw();if(id)world.send({k:'lbdel',id});
+  let cloud='';if(CLOUD.on&&u){try{await CLOUD.F.deleteDoc(CLOUD.F.doc(CLOUD.fs,'fp_lb',u.uid));cloud=' and the all-time board'}catch(e){cloud=' (the cloud board refused: paste the new firestore.rules in Firebase)'}}
+  chatSys('🗑 Removed your race record'+(n0===LB.length?' (nothing on this board)':'')+' from this board'+cloud)}
+{const base=world.onmsg;world.onmsg=m=>{if(m&&m.k==='lbdel'){if(typeof m.id==='string'&&/^u:[\w-]{6,40}$/.test(m.id)){const n0=LB.length;LB=LB.filter(x=>x[3]!==m.id);if(LB.length!==n0)lbSaveDraw()}return}return base(m)}}
 async function cloudPostLB(t){const u=CLOUD.user;if(!CLOUD.on||!u||t<25||t>400)return;const F=CLOUD.F,ref=F.doc(CLOUD.fs,'fp_lb',u.uid);
   try{const s=await F.getDoc(ref);if(s.exists()&&num(s.data().t,999)<=t&&!(s.data().at&&s.data().at.toMillis&&s.data().at.toMillis()<LB_RESET))return;await F.setDoc(ref,{name:cleanName(SAVE.name)||'Skier',t:rnd2(t),at:F.serverTimestamp()});toast('🏁 Saved to the all-time Jingle Race board!')}catch(e){}}
 {const b=finishRace;finishRace=time=>{b(time);if(CLOUD.user)cloudPostLB(time);else if(CLOUD.on)setTimeout(()=>toast('🏁 Sign in on the menu to put your times on the all-time board'),3200)}}

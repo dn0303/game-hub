@@ -68,6 +68,7 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == uid && fpLbOk()
         && (request.resource.data.t < resource.data.t
             || resource.data.at < timestamp.value(1794166200000));
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
     function fpLbOk() {
       let d = request.resource.data;
