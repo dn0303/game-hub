@@ -2247,7 +2247,7 @@ const capTops=[];let gachaG,gachaCrank,gachaSpin=0,gachaAnim=null;
 const _gp=V3();
 function gachaRoll(){const r=Math.random();let acc=0,rar=0;for(let i=0;i<RARITY.length;i++){acc+=RARITY[i].p;if(r<acc){rar=i;break}rar=i}
   const pool=ITEMS.filter(i=>i.cat==='pet'&&i.rar===rar);return pool[(Math.random()*pool.length)|0]}
-function gachaDraw(){if(gachaAnim)return;if(SAVE.points<GACHA_COST){toast('You need '+fmt(GACHA_COST-SAVE.points)+' more points for a draw');return}
+function gachaDraw(){if(gachaAnim){if(!gachaAnim.opened)return;mtn.remove(gachaAnim.c);mtn.remove(gachaAnim.pet);gachaAnim=null}if(SAVE.points<GACHA_COST){toast('You need '+fmt(GACHA_COST-SAVE.points)+' more points for a draw');return}
   SAVE.points-=GACHA_COST;const it=gachaRoll(),dupe=SAVE.owned.includes(it.id);if(dupe)SAVE.points+=DUPE_BACK;else{SAVE.owned.push(it.id);SAVE.eq.pet=it.id}save();closePanel();
   // capsule pops out of the chute, spins, and opens to reveal the pet
   const c=new THREE.Group(),col=[0xff3b4d,0x2f7bff,0xc77dff,0xffc934][it.rar];mesh(new THREE.SphereGeometry(.42,20,10,0,Math.PI*2,0,Math.PI/2),M({color:col,roughness:.2,metalness:.2}),0,0,0,c);
