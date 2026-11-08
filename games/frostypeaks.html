@@ -897,11 +897,11 @@ const vpostM=M({color:0x4a2a12,roughness:.85});
 {ZONES.push({x:POND.x,z:POND.z,r:POND.r+4});const gy=groundH(POND.x,POND.z);
  const iceTex=canvasTex(256,256,(g,W,H)=>{g.fillStyle='#bfe3f7';g.fillRect(0,0,W,H);g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;for(let i=0;i<70;i++){g.beginPath();const x=Math.random()*W,y=Math.random()*H,a=Math.random()*6.3,l=20+Math.random()*60;g.moveTo(x,y);g.quadraticCurveTo(x+Math.cos(a+.6)*l*.5,y+Math.sin(a+.6)*l*.5,x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}},[3,3]);
  const geo=new THREE.CircleGeometry(POND.r,120,0);geo.rotateX(-Math.PI/2);const pa=geo.attributes.position;for(let i=0;i<pa.count;i++){const x=pa.getX(i)+POND.x,z=pa.getZ(i)+POND.z;pa.setY(i,groundH(x,z)+.07)}geo.computeVertexNormals();
- const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x16304a,emissiveIntensity:.35}));ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
+ const ice=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:iceTex,color:0xd8f0ff,roughness:.12,metalness:.25,emissive:0x5a8ab0,emissiveIntensity:.55,depthWrite:false}));ice.renderOrder=1;ice.position.set(POND.x,0,POND.z);ice.receiveShadow=true;mtn.add(ice);
  const rimM=M({color:0xf8fbff,roughness:.8});for(let i=0;i<130;i++){const a=i/130*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+.4),z=POND.z+Math.sin(a)*(POND.r+.4);const s=mesh(new THREE.SphereGeometry(.7+((i*7)%3)*.15,10,8),rimM,x,groundH(x,z)-.2,z,mtn);s.scale.set(1.3,.45,1.3)}
   for(let i=0;i<20;i++){const a=i/20*Math.PI*2+.2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2),y=groundH(x,z);mesh(new THREE.CylinderGeometry(.07,.09,3,8),vpostM,x,y+1.5,z,mtn);addGlow(x,y+3.1,z,0xffd08a);addPool(x,z,5,0xffb060,.08)}
  for(let i=0;i<200;i++){const a=i/200*Math.PI*2,x=POND.x+Math.cos(a)*(POND.r+2.2),z=POND.z+Math.sin(a)*(POND.r+2.2);addBulb(x,groundH(x,z)+2.75-Math.abs(Math.sin(a*4))*.4,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff,0xff60e0][i%5])}
- addPool(POND.x,POND.z,POND.r*1.1,0x88c8ff,.08);glowTitle('⛸ SNOWFLAKE POND','Skating · ice hockey · ice fishing',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
+ glowTitle('⛸ SNOWFLAKE POND','Skating · ice hockey · ice fishing',POND.x,POND.z-POND.r-3,{h:7.5,ry:0,col:'#8fe3ff',w:11});
 }
 // ----- Snowman Yard
 {ZONES.push({x:YARD.x,z:YARD.z,r:YARD.r-4});
@@ -3086,18 +3086,22 @@ function setFar(e,far){e.far=far;e.o.traverse(c=>{if(!c.isLight)c.layers.set(far
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);cullT-=dt;if(cullT>0)return;cullT=.3;const cp=camera.position,lim=LM?1e9:state==='play'?1150:1e9;
   for(const e of CULL){if(e.o===me.root||e.o.parent!==mtn){if(e.far)setFar(e,false);continue}e.c.copy(e.c0).add(e.o.position).sub(e.p0);const far=cp.distanceTo(e.c)-e.r>lim;if(far!==e.far)setFar(e,far)}}}
 Object.assign(window.__fx,{CULL,renderer,mtn,sun});
-// ---------- ring boost: a 1 second push that fades out, with a golden glow and sparkles on you
-const boostFx=(()=>{const g=new THREE.Group();g.visible=false;me.root.add(g);
-  const aura=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa800,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));aura.position.y=1;g.add(aura);
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.06,8,40),new THREE.MeshBasicMaterial({color:0xffe27a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));ring.rotation.x=Math.PI/2;ring.position.y=.9;g.add(ring);
-  return{g,aura,ring}})();
+// ---------- ring boost: a 1 second push that fades out; you glow gold and yellow streaks whoosh past
+const boostFx=(()=>{const gold=new Map();const goldOf=m=>{let g=gold.get(m);if(!g){g=m.clone();if(g.emissive){g.emissive=new THREE.Color(0xffb000)}else if(g.color){g.color=g.color.clone().lerp(new THREE.Color(0xffd040),.25)}gold.set(m,g)}return g};
+  const sw=new THREE.Group();sw.visible=false;mtn.add(sw);const lineM=new THREE.MeshBasicMaterial({color:0xffc21a,transparent:true,opacity:0,depthWrite:false,toneMapped:false});
+  const st=[];for(let i=0;i<14;i++){const m=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,1,6,1,true),lineM);m.rotation.x=Math.PI/2;sw.add(m);st.push({m,ph:Math.random(),x:0,y:0,L:1})}
+  const swaps=[];let on=false;
+  function setGold(v){if(v===on)return;on=v;if(v){me.root.traverse(o=>{if(o.isMesh&&o.material&&!Array.isArray(o.material)&&!o.isSprite&&o.material.isMeshStandardMaterial){swaps.push([o,o.material]);o.material=goldOf(o.material)}})}else{for(const [o,m] of swaps)o.material=m;swaps.length=0}}
+  return{setGold,gold,sw,st,lineM}})();
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);const t=P.ringBoostT||0;
   if(t>0){P.ringBoostT=Math.max(0,t-dt);const u=1-P.ringBoostT,env=u<.12?u/.12:u>.75?(1-u)/.25:1;
-    if(P.loc==='mtn'&&(P.mode==='ride'||P.mode==='air')){const sp=Math.hypot(P.vel.x,P.vel.z);if(sp>.5){const k=10*env*dt/sp;P.pos.x+=P.vel.x*k;P.pos.z+=P.vel.z*k}
-      if(Math.random()<.8)trailEmit(P.pos.x,P.pos.y+.4,P.pos.z,['#ffd84a','#fff3a0','#ffffff'],3)}
-    boostFx.g.visible=true;const s=2+Math.sin(T*30)*.2;boostFx.aura.scale.set(s,s*1.25,1);boostFx.aura.material.opacity=.6*env;
-    const rs=.6+u*1.8;boostFx.ring.scale.set(rs,rs,rs);boostFx.ring.material.opacity=(1-u)*.9}
-  else if(boostFx.g.visible)boostFx.g.visible=false}}
+    if(P.loc==='mtn'&&(P.mode==='ride'||P.mode==='air')){const sp=Math.hypot(P.vel.x,P.vel.z);if(sp>.5){const k=10*env*dt/sp;P.pos.x+=P.vel.x*k;P.pos.z+=P.vel.z*k}}
+    boostFx.setGold(true);for(const g of boostFx.gold.values())if(g.emissive)g.emissiveIntensity=.4*env;
+    // whoosh streaks flowing back past the rider
+    const F=boostFx,sp=Math.hypot(P.vel.x,P.vel.z);F.sw.visible=true;F.sw.position.set(P.pos.x,P.pos.y,P.pos.z);F.sw.rotation.set(0,sp>.5?Math.atan2(P.vel.x,P.vel.z):P.yaw,0);F.lineM.opacity=.75*env;
+    for(const s of F.st){s.ph+=dt*2.4;if(s.ph>=1){s.ph-=1;const a=Math.random()*Math.PI*2,r=.9+Math.random()*.9;s.x=Math.cos(a)*r;s.y=Math.max(.15,1+Math.sin(a)*r*.8);s.L=1.2+Math.random()*1.8}
+      s.m.position.set(s.x,s.y,2.2-s.ph*5.5);s.m.scale.set(1,s.L*(1-Math.abs(s.ph-.5)),1)}}
+  else{boostFx.setGold(false);if(boostFx.sw.visible)boostFx.sw.visible=false}}}
 // ---------- fewer draw calls: merge things that never move into a few big meshes (nothing is hidden)
 var _smM=new THREE.Matrix4(),_smI=new THREE.Matrix4(),_smV=new THREE.Vector3(),SM_ATTR=['position','normal','uv','color'];
 function matSig(m){return[m.type,m.color&&m.color.getHex(),m.emissive&&m.emissive.getHex(),m.emissiveIntensity,m.roughness,m.metalness,m.map&&m.map.uuid,m.emissiveMap&&m.emissiveMap.uuid,m.normalMap&&m.normalMap.uuid,m.transparent,m.opacity,m.side,m.vertexColors,m.blending,m.depthWrite,m.depthTest,m.toneMapped,m.fog,m.flatShading,m.polygonOffset,m.polygonOffsetFactor,m.alphaTest,m.wireframe].join('|')}
