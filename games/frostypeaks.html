@@ -294,13 +294,13 @@ const ITEMS=[
  {id:'ski2',cat:'ski',name:'Jingle Twin-Tips',price:2000,st:{spd:1.05,turn:1.15,pop:1,spin:1,pts:1.3},col:0x22c77a,desc:'Park skis. Tricks score more.'},
  {id:'ski3',cat:'ski',name:'Blizzard Racers',price:4500,st:{spd:1.25,turn:1.2,pop:1,spin:1,pts:1.5},col:0xe2283a,desc:'Race skis built for pure speed.'},
  {id:'ski4',cat:'ski',name:'North Star Pro',price:9000,st:{spd:1.3,turn:1.35,pop:1,spin:1,pts:1.75},col:0x8b5cf6,desc:'What the pros ride. Good at everything.'},
- {id:'ski5',cat:'ski',name:'Golden Sleigh',price:20000,st:{spd:1.42,turn:1.45,pop:1,spin:1,pts:2.1},col:0xffc934,desc:'Solid gold. Santa approved.'},
+ {id:'ski5',cat:'ski',name:'Gold Rush Skis',price:20000,st:{spd:1.42,turn:1.45,pop:1,spin:1,pts:2.1},col:0xffc934,desc:'Solid gold. Santa approved.'},
  {id:'board0',cat:'board',name:'Rental Board',price:0,st:{spd:1,turn:1,pop:1,spin:1,pts:1},col:0x6b7c8f,desc:'A little scratched, still shreds.'},
  {id:'board1',cat:'board',name:'Peppermint Twist',price:800,st:{spd:1.05,turn:1.25,pop:1,spin:1,pts:1.15},col:0xff5d73,desc:'Soft and forgiving. Easy turns.'},
  {id:'board2',cat:'board',name:'Frostbite Park',price:2000,st:{spd:1.04,turn:1.15,pop:1,spin:1,pts:1.3},col:0x22d3c5,desc:'Twin park board. Tricks score more.'},
  {id:'board3',cat:'board',name:'Avalanche Freeride',price:4500,st:{spd:1.26,turn:1.2,pop:1,spin:1,pts:1.5},col:0xff9f1c,desc:'Long and stiff. Bombs the steeps.'},
  {id:'board4',cat:'board',name:'Aurora Pro',price:9000,st:{spd:1.3,turn:1.35,pop:1,spin:1,pts:1.75},col:0x4d6bff,desc:'Pro model with an all-mountain shape.'},
- {id:'board5',cat:'board',name:'Golden Reindeer',price:20000,st:{spd:1.42,turn:1.45,pop:1,spin:1,pts:2.1},col:0xffc934,desc:'The rarest board on the mountain.'},
+ {id:'board5',cat:'board',name:'Gilded Antler Board',price:20000,st:{spd:1.42,turn:1.45,pop:1,spin:1,pts:2.1},col:0xffc934,desc:'The rarest board on the mountain.'},
  {id:'hat0',cat:'hat',name:'Helmet',price:0,col:0x30343c,desc:'Safety first.'},
  {id:'hat1',cat:'hat',name:'Santa Hat',price:400,col:0xe2283a,desc:'Ho ho ho.'},
  {id:'hat2',cat:'hat',name:'Elf Hat',price:400,col:0x1f9d55,desc:'Comes with a jingle bell.'},
@@ -1795,22 +1795,22 @@ function exitRoom(){sfx.door();fadeTo(()=>{const B=ROOMS[P.loc].out;P.loc='mtn';
 const enterLodge=()=>enterRoom('lodge'),exitLodge=exitRoom;
 
 /* ================= Audio ================= */
-const sfx=(()=>{let AC=null,master,wind,carve,carveB,fire,grindG,noiseBuf;
+const sfx=(()=>{let AC=null,master,sfxG,wind,carve,carveB,fire,grindG,noiseBuf;
   function init(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
-    master=AC.createGain();master.connect(AC.destination);master.gain.value=SAVE.set.vol;
+    master=AC.createGain();master.connect(AC.destination);master.gain.value=SAVE.set.vol;sfxG=AC.createGain();sfxG.gain.value=SAVE.set.sfx??1;sfxG.connect(master);
     noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const d=noiseBuf.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;b=(b+.02*w)/1.02;d[i]=w*.5+b*3}
-    const loop=(type,f,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl).connect(g).connect(master);s.start();return g};
+    const loop=(type,f,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl).connect(g).connect(sfxG);s.start();return g};
     wind=loop('bandpass',500,.6);carve=loop('highpass',2600,.7);carveB=loop('bandpass',750,.9);fire=loop('lowpass',380,.5);grindG=loop('bandpass',3200,8)}
-  function tone(f,d,type='sine',v=.15,f2){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;if(f2)o.frequency.exponentialRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g).connect(master);o.start();o.stop(AC.currentTime+d)}
+  function tone(f,d,type='sine',v=.15,f2){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;if(f2)o.frequency.exponentialRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g).connect(sfxG);o.start();o.stop(AC.currentTime+d)}
   return{init,get ok(){return !!AC},
-    update(speed,ground,turn,inLodge){if(!AC)return;const t=AC.currentTime;master.gain.setTargetAtTime(SAVE.set.vol,t,.1);
+    update(speed,ground,turn,inLodge){if(!AC)return;const t=AC.currentTime;master.gain.setTargetAtTime(SAVE.set.vol,t,.1);sfxG.gain.setTargetAtTime(SAVE.set.sfx??1,t,.1);
       wind.gain.setTargetAtTime(inLodge?0:Math.min(.5,.04+speed/45),t,.15);const cg=inLodge||!ground||P.mode==='walk'?0:Math.min(.4,speed/38*(.3+Math.abs(turn))),bd=SAVE.sport==='board';carve.gain.setTargetAtTime(bd?cg*.25:cg,t,.08);carveB.gain.setTargetAtTime(bd?cg*1.3:0,t,.08);fire.gain.setTargetAtTime(0,t,.05)},
     grind(){},
     chime(){},
     thud(){},blip(){},pop(){},
     boom(){},
     coin(){},
-    noise(dur,type,f,q,v){if(!AC)return;const s=AC.createBufferSource();s.buffer=noiseBuf;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain(),t=AC.currentTime;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(fl).connect(g).connect(master);s.start(t,Math.random()*1.5);s.stop(t+dur)},
+    noise(dur,type,f,q,v){if(!AC)return;const s=AC.createBufferSource();s.buffer=noiseBuf;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain(),t=AC.currentTime;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(fl).connect(g).connect(sfxG);s.start(t,Math.random()*1.5);s.stop(t+dur)},
     step(snow){if(snow){this.noise(.13,'bandpass',1100+Math.random()*500,1.4,.28);this.noise(.06,'lowpass',380,1,.2)}},
     bells(){for(let i=0;i<7;i++)setTimeout(()=>{tone(2093+Math.random()*900,.35,'triangle',.035);tone(3136+Math.random()*600,.25,'sine',.02)},i*45+Math.random()*30)},
     door(){},skate(){this.noise(.22,'highpass',2800+Math.random()*800,.8,.12)},
@@ -1970,6 +1970,7 @@ function renderPanel(){const c=$('panelcard');const pts=`<span class="pill" styl
      <div class="set"><span>Mouse sensitivity</span><input type="range" min=".2" max="3" step=".1" value="${s.sens}" data-set="sens"><b>${s.sens}</b></div>
      <div class="set"><span>Field of view</span><input type="range" min="60" max="100" step="1" value="${s.fov}" data-set="fov"><b>${s.fov}</b></div>
      <div class="set"><span>Volume</span><input type="range" min="0" max="1" step=".05" value="${s.vol}" data-set="vol"><b>${Math.round(s.vol*100)}</b></div>
+     <div class="set"><span>Sound effects</span><input type="range" min="0" max="1" step=".05" value="${s.sfx??1}" data-set="sfx"><b>${Math.round((s.sfx??1)*100)}</b></div>
      <div class="set"><span>Piano music</span><input type="range" min="0" max="1" step=".05" value="${s.mus}" data-set="mus"><b>${Math.round(s.mus*100)}</b></div>
      <div class="set"><span>Graphics</span><div class="seg">${['low','medium','high'].map(q=>`<button data-q="${q}" class="${s.quality===q?'on':''}">${q[0].toUpperCase()+q.slice(1)}</button>`).join('')}</div><span></span></div>
      <div class="set"><span>Invert mouse Y</span><div class="seg"><button data-inv="0" class="${!s.invert?'on':''}">Off</button><button data-inv="1" class="${s.invert?'on':''}">On</button></div><span></span></div>
@@ -1990,7 +1991,7 @@ $('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');i
   if(d.inv)SAVE.set.invert=d.inv==='1';
   if(d.cam){camS.mode=d.cam;SAVE.cam=d.cam}
   save();renderPanel()});
-$('panelcard').addEventListener('input',e=>{const k=e.target.dataset.set;if(!k)return;SAVE.set[k]=+e.target.value;if(k==='fov'){camera.fov=SAVE.set.fov;camera.updateProjectionMatrix()}e.target.nextElementSibling.textContent=k==='vol'||k==='mus'?Math.round(SAVE.set[k]*100):SAVE.set[k];save()});
+$('panelcard').addEventListener('input',e=>{const k=e.target.dataset.set;if(!k)return;SAVE.set[k]=+e.target.value;if(k==='fov'){camera.fov=SAVE.set.fov;camera.updateProjectionMatrix()}e.target.nextElementSibling.textContent=k==='vol'||k==='mus'||k==='sfx'?Math.round(SAVE.set[k]*100):SAVE.set[k];save()});
 $('panel').addEventListener('click',e=>{if(e.target.id==='panel')closePanel()});
 function buyItem(id){const it=ITEM[id];if(!it||SAVE.owned.includes(id)||SAVE.points<it.price)return false;SAVE.points-=it.price;SAVE.owned.push(id);equip(it);sfx.coin();toast(it.cat==='pass'?'🎟️ Snow Launcher Pass unlocked for life! Find the launcher by the North Pole Express.':it.cat==='sleigh'?'🛷 Unlocked the '+it.name+'! Go outside and press 4 to ride it.':'Bought '+it.name+'! You\'re wearing it now.');refreshShopLabels();return true}
 function equip(it){if(it.cat==='pass')return;if(it.cat==='sleigh'){SAVE.eq.sleigh=it.id;save();return}SAVE.eq[it.cat]=it.id;if(it.cat==='ski'||it.cat==='board')SAVE.sport=it.cat;applyLook();save()}
@@ -3854,7 +3855,8 @@ window.__ck={CK,BK,HALL,hallRefresh,hallApply,likeCookie,HALL_SLOTS,BK_STATIONS}
 const RACE_HZ=[];
 {const stripe=canvasTex(256,64,(g,W,H)=>{g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.fillStyle='#e0142c';for(let x=-64;x<W+64;x+=64){g.beginPath();g.moveTo(x,0);g.lineTo(x+32,0);g.lineTo(x+64,H);g.lineTo(x+32,H);g.fill()}g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,0,W,4);g.fillRect(0,H-4,W,4)});
  const blocked=(x,z)=>COLLIDERS.some(c=>x>c.x0-3&&x<c.x1+3&&z>c.z0-2&&z<c.z1+2);
- for(let i=0;i<RACE.gates.length-1;i+=2){const z=(RACE.gates[i].z+RACE.gates[i+1].z)/2,x=mainX(z)+((i/2)%2?-1.6:1.6);if(blocked(x,z))continue;RACE_HZ.push({x,z,y:groundH(x,z)})}
+ const add=(x,z)=>{if(!blocked(x,z)&&!RACE_HZ.some(h=>Math.hypot(h.x-x,h.z-z)<8))RACE_HZ.push({x,z,y:groundH(x,z),broken:0})};
+ for(let i=0;i<RACE.gates.length-1;i++){const z0=RACE.gates[i].z,z1=RACE.gates[i+1].z,zm=(z0+z1)/2;add(mainX(zm)+(i%2?-1.6:1.6),zm);const zq=z0+(z1-z0)*(i%2?.25:.75);add(mainX(zq)+(i%3===0?-9:9),zq)}
  const n=RACE_HZ.length,mk=(geo,mat)=>{const im=new THREE.InstancedMesh(geo,mat,n);im.castShadow=true;mtn.add(im);return im};
  const board=mk(new THREE.BoxGeometry(4.6,1,.28),new THREE.MeshStandardMaterial({map:stripe,roughness:.5,emissive:0x400008,emissiveIntensity:.4}));
  const board2=mk(new THREE.BoxGeometry(4.6,.5,.26),new THREE.MeshStandardMaterial({map:stripe,roughness:.5}));
@@ -3865,13 +3867,60 @@ const RACE_HZ=[];
  const sign=mk(new THREE.PlaneGeometry(1.3,1.3),new THREE.MeshStandardMaterial({map:signT,transparent:true,alphaTest:.5,side:THREE.DoubleSide,emissive:0x664400,emissiveIntensity:.5}));
  RACE_HZ.forEach((h,i)=>{const {x,z,y}=h;board.setMatrixAt(i,mtx(x,y+1.45,z));board2.setMatrixAt(i,mtx(x,y+.6,z));post.setMatrixAt(i,mtx(x-2.35,y+1.15,z));post2.setMatrixAt(i,mtx(x+2.35,y+1.15,z));
    bea.setMatrixAt(i,mtx(x-2.35,y+2.45,z));bea2.setMatrixAt(i,mtx(x+2.35,y+2.45,z));snow.setMatrixAt(i,mtx(x,y+.05,z));sign.setMatrixAt(i,mtx(x,y+2.55,z-.05));
-   COLLIDERS.push({x0:x-2.5,x1:x+2.5,z0:z-.4,z1:z+.4,y1:y+2});addPool(x,z-3,6,0xff3040)});
+   addPool(x,z-3,6,0xff3040)});
  for(const im of [board,board2,post,post2,bea,bea2,snow,sign]){im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere()}
  buildGlows(mtn);GLOW_S.length=0;GLOW_L.length=0;POOLS.length=0;
  // sliding loops + blinking beacons
  const _now=()=>typeof netTime==='function'?netTime():T;
  const b=updateExtras2;updateExtras2=dt=>{b(dt);const nt=_now();beaconM.emissiveIntensity=Math.sin(T*7)>0?3:.25;
-   for(const G of RACE.gates){if(!G.mv||!G.m)continue;G.x=G.x0+Math.sin(nt*1.05+G.z*.013)*5;G.m.position.x=G.x;G.m.position.y=groundH(G.x,G.z)+RACE.R+.15}}}
+   for(const G of RACE.gates){if(!G.mv||!G.m)continue;G.x=G.x0+Math.sin(nt*1.05+G.z*.013)*5;G.m.position.x=G.x;G.m.position.y=groundH(G.x,G.z)+RACE.R+.15}
+   // smashing through a barrier: it bursts apart and you lose most of your speed (no crash)
+   if(state==='play'&&P.loc==='mtn'){for(let i=0;i<RACE_HZ.length;i++){const h=RACE_HZ[i];if(h.broken){if(T-h.broken>25)setBroken(i,0);continue}
+       if(Math.abs(P.pos.x-h.x)<2.6&&Math.abs(P.pos.z-h.z)<.7&&P.pos.y<h.y+2.3){const sp=Math.hypot(P.vel.x,P.vel.z);
+         if(sp>3.5&&P.mode!=='walk'){smash(i,P.vel.x,P.vel.z,true);world.send({k:'hz',i})}else{P.pos.z=h.z+(P.pos.z<h.z?-.7:.7);P.vel.z=0}}}}
+   for(let i=DEB.length-1;i>=0;i--){const d=DEB[i];d.t+=dt;d.v.y-=14*dt;d.m.position.addScaledVector(d.v,dt);const gy=groundH(d.m.position.x,d.m.position.z)+.08;if(d.m.position.y<gy){d.m.position.y=gy;d.v.y*=-.25;d.v.x*=.6;d.v.z*=.6;d.spin*=.5}
+     d.m.rotation.x+=d.spin*dt;d.m.rotation.z+=d.spin*.7*dt;if(d.t>2.4)d.m.scale.setScalar(Math.max(.01,1-(d.t-2.4)/.6));if(d.t>3){mtn.remove(d.m);DEB.splice(i,1)}}};
+ const PARTS=[board,board2,post,post2,bea,bea2,sign],keepM=RACE_HZ.map((h,i)=>PARTS.map(im=>{const m=new THREE.Matrix4();im.getMatrixAt(i,m);return m})),zero=new THREE.Matrix4().makeScale(0,0,0);
+ function setBroken(i,on){RACE_HZ[i].broken=on?T:0;PARTS.forEach((im,k)=>{im.setMatrixAt(i,on?zero:keepM[i][k]);im.instanceMatrix.needsUpdate=true})}
+ const DEB=[],debG=[new THREE.BoxGeometry(1.1,.5,.26),new THREE.BoxGeometry(.7,.45,.26),new THREE.CylinderGeometry(.14,.14,1.1,8)],debM=[board.material,board.material,post.material];
+ function smash(i,vx,vz,mine){const h=RACE_HZ[i];if(h.broken)return;setBroken(i,1);const sp=Math.hypot(vx,vz)||1;
+   for(let k=0;k<12;k++){const j=k%3,m=new THREE.Mesh(debG[j],debM[j]);m.castShadow=true;m.position.set(h.x+(Math.random()-.5)*4,h.y+.6+Math.random()*1.2,h.z);m.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);mtn.add(m);
+     DEB.push({m,t:0,spin:(Math.random()-.5)*14,v:new THREE.Vector3(vx/sp*(4+Math.random()*7)+(Math.random()-.5)*6,3+Math.random()*5,vz/sp*(4+Math.random()*7)+(Math.random()-.5)*3)})}
+   trailEmit(h.x,h.y+1.2,h.z,['#ffffff','#ff3048','#ffd54d'],50);
+   if(mine){P.vel.x*=.32;P.vel.z*=.32;if(P.vel.y>0)P.vel.y*=.5;hint('💥 Smashed a barrier! You lost your speed.',1.6)}}
+ if(window.__fx)__fx.HZ=RACE_HZ;
+ {const base=world.onmsg;world.onmsg=m=>{if(m&&m.k==='hz'){const i=num(m.i)|0;if(RACE_HZ[i])smash(i,0,1,false);return}return base(m)}}}
+
+/* ================= Lodge: spec card at the gear displays + dressed-up shopkeeper desks ================= */
+{const css=document.createElement('style');css.textContent=`#speccard{position:absolute;left:50%;bottom:172px;transform:translateX(-50%);width:300px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px 12px;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+#speccard.hidden{display:none}#speccard h3{margin:0;font-size:17px}#speccard .sp-p{font-size:13px;opacity:.85;margin:2px 0 8px}#speccard .sp-c{font-size:13px;font-weight:700;color:#ffd54d;margin-bottom:6px}#speccard .bars{font-size:12px;gap:5px 8px;grid-template-columns:60px 1fr}#speccard .bar{height:8px}`;document.head.appendChild(css);
+ const card=document.createElement('div');card.id='speccard';card.className='hidden';(document.getElementById('hud')||document.body).appendChild(card);let shown='';
+ const b=updateExtras2;updateExtras2=dt=>{b(dt);let it=null;
+   if(state==='play'&&P.loc==='lodge'&&P.mode==='walk'&&!panelKind&&!paused){let bd=1.7;for(const d of DISPLAYS){const dd=Math.hypot(P.pos.x-d.ix,P.pos.z-d.iz);if(dd<bd){bd=dd;it=ITEM[d.id]}}if(it&&!['ski','board','sleigh'].includes(it.cat))it=null}
+   const own=it&&SAVE.owned.includes(it.id),key=it?it.id+own+SAVE.points:'';if(key===shown)return;shown=key;if(!it){card.classList.add('hidden');return}
+   const cat={ski:'⛷ Skis',board:'🏂 Snowboard',sleigh:'🛷 Sleigh'}[it.cat];
+   card.innerHTML=`<h3>${esc(it.name)}</h3><div class="sp-c">${cat} · ${own?'✓ Owned':it.price?fmt(it.price)+' pts':'Free'}</div><div class="sp-p">${esc(it.desc||'')}</div>${it.st?statBars(it.st):''}`;card.classList.remove('hidden')}}
+// shopkeeper desks: candy-cane arch with a lit name sign, garland and lights along the front, a mini tree, gifts and a candy jar
+{const S=lodge,cane=M({map:caneTex,roughness:.35}),green=M({color:0x1d5a32,roughness:.9}),gold=M({color:0xffc934,metalness:.85,roughness:.25}),glass=new THREE.MeshStandardMaterial({color:0xdff0ff,transparent:true,opacity:.3,roughness:.05});
+ const desk=(cx,cz,len,ry,title,sub,col,top=true)=>{const g=new THREE.Group();g.position.set(cx,0,cz);g.rotation.y=ry;S.add(g);const W=(lx,lz)=>{const c=Math.cos(ry),s=Math.sin(ry);return[cx+lx*c+lz*s,cz-lx*s+lz*c]};
+   // local frame: desk runs along x, its front faces -z
+   const h=len/2+.25;for(const s of [-1,1])mesh(new THREE.CylinderGeometry(.13,.13,3.6,12),cane,s*h,1.8,-.75,g);
+   const sy=Math.min(1,1.3/h),arch=mesh(new THREE.TorusGeometry(h,.13,8,32,Math.PI),cane,0,3.6,-.75,g);arch.scale.y=sy;
+   const sg=signPlane([[title,.5,'#ffe2a8'],[sub,.28,'#fff']],Math.min(4.2,len+.6),1,{bg:col,border:'#ffd54d',glow:.4});sg.position.set(0,4.15,-.8);sg.rotation.y=Math.PI;g.add(sg);
+   for(let i=0;i<=24;i++){const a=i/24*Math.PI,[x,z]=W(Math.cos(a)*h,-.75);addBulb(x,3.6+Math.sin(a)*h*sy,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
+   // garland swags along the front edge with bulbs
+   const n=Math.round(len*6);for(let i=0;i<=n;i++){const t=i/n,lx=-len/2+t*len,sag=Math.abs(Math.sin(t*Math.PI*Math.max(2,Math.round(len/1.4))))*.22,y=1.12-sag;mesh(new THREE.SphereGeometry(.09,6,5),green,lx,y,-.68,g);if(i%3===0){const [x,z]=W(lx,-.74);addBulb(x,y-.05,z,[0xff3030,0xffd030,0x30ff60,0xffffff][(i/3|0)%4])}}
+   const wr=mesh(new THREE.TorusGeometry(.32,.1,8,20),green,0,.62,-.66,g);mesh(new THREE.BoxGeometry(.3,.18,.06),M({color:0xd62839}),0,.32,-.7,g);
+   if(top){// mini tree with lights at one end, gifts at the other, a candy jar in between
+   const tx=len/2-.3;for(const [r,hh,y] of [[.32,.5,1.45],[.24,.4,1.72],[.15,.32,1.95]])mesh(new THREE.ConeGeometry(r,hh,10),M({color:0x2f8a50}),tx,y,-.1,g);mesh(new THREE.OctahedronGeometry(.08),gold,tx,2.15,-.1,g);
+   for(let i=0;i<8;i++){const a=i*2.4,t=i/8,[x,z]=W(tx+Math.cos(a)*(.3-t*.2),-.1+Math.sin(a)*(.3-t*.2));addBulb(x,1.35+t*.65,z,[0xff3030,0x30ff60,0xffd030,0x30a0ff][i%4])}
+   [[.32,0xd62839],[.24,0x1f9d55],[.18,0xffc934]].forEach(([s,c],i)=>{const bx=mesh(new THREE.BoxGeometry(s,s*.8,s),M({color:c}),-len/2+.35+(i%2)*.12,1.2+s*.4+(i?.26*(i>1?1.5:.9):0)-(i?0:0),-.1+(i%2)*.05,g);bx.rotation.y=i*.6;mesh(new THREE.BoxGeometry(s*1.02,s*.82,s*.16),M({color:0xffffff}),0,0,0,bx)});
+   mesh(new THREE.CylinderGeometry(.14,.14,.34,16),glass,-len/2+1.05,1.37,-.15,g);for(let i=0;i<10;i++)mesh(new THREE.SphereGeometry(.045,6,5),M({color:[0xd62839,0x1f9d55,0xffffff,0xffc934][i%4]}),-len/2+1.05+(Math.random()-.5)*.14,1.25+Math.random()*.2,-.15+(Math.random()-.5)*.14,g);mesh(new THREE.CylinderGeometry(.15,.15,.04,16),gold,-len/2+1.05,1.56,-.15,g)}
+   const [lx,lz]=W(0,-1.2);addGlow(lx,3.2,lz,0xffd890)};
+ desk(-21,6,4,0,"🦌 RUDOLPH",'Checkout · full catalog','#7a1020');
+ desk(13.3,0,12,Math.PI/2,'☕ HOLLY','Cocoa Bar · order here','#3b1d0e');
+ desk(34.8,5.6,3.6,Math.PI/2,'👩‍🍳 GINGER','Bakery · ask me how','#5a2a12',false);
+ buildGlows(lodge,.45,2.5);GLOW_S.length=0;GLOW_L.length=0}
 
 /* ================= Camera ================= */
 let curCrouch=0;
