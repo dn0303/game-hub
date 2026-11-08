@@ -111,7 +111,7 @@ input{font-family:inherit}
 .lbt{width:100%;border-collapse:collapse;margin-top:12px;font-size:16px}.lbt td{padding:6px 10px;border-bottom:1px solid var(--line)}.lbt td:last-child{text-align:right;color:#7dff9a}.lbt tr.me td{color:var(--gold)}
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;z-index:10;pointer-events:none}
-#topright{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#topright{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}#bonusrow{display:flex;gap:6px;align-items:flex-start}
 .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:600;font-size:15px}
 #pts{font-size:24px;color:var(--gold);padding:6px 16px}
 #pts small{font-size:13px;color:#fff;opacity:.7;margin-left:4px}
@@ -232,7 +232,7 @@ body.lmap-on #hud,body.lmap-on #toast{opacity:0;transition:opacity .4s}
 
 <div id="hud" class="hidden">
   <div id="locname"></div>
-  <div id="topright"><div class="pill" id="pts">0<small>pts</small></div><div class="pill hidden" id="buff"></div><div class="pill" id="bonus"></div><div class="pill" id="online">Connecting…</div><button class="pill" id="invbtn">🎒 Inventory <kbd>I</kbd></button></div>
+  <div id="topright"><div class="pill" id="pts">0<small>pts</small></div><div class="pill hidden" id="buff"></div><div id="bonusrow"><button class="pill" id="invbtn">🎒 Inventory <kbd>I</kbd></button><div class="pill" id="bonus"></div></div><div class="pill" id="online">Connecting…</div></div>
   <div class="pill" id="musbtn" title="Music (N)">🎹 Music on</div>
   <div id="trick" style="opacity:0"><div id="trickname"></div><div id="trickpts"></div><div id="combo"></div></div>
   <div id="prompt" class="hidden"></div>
@@ -478,10 +478,10 @@ for(const r of RAILS){r.y1=groundH(r.x,r.z1)+.35;r.y2=groundH(r.x,r.z2)+.85;r.le
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.domElement.id='c';document.body.prepend(renderer.domElement);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.6;
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 const camera=new THREE.PerspectiveCamera(SAVE.set.fov,innerWidth/innerHeight,.05,5000);
 const mtn=new THREE.Scene(), lodge=new THREE.Scene();
-function resize(){const pr=Math.min(devicePixelRatio,SAVE.set.quality==='low'?1:1.75);renderer.setPixelRatio(pr);renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+function resize(){const pr=Math.min(devicePixelRatio,SAVE.set.quality==='low'?1:SAVE.set.quality==='high'?1.5:1.25);renderer.setPixelRatio(pr);renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
 /* ---------- helpers ---------- */
@@ -2054,7 +2054,7 @@ let race=null,prevZ=null;
 function updateRace(dt){const riding=state==='play'&&P.loc==='mtn'&&['ride','air','grind','crash'].includes(P.mode);const z=P.pos.z,pz=prevZ;prevZ=riding?z:null;const bar=$('racebar');
   if(!riding||pz===null){if(race&&!riding){race=null;loopsReset();bar.classList.add('hidden')}return}
   if(!race){if(pz<RACE.startZ&&z>=RACE.startZ&&Math.abs(P.pos.x-mainX(RACE.startZ))<16){race={t0:T,next:0,miss:0};toast('🏁 Jingle Race started! Ride through all '+RACE.gates.length+' glowing loops.')}else return}
-  while(race.next<RACE.gates.length&&z>=RACE.gates[race.next].z){const G=RACE.gates[race.next];if(Math.abs(P.pos.x-G.x)>RACE.R+.5){race.miss++;toast('Missed loop '+(race.next+1)+'! +3 seconds')}else{const sp=Math.hypot(P.vel.x,P.vel.z);if(sp>1){const add=Math.min(7,Math.max(0,34-sp*.15));P.vel.x*=1+add/sp;P.vel.z*=1+add/sp}P.ringBoostT=.6;hint('⚡ Boost!',.6)}race.next++}
+  while(race.next<RACE.gates.length&&z>=RACE.gates[race.next].z){const G=RACE.gates[race.next];if(Math.abs(P.pos.x-G.x)>RACE.R+.5){race.miss++;toast('Missed loop '+(race.next+1)+'! +3 seconds')}else{P.ringBoostT=1;hint('⚡ Boost!',1)}race.next++}
   RACE.gates.forEach((G,i)=>{if(!G.m)return;const on=i===race.next,s=on?1.12+Math.sin(T*7)*.08:1;G.m.scale.setScalar(s);G.m.children[0].material.color.setHex(i<race.next?0x7dff9a:0xffd84a)});
   const el=T-race.t0;
   if(pz<RACE.finZ&&z>=RACE.finZ){const time=el+race.miss*3;race=null;loopsReset();bar.classList.add('hidden');finishRace(time);return}
@@ -2888,7 +2888,7 @@ function refreshHouses(){const own=plotOwners(),mh=myHouse();
   HOUSES.forEach((h,i)=>{const o=own[i];h.owner=o;const key=o?o.id+'|'+o.name+'|'+JSON.stringify(o.cfg):'free';setHouseLabel(h,o);if(key===h.key)return;h.key=key;
     if(h.g){mtn.remove(h.g);h.g.traverse(m=>{if(m.isMesh||m.isPoints){m.geometry!==bulbGeo&&m.geometry.dispose()}});h.g=null}
     if(h.col){const k=COLLIDERS.indexOf(h.col);if(k>=0)COLLIDERS.splice(k,1);h.col=null}
-    const g=buildCottage(o?o.cfg:{p:i,w:plotPaint(i),r:'roof0',l:'',d:[]},o?o.name:'');g.position.set(h.x,groundH(h.x,h.z),h.z);g.rotation.y=h.ry;g.userData.seed=i;mtn.add(g);h.g=g;
+    const g=buildCottage(o?o.cfg:{p:i,w:plotPaint(i),r:'roof0',l:'',d:[]},o?o.name:'');g.position.set(h.x,groundH(h.x,h.z),h.z);g.rotation.y=h.ry;g.userData.seed=i;mtn.add(g);h.g=g;staticMerge(g,{anim:g.userData.anim});
     {const [dx,dz]=plotDir(h);h.col=oBox(h.x+dx,h.z+dz,CW/2+.3,CD/2+1.3,h.ry)}COLLIDERS.push(h.col)})}
 function claimPlot(i){const mh=myHouse();if(!mh){if(SAVE.points<COTTAGE_PRICE){toast(`🏡 This cottage costs ${fmt(COTTAGE_PRICE)} pts. You have ${fmt(SAVE.points)}.`);return}SAVE.points-=COTTAGE_PRICE;saveT=1}SAVE.house=mh?{...mh,p:i}:{p:i,c:Date.now(),w:plotPaint(i),r:'roof0',l:'',d:[]};save();hsT=0;refreshHouses();
   bigPop('🏡',mh?'Moved to a new plot!':'Welcome home!',mh?'Your decorations came with you':'Walk up to your door and press E to decorate','#ffb36b')}
@@ -2993,10 +2993,11 @@ function invSwatch(i){const bg=i.cat==='ski'||i.cat==='board'?`linear-gradient(1
   const ic={ski:'⛷️',board:'🏂',hat:'🎅',jacket:'🧥',gog:'🥽',trail:i.price?'✨':'🚫',sleigh:'🛷',pass:'🎟️'}[i.cat]||'🎁';return `<div class="isw" style="background:${bg}">${ic}</div>`}
 function invCard(i,eq,btn,note){return `<div class="icard ${eq?'eq':''}">${invSwatch(i)}<div class="iin"><h3>${esc(i.name)}</h3><p>${note||esc(i.desc||'')}</p>${btn}</div></div>`}
 EXTRA_PANELS.inv=c=>{const tabs=[['pets','🐾 Pets'],['gear','🎿 Gear'],['items','🎁 Items']];let body='';
-  if(invTab==='pets'){const pets=ITEMS.filter(i=>i.cat==='pet'&&i.id!=='pet0'&&SAVE.owned.includes(i.id)).sort((a,b)=>(b.rar||0)-(a.rar||0));
+  if(invTab==='pets'){const allP=ITEMS.filter(i=>i.cat==='pet'&&i.id!=='pet0'),pets=allP.filter(i=>SAVE.owned.includes(i.id)).sort((a,b)=>(b.rar||0)-(a.rar||0)),miss=allP.filter(i=>!SAVE.owned.includes(i.id)).sort((a,b)=>(b.rar||0)-(a.rar||0));
+    const missH=miss.length?`<div class="invsec" style="margin-top:14px">❔ Still to find · ${pets.length}/${allP.length} collected</div><div class="pgrid">${miss.map(i=>`<div class="pcard locked r${i.rar||0}"><div class="pimg"><span style="font-size:44px;opacity:.6">❔</span></div><div class="pname">???</div><div class="prar" style="color:${RARITY[i.rar||0].col}">${RARITY[i.rar||0].name}</div><div class="pnote">Win it at the Pet Gacha</div></div>`).join('')}</div>`:`<div class="invsec" style="margin-top:14px">🏆 You've collected every pet!</div>`;
     body=pets.length?`<div class="sub" style="margin-bottom:8px">The pet walking with you adds to every trick: Common ${pctTxt(1+PET_BONUS[0])}, Rare ${pctTxt(1+PET_BONUS[1])}, Epic ${pctTxt(1+PET_BONUS[2])}, Legendary ${pctTxt(1+PET_BONUS[3])}.</div><div class="pgrid">${pets.map(i=>{const eq=SAVE.eq.pet===i.id;
-        return petCard(i.id,{note:`Trick points ${pctTxt(1+PET_BONUS[i.rar||0])}`,btn:eq?'<button class="btn small" data-ipet="pet0">Put away</button>':`<button class="btn small green" data-ipet="${i.id}">Walk with</button>`}).replace('pcard',eq?'pcard eq':'pcard')}).join('')}</div>`
-      :`<div class="iempty">No pets yet. Win one at the 🎁 Pet Gacha next to the What To Do sign (5,000 pts a draw).</div>`}
+        return petCard(i.id,{note:`Trick points ${pctTxt(1+PET_BONUS[i.rar||0])}`,btn:eq?'<button class="btn small" data-ipet="pet0">Put away</button>':`<button class="btn small green" data-ipet="${i.id}">Walk with</button>`}).replace('pcard',eq?'pcard eq':'pcard')}).join('')}</div>`+missH
+      :`<div class="iempty">No pets yet. Win one at the 🎁 Pet Gacha next to the What To Do sign (5,000 pts a draw).</div>`+missH}
   else if(invTab==='gear'){body=GEAR_CATS.map(([cat,lab])=>{const own=ITEMS.filter(i=>i.cat===cat&&(SAVE.owned.includes(i.id)||!i.price));if(!own.length)return '';
       return `<div class="invsec">${lab}</div><div class="igrid">${own.map(i=>{const eq=cat==='sleigh'?SAVE.eq.sleigh===i.id:SAVE.eq[cat]===i.id;const note=i.st&&i.st.pts>1?`Trick points ×${i.st.pts}`:'';
         return invCard(i,eq,eq?'<button class="btn small" disabled>Equipped</button>':`<button class="btn small green" data-ieq="${i.id}">Equip</button>`,note)}).join('')}</div>`}).join('')}
@@ -3082,9 +3083,65 @@ const CULL=[];
  for(const o of mtn.children){if(o.isInstancedMesh||o.frustumCulled===false||o.isPoints||o.isLight||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c0:sp.center.clone(),p0:o.position.clone(),c:sp.center.clone(),r:sp.radius,far:false})}}
 let cullT=0;
 function setFar(e,far){e.far=far;e.o.traverse(c=>{if(!c.isLight)c.layers.set(far?2:0)})}
-{const b=updateExtras2;updateExtras2=dt=>{b(dt);cullT-=dt;if(cullT>0)return;cullT=.3;const cp=camera.position,lim=LM?1e9:state==='play'?560:1e9;
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);cullT-=dt;if(cullT>0)return;cullT=.3;const cp=camera.position,lim=LM?1e9:state==='play'?1150:1e9;
   for(const e of CULL){if(e.o===me.root||e.o.parent!==mtn){if(e.far)setFar(e,false);continue}e.c.copy(e.c0).add(e.o.position).sub(e.p0);const far=cp.distanceTo(e.c)-e.r>lim;if(far!==e.far)setFar(e,far)}}}
-Object.assign(window.__fx,{CULL,renderer});
+Object.assign(window.__fx,{CULL,renderer,mtn,sun});
+// ---------- ring boost: a 1 second push that fades out, with a golden glow and sparkles on you
+const boostFx=(()=>{const g=new THREE.Group();g.visible=false;me.root.add(g);
+  const aura=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa800,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));aura.position.y=1;g.add(aura);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.06,8,40),new THREE.MeshBasicMaterial({color:0xffe27a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));ring.rotation.x=Math.PI/2;ring.position.y=.9;g.add(ring);
+  return{g,aura,ring}})();
+{const b=updateExtras2;updateExtras2=dt=>{b(dt);const t=P.ringBoostT||0;
+  if(t>0){P.ringBoostT=Math.max(0,t-dt);const u=1-P.ringBoostT,env=u<.12?u/.12:u>.75?(1-u)/.25:1;
+    if(P.loc==='mtn'&&(P.mode==='ride'||P.mode==='air')){const sp=Math.hypot(P.vel.x,P.vel.z);if(sp>.5){const k=10*env*dt/sp;P.pos.x+=P.vel.x*k;P.pos.z+=P.vel.z*k}
+      if(Math.random()<.8)trailEmit(P.pos.x,P.pos.y+.4,P.pos.z,['#ffd84a','#fff3a0','#ffffff'],3)}
+    boostFx.g.visible=true;const s=2+Math.sin(T*30)*.2;boostFx.aura.scale.set(s,s*1.25,1);boostFx.aura.material.opacity=.6*env;
+    const rs=.6+u*1.8;boostFx.ring.scale.set(rs,rs,rs);boostFx.ring.material.opacity=(1-u)*.9}
+  else if(boostFx.g.visible)boostFx.g.visible=false}}
+// ---------- fewer draw calls: merge things that never move into a few big meshes (nothing is hidden)
+var _smM=new THREE.Matrix4(),_smI=new THREE.Matrix4(),_smV=new THREE.Vector3(),SM_ATTR=['position','normal','uv','color'];
+function matSig(m){return[m.type,m.color&&m.color.getHex(),m.emissive&&m.emissive.getHex(),m.emissiveIntensity,m.roughness,m.metalness,m.map&&m.map.uuid,m.emissiveMap&&m.emissiveMap.uuid,m.normalMap&&m.normalMap.uuid,m.transparent,m.opacity,m.side,m.vertexColors,m.blending,m.depthWrite,m.depthTest,m.toneMapped,m.fog,m.flatShading,m.polygonOffset,m.polygonOffsetFactor,m.alphaTest,m.wireframe].join('|')}
+function matLive(m){return[m.color&&m.color.getHex(),m.emissive&&m.emissive.getHex(),m.emissiveIntensity,m.opacity,m.visible,m.map&&m.map.uuid].join('|')}
+function staticMerge(root,{anim=null,filter=null,cell=0}={}){
+  root.updateMatrixWorld(true);const dyn=new Set();
+  if(anim&&anim.length){const snap=new Map();root.traverse(o=>snap.set(o,[o.position.clone(),o.quaternion.clone(),o.scale.clone(),o.visible,o.material&&!Array.isArray(o.material)?matLive(o.material):'']));
+    for(const t of [.73,2.41,5.3])for(const f of anim){try{f(t,1/60)}catch(e){}}
+    root.traverse(o=>{const s=snap.get(o);if(s&&(!o.position.equals(s[0])||!o.quaternion.equals(s[1])||!o.scale.equals(s[2])||o.visible!==s[3]||(o.material&&!Array.isArray(o.material)&&matLive(o.material)!==s[4])))dyn.add(o)});root.updateMatrixWorld(true)}
+  const isDyn=o=>{for(let p=o;p&&p!==root;p=p.parent)if(dyn.has(p)||!p.visible||p.userData.keep)return true;return false};
+  const groups=new Map();
+  root.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||o.children.length||Array.isArray(o.material)||o.morphTargetInfluences)return;if(filter&&!filter(o))return;if(isDyn(o))return;
+    const g=o.geometry;if(!g||!g.attributes.position||!g.attributes.normal)return;if(Object.values(g.attributes).some(a=>a.isInterleavedBufferAttribute))return;
+    const names=SM_ATTR.filter(n=>g.attributes[n]);let key=matSig(o.material)+'|'+names.map(n=>n+g.attributes[n].itemSize).join(',')+'|'+(+o.castShadow)+(+o.receiveShadow)+'|'+o.renderOrder+'|'+o.frustumCulled;
+    if(cell){o.getWorldPosition(_smV);key+='|'+Math.floor(_smV.x/cell)+','+Math.floor(_smV.z/cell)}
+    let G=groups.get(key);if(!G)groups.set(key,G={o,names,list:[]});G.list.push(o)});
+  _smI.copy(root.matrixWorld).invert();let removed=0;
+  for(const G of groups.values()){if(G.list.length<2)continue;const parts=[];let n=0;
+    for(const o of G.list){const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();_smM.multiplyMatrices(_smI,o.matrixWorld);g.applyMatrix4(_smM);
+      if(_smM.determinant()<0)for(const nm of G.names){const a=g.attributes[nm],s=a.itemSize,arr=a.array;for(let i=0;i+2<a.count;i+=3)for(let c=0;c<s;c++){const t=arr[(i+1)*s+c];arr[(i+1)*s+c]=arr[(i+2)*s+c];arr[(i+2)*s+c]=t}}
+      parts.push(g);n+=g.attributes.position.count}
+    const out=new THREE.BufferGeometry();for(const nm of G.names){const s=parts[0].attributes[nm].itemSize,arr=new Float32Array(n*s);let off=0;for(const g of parts){const a=g.attributes[nm];for(let i=0;i<a.count;i++)for(let c=0;c<s;c++)arr[off++]=a.getComponent?a.getComponent(i,c):a.array[i*s+c]}
+      out.setAttribute(nm,new THREE.BufferAttribute(arr,s,nm==='color'?false:parts[0].attributes[nm].normalized&&false))}
+    for(const g of parts)g.dispose();out.computeBoundingSphere();out.computeBoundingBox();
+    const m=new THREE.Mesh(out,G.o.material);m.castShadow=G.o.castShadow;m.receiveShadow=G.o.receiveShadow;m.renderOrder=G.o.renderOrder;m.frustumCulled=G.o.frustumCulled;m.userData.merged=1;root.add(m);
+    for(const o of G.list){o.parent.remove(o);removed++}}
+  return removed}
+// the village props: watch them for a few seconds of play, then merge whatever stayed perfectly still
+{let smT=0,smSnap=null,smGroups=null,smDone=false;const keep=new Set([puckM,...goalLamps.map(l=>l.lamp)]);
+ const cands=()=>mtn.children.filter(o=>o.isMesh&&!o.children.length&&!o.isInstancedMesh&&!keep.has(o)&&!o.userData.merged);
+ const b=updateExtras2;updateExtras2=dt=>{b(dt);if(smDone||state!=='play')return;smT+=dt;
+  if(!smSnap&&smT>1){smSnap=new Map(cands().filter(o=>!Array.isArray(o.material)).map(o=>[o,[o.position.clone(),o.quaternion.clone(),o.scale.clone(),o.visible,matLive(o.material)]]));
+    // big static groups (shops, chalets, lift stations, the tree): remember every part's world matrix
+    const busy=[[GACHA_AT.x,GACHA_AT.z],[LAUNCH.x,LAUNCH.z],[WORKSHOP.x,WORKSHOP.z],[GIANT.x,GIANT.z],[RINK.x,RINK.z],[LODGE.x,LODGE.z]];mtn.updateMatrixWorld(true);
+    smGroups=new Map();for(const c of mtn.children){if(c.isMesh||c.isPoints||c.isSprite||c===me.root||c===mtn.userData.sky||HOUSES.some(h=>h.g===c))continue;if(busy.some(([x,z])=>Math.hypot(c.position.x-x,c.position.z-z)<16))continue;
+      const parts=[];c.traverse(o=>{if(o.isMesh&&!o.children.length&&!o.isInstancedMesh&&!Array.isArray(o.material))parts.push([o,o.matrixWorld.clone(),o.visible,matLive(o.material)])});if(parts.length>=4)smGroups.set(c,parts)}}
+  else if(smSnap&&smT>6){smDone=true;const still=new Set();for(const [o,s] of smSnap)if(o.parent===mtn&&o.position.equals(s[0])&&o.quaternion.equals(s[1])&&o.scale.equals(s[2])&&o.visible===s[3]&&o.visible&&matLive(o.material)===s[4])still.add(o);
+    let n=staticMerge(mtn,{filter:o=>still.has(o),cell:120});smSnap=null;mtn.updateMatrixWorld(true);
+    for(const [c,parts] of smGroups){if(c.parent!==mtn)continue;const ok=new Set();for(const [o,m,v,ml] of parts)if(o.matrixWorld.equals(m)&&o.visible===v&&v&&matLive(o.material)===ml){let vis=true;for(let p=o.parent;p&&p!==c;p=p.parent)if(!p.visible)vis=false;if(vis)ok.add(o)}
+      n+=staticMerge(c,{filter:o=>ok.has(o)})}smGroups=null;
+    // rebuild the distance list so merged meshes are included
+    CULL.length=0;const box=new THREE.Box3(),sp=new THREE.Sphere();mtn.updateMatrixWorld(true);for(const o of mtn.children){if(o.isPoints||o.isLight||o.isInstancedMesh||o.frustumCulled===false||o===terrainMesh||o.isSprite||o===mtn.userData.sky)continue;try{box.setFromObject(o)}catch{continue}if(box.isEmpty())continue;box.getBoundingSphere(sp);if(sp.radius>260)continue;CULL.push({o,c0:sp.center.clone(),p0:o.position.clone(),c:sp.center.clone(),r:sp.radius,far:false})}
+    window.__fx.smMerged=n}}}
+Object.assign(window.__fx,{staticMerge});
 
 /* ================= Camera ================= */
 let curCrouch=0;
@@ -3161,7 +3218,7 @@ renderer.domElement.addEventListener('click',()=>{sfx.init();if(state==='play'&&
 let _mlx=0,_mly=0;
 addEventListener('mousemove',ev=>{if(!document.pointerLockElement||state!=='play')return;const s=.0022*SAVE.set.sens,inv=SAVE.set.invert?-1:1;camS.lastMouse=T;
   // browsers sometimes report a huge bogus jump in pointer-lock movement: drop those spikes
-  let mx=ev.movementX,my=ev.movementY;if((Math.abs(mx)>140&&Math.abs(mx)>5*Math.abs(_mlx)+60)||(Math.abs(my)>140&&Math.abs(my)>5*Math.abs(_mly)+60)){_mlx=_mly=0;return}_mlx=mx;_mly=my;const e={movementX:mx,movementY:my};
+  let mx=ev.movementX,my=ev.movementY;if((Math.abs(mx)>400&&Math.abs(mx)>6*Math.abs(_mlx)+150)||(Math.abs(my)>400&&Math.abs(my)>6*Math.abs(_mly)+150)){_mlx=_mly=0;return}_mlx=mx;_mly=my;const e={movementX:mx,movementY:my};
   if(camS.mode==='first'){if((INDOOR()||P.mode==='walk')){P.yaw-=e.movementX*s}else camS.lookYaw=clamp(camS.lookYaw-e.movementX*s,-1.9,1.9);camS.lookPitch=clamp(camS.lookPitch-e.movementY*s*inv,-1.3,1.3)}
   else{if(freeCam())camS.yaw-=e.movementX*s;else camS.yawOff-=e.movementX*s;camS.pitchOff=clamp(camS.pitchOff+e.movementY*s*inv,-.55,1)}});
 document.addEventListener('pointerlockchange',()=>{$('clicktoplay').classList.add('hidden');if(!document.pointerLockElement&&state==='play'&&!paused&&!panelKind&&$('chatbox').classList.contains('hidden')){if(chatUnlock){chatUnlock=false;return}togglePause()}chatUnlock=false});
