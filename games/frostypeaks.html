@@ -3454,24 +3454,31 @@ function sugarN(){if(_mc.suN)return _mc.suN;const c=cnv(128),g=c.getContext('2d'
  g.putImageData(im,0,0);const t=tex(c,false);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return _mc.suN=t}
 const ICOLS=[['White','#fbf7ef'],['Red','#c8162e'],['Green','#1f8a3c'],['Pink','#f49ac1'],['Sky blue','#86cdf0'],['Yellow','#ffd34a'],['Purple','#8e5bd0'],['Chocolate','#4a2a18'],['Black','#1c1a1a'],['Gold','gold']];
 function icingMat(col){const k='ic'+col;if(_mc[k])return _mc[k];const gold=col==='gold';
- return _mc[k]=new THREE.MeshPhysicalMaterial({color:gold?0xd8a93c:new THREE.Color(col),roughness:gold?.26:.34,metalness:gold?.9:0,clearcoat:gold?0:.5,clearcoatRoughness:.28,sheen:gold?0:.3,sheenRoughness:.55,sheenColor:new THREE.Color(0xffffff),normalMap:icingN(),normalScale:new THREE.Vector2(.18,.18),envMapIntensity:1})}
+ if(gold)return _mc[k]=new THREE.MeshPhysicalMaterial({color:0xd8a93c,roughness:.26,metalness:.9,normalMap:icingN(),normalScale:new THREE.Vector2(.12,.12)});
+ // creamy buttercream/royal icing: rich, opaque colour with a soft satin sheen (no white sheen washing the colour out)
+ const c=new THREE.Color(col),e=c.clone().multiplyScalar(.14);
+ return _mc[k]=new THREE.MeshPhysicalMaterial({color:c,emissive:e,roughness:.42,metalness:0,clearcoat:.22,clearcoatRoughness:.35,specularIntensity:.55,normalMap:icingN(),normalScale:new THREE.Vector2(.08,.08),envMapIntensity:.45})}
 function candyM(col,o={},key){const k='cm'+col+(key||JSON.stringify(o));if(_mc[k])return _mc[k];
  return _mc[k]=new THREE.MeshPhysicalMaterial(Object.assign({color:new THREE.Color(col),roughness:.22,clearcoat:1,clearcoatRoughness:.08},o))}
 const sugarM=col=>{const k='su'+col;return _mc[k]||(_mc[k]=new THREE.MeshPhysicalMaterial({color:new THREE.Color(col),roughness:.55,sheen:1,sheenColor:new THREE.Color(0xffffff),sheenRoughness:.35,normalMap:sugarN(),normalScale:new THREE.Vector2(.9,.9),clearcoat:.25,clearcoatRoughness:.4}))};
 
 // ---------- piped icing: an oval bead swept along the stroke, resting on the surface, with rounded ends
-function icingGeo(pts,r,flat=.7){const RS=12,h=r*flat,V=[],UV=[],I=[];let rings=0;const _t=new THREE.Vector3(),_s=new THREE.Vector3(),c=new THREE.Vector3();
+function icingGeo(pts,r,flat=.7){if(!pts.length)return new THREE.BufferGeometry();const RS=12,h=r*flat,V=[],UV=[],I=[];let rings=0;const _t=new THREE.Vector3(),_s=new THREE.Vector3(),c=new THREE.Vector3();
  const ring=(p,t,n,f,len)=>{_t.copy(t).addScaledVector(n,-t.dot(n));if(_t.lengthSq()<1e-9)_t.set(1,0,0).addScaledVector(n,-n.x);_t.normalize();_s.crossVectors(n,_t).normalize();
    const k=Math.sqrt(Math.max(0,1-f*f)),off=f*r*(f>=0?1:1);c.copy(p);
    for(let a=0;a<=RS;a++){const th=a/RS*Math.PI*2,ca=Math.cos(th),sa=Math.sin(th);V.push(c.x+_s.x*ca*r*k+n.x*(sa*h*k+h*.26),c.y+_s.y*ca*r*k+n.y*(sa*h*k+h*.26),c.z+_s.z*ca*r*k+n.z*(sa*h*k+h*.26));UV.push(a/RS,len/(r*8))}rings++};
- const n=pts.length,T=[];for(let i=0;i<n;i++){const a=pts[Math.max(0,i-1)].p,b=pts[Math.min(n-1,i+1)].p;const t=b.clone().sub(a);if(t.lengthSq()<1e-12)t.set(1,0,0);T.push(t.normalize())}
+ const n=pts.length,T=[],UPV=new THREE.Vector3(0,1,0);
+ // steady frames: normals leaned toward straight up and averaged along the stroke so thick icing never twists
+ pts=pts.map((o,i)=>{const m=new THREE.Vector3();for(let j=Math.max(0,i-3);j<=Math.min(n-1,i+3);j++)m.add(pts[j].n);m.normalize().multiplyScalar(.45).add(UPV).normalize();return{p:o.p,n:m}});
+ for(let i=0;i<n;i++){const a=pts[Math.max(0,i-2)].p,b=pts[Math.min(n-1,i+2)].p;const t=b.clone().sub(a);if(t.lengthSq()<1e-12)t.set(1,0,0);T.push(t.normalize())}
  const capF=[1,.92,.78,.55,.28];const tip=(i,dir)=>{const p=pts[i].p,t=T[i],nn=pts[i].n;for(const f of (dir<0?capF:[...capF].reverse())){const pp=p.clone().addScaledVector(t,dir*f*r*.95);ring(pp,t,nn,f,0)}};
  tip(0,-1);let len=0;for(let i=0;i<n;i++){if(i)len+=pts[i].p.distanceTo(pts[i-1].p);ring(pts[i].p,T[i],pts[i].n,0,len)}tip(n-1,1);
- for(let q=0;q<rings-1;q++)for(let a=0;a<RS;a++){const i0=q*(RS+1)+a,i1=i0+RS+1;I.push(i0,i1,i0+1,i0+1,i1,i1+1)}
+ for(let q=0;q<rings-1;q++)for(let a=0;a<RS;a++){const i0=q*(RS+1)+a,i1=i0+RS+1;I.push(i0,i0+1,i1,i0+1,i1+1,i1)}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(V,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));g.setIndex(I);g.computeVertexNormals();g.computeBoundingSphere();return g}
 function smoothPts(pts,r){if(pts.length<3)return pts;let P=pts.map(o=>({p:o.p.clone(),n:o.n.clone()}));
- for(let it=0;it<2;it++){const Q=[P[0]];for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1];Q.push({p:a.p.clone().lerp(b.p,.25),n:a.n.clone().lerp(b.n,.25).normalize()},{p:a.p.clone().lerp(b.p,.75),n:a.n.clone().lerp(b.n,.75).normalize()})}Q.push(P[P.length-1]);P=Q}
- const out=[P[0]];for(const o of P)if(o.p.distanceTo(out[out.length-1].p)>r*.35)out.push(o);if(out[out.length-1]!==P[P.length-1])out.push(P[P.length-1]);return out}
+ for(let it=0;it<(r>.05?4:3);it++){const Q=[P[0]];for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1];Q.push({p:a.p.clone().lerp(b.p,.25),n:a.n.clone().lerp(b.n,.25).normalize()},{p:a.p.clone().lerp(b.p,.75),n:a.n.clone().lerp(b.n,.75).normalize()})}Q.push(P[P.length-1]);P=Q}
+ const out=[P[0]];for(const o of P)if(o.p.distanceTo(out[out.length-1].p)>r*.5)out.push(o);if(out[out.length-1]!==P[P.length-1])out.push(P[P.length-1]);
+ const ys=out.map(o=>o.p.y);out.forEach((o,i)=>{let t=0,w=0;for(let j=Math.max(0,i-3);j<=Math.min(out.length-1,i+3);j++){t+=ys[j];w++}o.p.y=Math.max(ys[i]-r*.3,t/w)});return out}
 
 // ---------- a cookie object (used by the decorator and by the cookies on display around the bakery)
 function makeCookie({shape='man',dough=DOUGHS[0],seed=1,N=150,TS=1024,raw=false}){
@@ -3483,7 +3490,7 @@ function makeCookie({shape='man',dough=DOUGHS[0],seed=1,N=150,TS=1024,raw=false}
  C.surf=(x,z)=>{_rc.set(_v1.set(x,3,z),_dn);_rc.far=10;const hits=C.icings.length?_rc.intersectObjects(C.icings,false):[];const ch=C.heightAt(x,z);
    if(hits.length&&hits[0].point.y>ch){const nn=hits[0].face.normal.clone().transformDirection(hits[0].object.matrixWorld);nn.y=Math.max(nn.y,.25);return{p:hits[0].point.clone(),n:nn.normalize()}}
    if(ch<=0.004)return null;const e=.012,nx=C.heightAt(x-e,z)-C.heightAt(x+e,z),nz=C.heightAt(x,z-e)-C.heightAt(x,z+e);return{p:new THREE.Vector3(x,ch,z),n:new THREE.Vector3(nx,2*e,nz).normalize()}};
- C.addIcing=(pts,r,col,dot)=>{const g=icingGeo(dot?pts:smoothPts(pts,r),dot?r*1.45:r,dot?.62:.7);const m=new THREE.Mesh(g,icingMat(col));m.castShadow=m.receiveShadow=true;G.add(m);C.icings.push(m);return m};
+ C.addIcing=(pts,r,col,dot)=>{const g=icingGeo(dot?pts:smoothPts(pts,r),dot?r*1.4:r,dot?.7:.82);const m=new THREE.Mesh(g,icingMat(col));m.castShadow=m.receiveShadow=true;G.add(m);C.icings.push(m);return m};
  C.dispose=()=>{G.traverse(o=>{if(o.geometry&&o.geometry!==_shared)o.geometry.dispose()});t.map.dispose();t.nrm.dispose();mat.dispose()};
  return C}
 const _rc=new THREE.Raycaster(),_dn=new THREE.Vector3(0,-1,0),_v1=new THREE.Vector3(),_shared={};
@@ -3641,7 +3648,7 @@ const BK_STATIONS=[],HALL_SLOTS=[],BK_FX={flames:[],steam:[]};let bkBaker,bkOven
 
 /* ---------- the decorator ---------- */
 const BK={open:false,step:1,shape:'man',dough:'classic',icol:'#fbf7ef',tip:1,deco:'jim',C:null,undo:[],stroke:null,orbit:{yaw:0,pitch:1.02,dist:5.4},drag:null,baking:0,result:null};
-{const TIPS=[['Fine',.02],['Medium',.032],['Thick',.05]];
+{const TIPS=[['Fine',.028],['Medium',.042],['Thick',.064]];
  const css=document.createElement('style');css.textContent=`
 #bake{position:fixed;inset:0;z-index:40;cursor:crosshair;user-select:none}
 #bake.hidden{display:none}
