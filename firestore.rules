@@ -90,6 +90,9 @@ service cloud.firestore {
           && request.resource.data.likes == resource.data.likes + 1
           && !exists(/databases/$(database)/documents/fp_cookie_likes/$(uid + '_' + string(resource.data.v) + '_' + request.auth.uid))
           && existsAfter(/databases/$(database)/documents/fp_cookie_likes/$(uid + '_' + string(resource.data.v) + '_' + request.auth.uid))));
+      // your own cookie, or the game owner taking down something inappropriate
+      allow delete: if request.auth != null && (request.auth.uid == uid
+        || (request.auth.token.email == 'daenii066@gmail.com' && request.auth.token.email_verified == true));
     }
     function fpCookieOk() {
       let d = request.resource.data;
