@@ -493,7 +493,7 @@ GEO.cyl6=new THREE.CylinderGeometry(1,.84,1,20);GEO.s8b=new THREE.SphereGeometry
 const raceSpawn=(i,n)=>[((i%6)-2.5)*2.5+(((i/6)|0)%2?.6:0),.6,5.6-((i/6)|0)*2.3];
 const ROUNDS={
   sweep:{name:'Sweep Stakes',kind:'RACE',desc:'Hop the sweepers, dodge the mallets, ride the spinning plates and beat the rolling gumballs to the top.',
-    build(w){w.limit=120;w.spawn=raceSpawn;const P=w.path;
+    build(w){w.limit=200;w.spawn=raceSpawn;const P=w.path;
       w.plat(0,0,2,18,12,'#ffd9a0');w.arch(7.6,0,16);
       w.plat(0,0,26,16,36,stripeMat('#9be7dd','#8adbd0',1,6));
       [[-3,14,1.7,0],[3.4,22,-1.9,1],[-3.4,30,2.1,2],[3,38,-2.3,.5]].forEach((s,i)=>w.spinner(s[0],0,s[1],5.3,s[2],s[3],{col:i%2?'#8b6cff':'#ff5d73'}));
@@ -504,17 +504,27 @@ const ROUNDS={
       P.push({z:58.6,xs:[-5.5,0,5.5],hw:.7},{z:79.6,xs:[-5.5,0,5.5],hw:.7});
       w.plat(0,0,83,16,6,'#ffd9a0');w.cp(82.5,0,0,5);P.push({z:85.4,x:-2,hw:2});
       [[-3.5,91,1.3],[3.5,96,-1.4],[-2.5,102,1.6],[4,107,-1.3],[0,112,1.2]].forEach((d,i)=>{w.disc(d[0],0,d[1],3.4,i%2?'#ff9f1c':'#4dabf7',d[2]);P.push({z:d[1],x:d[0],hw:1.2});});
-      w.plat(0,0,118,14,6,'#ffd9a0');w.cp(117.5,0,0,4);P.push({z:120,x:0,hw:5});
-      w.ramp(0,121,0,151,7,12,stripeMat('#c3b5ff','#b6a6ff',1,8));w.balls(-4.6,4.6,151,7,121.5,0,7,8.5,1.15);
-      w.plat(0,7,157.5,14,13,'#ffd9a0');w.arch(157,7,12,true);w.finZ=156.6;P.push({z:150.5,x:0,hw:4.6},{z:160,x:0,hw:4});}},
-  knock:{name:'Knock Knock',kind:'RACE',desc:'Some doors burst open. Some are painted on. Follow the crowd or trust your gut.',
-    build(w){w.limit=100;w.spawn=raceSpawn;const P=w.path,Z=[16,30,44,58,72,86],N=[6,5,5,4,4,3],Rl=[3,3,2,2,2,1],cs=['#ffd9a0','#9be7dd','#ffb3c1','#c3b5ff','#ffe58a','#a5d8ff','#ffd9a0'];
+      w.plat(0,0,118,14,6,'#ffd9a0');w.cp(117.5,0,0,4);P.push({z:120.4,x:0,hw:3});
+      [124.5,130.5,136.5].forEach((z,k)=>{const sl=w.slider(0,0,z,6.4,5.5,4.2,5.2,k*2.1,k%2?'#2ec4b6':'#ff9f1c');P.push({z:z+1.6,sl,nj:1});});
+      w.plat(0,0,142.5,14,6,'#ffd9a0');w.cp(142.5,0,0,4);P.push({z:145,x:0,hw:5});
+      w.plat(0,0,163.5,14,36,stripeMat('#ffe58a','#ffdb6b',1,6));
+      [[0,151.5,2.2,0],[0,163.5,-2.5,1.2],[0,175.5,2.8,2.1]].forEach((q,i)=>w.spinner(q[0],0,q[1],6.3,q[2],q[3],{col:i%2?'#2ec4b6':'#ff5d73'}));
+      w.hammer(0,157.5,8.2,7,1.1,2.9,w.rnd()*6.28);w.hammer(0,169.5,8.2,7,1.1,2.5,w.rnd()*6.28,'#4dabf7');P.push({z:181,x:0,hw:5});
+      w.plat(0,0,184.5,14,6,'#ffd9a0');w.cp(184.5,0,0,4);P.push({z:187,x:2,hw:2});
+      [[3.5,192.6,-1.6],[-3.5,197.6,1.7],[2.6,203.6,-1.9],[-4,208.6,1.6],[0,213.6,-1.5]].forEach((d,i)=>{w.disc(d[0],0,d[1],3.4,i%2?'#8b6cff':'#ff8fa3',d[2]);P.push({z:d[1],x:d[0],hw:1.2});});
+      w.plat(0,0,219.6,14,6,'#ffd9a0');w.cp(219,0,0,4);P.push({z:222,x:0,hw:5});
+      w.ramp(0,222.6,0,252.6,7,12,stripeMat('#c3b5ff','#b6a6ff',1,8));w.balls(-4.6,4.6,252.6,7,223.1,0,8,9,1.15);
+      w.plat(0,7,259.1,14,13,'#ffd9a0');w.arch(258.6,7,12,true);w.finZ=258.2;P.push({z:252.1,x:0,hw:4.6},{z:262,x:0,hw:4});}},
+  knock:{name:'Knock Knock',kind:'RACE',desc:'Some doors burst open. Some are painted on. Follow the crowd or trust your gut, and watch what swings between the walls.',
+    build(w){w.limit=200;w.spawn=raceSpawn;const P=w.path,N=[6,6,6,5,5,5,5,4,4,4,4,3,3,3],Rl=[3,3,3,3,2,2,2,2,2,2,1,1,1,1],Z=N.map((_,i)=>16+i*16),cs=['#ffd9a0','#9be7dd','#ffb3c1','#c3b5ff','#ffe58a','#a5d8ff'];
       w.plat(0,0,2,22,12,cs[0]);P.push({z:9,x:0,hw:8});
-      for(let i=0;i<6;i++){const z0=i?Z[i-1]:8,z1=Z[i];w.plat(0,0,(z0+z1)/2,22,z1-z0,cs[i%7]);w.doorWall(Z[i],0,22,N[i],Rl[i]);P.push({z:Z[i]+.8,wall:i,hw:.4});w.cp(Z[i]+2,0,0,7);}
-      w.plat(0,0,95,22,18,cs[6]);w.spinner(0,0,37,8.6,1.25,0,{col:'#8b6cff'});w.spinner(0,0,65,8.6,-1.5,1);w.spinner(0,0,79,8.6,1.8,2,{col:'#2ec4b6'});
-      w.arch(97,0,20,true);w.finZ=96.6;P.push({z:101,x:0,hw:7});}},
+      for(let i=0;i<14;i++){const z0=i?Z[i-1]:8,z1=Z[i],m=(z0+z1)/2;w.plat(0,0,m,22,z1-z0,cs[i%6]);w.doorWall(Z[i],0,22,N[i],Rl[i]);
+        if(i>0){if(i%3===1)w.spinner(0,0,m,8.6,(i%2?1:-1)*(1.2+i*.09),i,{col:'#8b6cff'});else if(i%3===2)for(const x of[-6.2,0,6.2])w.hammer(x,m,8.2,7,1,2.4+Math.abs(x)*.08,w.rnd()*6.28,x?'#2ec4b6':'#ff5d73');else{w.spinner(-5.4,0,m,4.4,2.1,i,{col:'#4dabf7'});w.spinner(5.4,0,m,4.4,-2.1,i+1,{col:'#ff9f1c'});}
+          P.push({z:m,x:0,hw:8});}
+        P.push({z:Z[i]+.8,wall:i,hw:.4});w.cp(Z[i]+2,0,0,7);}
+      w.plat(0,0,233,22,18,cs[2]);w.arch(235,0,20,true);w.finZ=234.6;P.push({z:239,x:0,hw:7});}},
   tipsy:{name:'Tipsy Trail',kind:'RACE',desc:'Every plank tips under your weight. Spread out, keep moving, and mind the sliding trays.',
-    build(w){w.limit=120;w.spawn=raceSpawn;const P=w.path;
+    build(w){w.limit=200;w.spawn=raceSpawn;const P=w.path;
       w.plat(0,0,2,18,12,'#ffd9a0');w.arch(7.6,0,16);P.push({z:8,x:0,hw:6});
       const a=[w.seesaw(-4.6,0,14.6,7.6,12),w.seesaw(4.6,0,14.6,7.6,12,'#ff5d73')];P.push({z:20.4,ss:a});
       w.plat(0,0,24.5,16,6.6,'#ffd9a0');w.cp(24.5,0,0,5);P.push({z:27,x:0,hw:6});
@@ -523,21 +533,35 @@ const ROUNDS={
       [67.6,73.6,79.6].forEach((z,k)=>{const s=w.slider(0,0,z,6.4,5.5,4.4,5.6,k*2.3,k%2?'#4dabf7':'#ff9f1c');P.push({z:z+1.6,sl:s,nj:1});});
       w.plat(0,0,85.6,16,6.4,'#ffd9a0');w.cp(85.6,0,0,5);P.push({z:88,x:0,hw:3});
       const big=w.seesaw(0,0,97,10.5,15.6,'#ffd23f');P.push({z:104.4,ss:[big]});
-      w.plat(0,0,112,14,13,'#ffd9a0');w.arch(110.5,0,12,true);w.finZ=110;P.push({z:115,x:0,hw:4});}},
+      w.plat(0,0,108.4,16,6.4,'#ffd9a0');w.cp(108.4,0,0,5);P.push({z:111,x:0,hw:6});
+      P.push({z:125.6,ss:[-5.4,0,5.4].map((x,k)=>w.seesaw(x,0,119,4.9,14,['#ff5d73','#4dabf7','#8b6cff'][k]))});
+      w.plat(0,0,129.6,16,6.4,'#ffd9a0');w.cp(129.6,0,0,5);P.push({z:132,x:0,hw:3});
+      [136,142,148,154].forEach((z,k)=>{const sl=w.slider(0,0,z,6.2,5.5,4.6,5-k*.3,k*1.9,k%2?'#ff9f1c':'#2ec4b6');P.push({z:z+1.6,sl,nj:1});});
+      w.plat(0,0,160.2,16,6.4,'#ffd9a0');w.cp(160.2,0,0,5);P.push({z:162.6,x:0,hw:6});
+      for(let k=0;k<2;k++){const z=168.6+k*10.2;P.push({z:z+4.6,ss:[w.seesaw(-5,0,z,8.2,9.6,k?'#ffd23f':'#ff8fa3'),w.seesaw(5,0,z,8.2,9.6,k?'#ff8fa3':'#ffd23f')]});}
+      w.plat(0,0,187,16,6,'#ffd9a0');w.cp(187,0,0,5);P.push({z:189.4,x:0,hw:3});
+      P.push({z:204,ss:[-5.4,0,5.4].map((x,k)=>w.seesaw(x,0,197.4,4.9,14,['#2ec4b6','#ffd23f','#ff5d73'][k]))});
+      w.plat(0,0,208,16,6.4,'#ffd9a0');w.cp(208,0,0,5);P.push({z:210.4,x:0,hw:3});
+      [214.4,220.4,226.4].forEach((z,k)=>{const sl=w.slider(0,0,z,6,5.5,4.8,4.2,k*2.6,k%2?'#8b6cff':'#4dabf7');P.push({z:z+1.6,sl,nj:1});});
+      w.plat(0,0,232.6,16,6.4,'#ffd9a0');w.cp(232.6,0,0,5);P.push({z:235,x:0,hw:6});
+      for(let k=0;k<2;k++){const z=241+k*10.2;P.push({z:z+4.6,ss:[w.seesaw(-5,0,z,8.2,9.6,k?'#4dabf7':'#ff9f1c'),w.seesaw(5,0,z,8.2,9.6,k?'#ff9f1c':'#4dabf7')]});}
+      w.plat(0,0,259.4,16,6,'#ffd9a0');w.cp(259.4,0,0,5);P.push({z:261.8,x:0,hw:3});
+      P.push({z:280.8,ss:[w.seesaw(0,0,272,9.5,18.4,'#2ec4b6')]});
+      w.plat(0,0,288,14,13,'#ffd9a0');w.arch(286.5,0,12,true);w.finZ=286;P.push({z:291,x:0,hw:4});}},
   spin:{name:'Spin Cycle',kind:'SURVIVAL',desc:'Jump the low bar, duck the high one, and stay on the plate while the petals drop away.',
-    build(w){w.type='survive';w.limit=85;w.ai='spin';w.viewR=24;w.killY=-7;
+    build(w){w.type='survive';w.limit=120;w.ai='spin';w.viewR=24;w.killY=-7;
       w.spawn=(i,n)=>{const m=Math.ceil(n/2),k=(i/2)|0,a=.45+(k+.5)/m*(Math.PI-.9)+(i%2)*Math.PI,r=5+(k%2)*2.6;return[Math.cos(a)*r,.6,Math.sin(a)*r];};
       w.disc(0,0,0,10,'#ffd9a0',0,1.4);w.mesh(GEO.cyl,stripeMat('#ffb3c1','#ffd9a0',8,1),0,.01,0,6,.02,6).castShadow=false;
       const ord=[...Array(10).keys()];for(let i=9;i>0;i--){const j=(w.rnd()*(i+1))|0;[ord[i],ord[j]]=[ord[j],ord[i]];}
-      w.petals=[];for(let i=0;i<10;i++){const a=i/10*6.2832,c=w.disc(Math.cos(a)*11.4,0,Math.sin(a)*11.4,2.8,i%2?'#2ec4b6':'#8b6cff',0,.8);c.dropT=14+ord[i]*5.6;c.y0=c.mesh.position.y;
+      w.petals=[];for(let i=0;i<10;i++){const a=i/10*6.2832,c=w.disc(Math.cos(a)*11.4,0,Math.sin(a)*11.4,2.8,i%2?'#2ec4b6':'#8b6cff',0,.8);c.dropT=18+ord[i]*8;c.y0=c.mesh.position.y;
         c.upd=t=>{if(t>c.dropT)c.off=true;};c.sync=()=>{const t=w.t,m=c.mesh;if(t>c.dropT){const f=t-c.dropT;m.position.y=c.y0-f*f*10;m.visible=f<1.5;}else m.visible=t<c.dropT-2.6||Math.sin(t*22)>-.2;};
         c.dyn=true;w.dyn.push(c);w.petals.push(c);}
-      const lo=t=>{const u=clamp(t,0,90);return .95*u+.0085*u*u;},hi=t=>{const u=clamp(t,0,90);return 1.5708-(.7*u+.006*u*u);};
+      const lo=t=>{const u=clamp(t,0,120);return .95*u+.0062*u*u;},hi=t=>{const u=clamp(t,0,120);return 1.5708-(.7*u+.0044*u*u);};
       w.spinner(0,0,0,9.7,0,0,{ang:lo});w.spinner(0,0,0,9.7,0,0,{ang:hi,high:1.55,col:'#4dabf7'});w.loAng=lo;w.hiAng=hi;}},
   crown:{name:'Crumble Crown',kind:'FINAL',desc:'Pads drop after you step on them and grow back for a while. The outer rings fall away for good. Last puff standing takes the crown.',
-    build(w){w.type='final';w.limit=110;w.ai='crown';w.killY=-8;w.viewR=27;w.center.set(0,0,0);const cols=['#ffd23f','#ff8fa3','#63e6d6','#c3b5ff','#ffb347','#8fd3ff'],list=[];w.rings=[];
+    build(w){w.type='final';w.limit=150;w.ai='crown';w.killY=-8;w.viewR=27;w.center.set(0,0,0);const cols=['#ffd23f','#ff8fa3','#63e6d6','#c3b5ff','#ffb347','#8fd3ff'],list=[];w.rings=[];
       for(let k=0;k<=5;k++)w.rings.push([]);const S=1.848;for(let q=-5;q<=5;q++)for(let r=Math.max(-5,-q-5);r<=Math.min(5,-q+5);r++){const k=Math.max(Math.abs(q),Math.abs(r),Math.abs(q+r)),c=w.tile(S*1.732*(q+r/2),0,S*1.5*r,1.5,((q-r)%3+3)%3?cols[k]:'#ffffff');c.tile.ring=k;w.rings[k].push(c);list.push(c);}
-      w.layers=[{y:0,list}];w.finishTiles();w.regenUntil=34;w.drops=[[5,28],[4,46],[3,62]];
+      w.layers=[{y:0,list}];w.finishTiles();w.regenUntil=55;w.drops=[[5,42],[4,66],[3,88]];
       w.tick=t=>{for(const d of w.drops){if(!d[2]&&t>d[1]-2.5){d[2]=1;for(const c of w.rings[d[0]]){c.tile.dead=true;if(c.tile.at==null){w.tim.setColorAt(c.tile.i,FXC.set('#ff5d73'));w.tim.instanceColor.needsUpdate=true;}}}
         if(d[2]===1&&t>d[1]){d[2]=2;for(const c of w.rings[d[0]])w.trigTile(c.tile.i,t-Math.random()*.3);}}};
       w.spawn=(i,n)=>{const pool=[...w.rings[2],...w.rings[3],...w.rings[4]],c=pool[(i*7+3)%pool.length];return[c.pos.x,.7,c.pos.z];};
