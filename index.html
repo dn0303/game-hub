@@ -7,16 +7,16 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#13122a">
+<meta name="theme-color" content="#0e0d0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: a game shelf. Header strip, then a wrapping grid of game cards; each game opens in its own tab. */
 :root{
-  --bg:#13122a; --panel:#1d1b3d; --panel-2:#272452; --line:#3a3670;
-  --fg:#f2f0ff; --muted:#a9a5d6; --accent:#ffc934; --accent-ink:#221a00;
-  --hot:#ff6b5a; --ok:#5fe0a8;
+  --bg:#0e0d0d; --panel:#181615; --panel-2:#23201e; --line:#36312d;
+  --fg:#f6f2ef; --muted:#b3aaa3; --accent:#36d67e; --accent-ink:#04210f;
+  --hot:#ff5d73; --ok:#7cf0b0;
   --display:"Bungee","Arial Black",Impact,sans-serif;
   --body:"Chakra Petch","Segoe UI",system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -26,7 +26,7 @@
 [hidden]{display:none!important}
 html,body{margin:0;min-height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
-  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.05) 1px,transparent 0);background-size:22px 22px}
+  background-image:radial-gradient(circle at 1px 1px,rgba(54,214,126,.06) 1px,transparent 0);background-size:22px 22px}
 .wrap{max-width:1120px;margin:0 auto;padding-block:calc(28px + env(safe-area-inset-top,0px)) 56px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:28px}
@@ -106,14 +106,14 @@ const BUILTIN = [
   { key:"rocketarena", title:"Rocket Arena", file:"games/rocketarena.html", size:3884464, hue:18, hue2:205,
     desc:"Rocket-powered car soccer. Boost, jump and score against bots or friends online.",
     tags:["Car soccer","Bots","Online"] },
-  { key:"buildfight", title:"Build Fight", file:"games/buildfight.html", size:123202, hue:46, hue2:265,
+  { key:"buildfight", title:"Build Fight", file:"games/buildfight.html", size:123202, hue:46, hue2:195,
     desc:"Third-person build-and-shoot duels with walls, ramps, edits, three guns and a pickaxe.",
     tags:["Shooter","Building","Online"] },
-  { key:"frostypeaks", title:"Frosty Peaks", file:"games/frostypeaks.html", size:577093, hue:355, hue2:225,
+  { key:"frostypeaks", title:"Frosty Peaks", file:"games/frostypeaks.html", size:620664, hue:355, hue2:225,
     desc:"A cozy Christmas village hangout. Chat, buy and decorate your own cottage, play ice hockey, go ice fishing, trade pets and gift points, team snowball fights in the arena, ride quad chairs with friends, and ski, snowboard or ride Rudolph's sleigh.",
     tags:["Skiing","Tricks","Online"] },
-  { key:"reflexrange", title:"Reflex Range", file:"games/reflexrange.html", size:74006, hue:14, hue2:230,
-    desc:"A 3D aim trainer with eight drills, including corner peeks and a Valorant-style bot duel. Stats, ranks and an online leaderboard.",
+  { key:"reflexrange", title:"Reflex Range", file:"games/reflexrange.html", size:111913, hue:14, hue2:230,
+    desc:"A 3D aim trainer with a walkable Valorant-style practice range plus eight drills: corner peeks, bot duels, flicks and tracking. Stats, ranks and an online leaderboard.",
     tags:["Aim trainer","Leaderboard","Stats"] },
   { key:"puffballpanic", title:"Puffball Panic", file:"games/puffballpanic.html", size:128927, hue:345, hue2:48,
     desc:"A wobbly knockout party for up to 20 puffs. Race through sweepers, mystery doors and tipping planks, survive the spin, then be the last one standing on the crumbling pads. Bots fill empty spots.",
