@@ -889,21 +889,21 @@ Object.assign(ROUNDS,{
       w.spawn=teamSpawn((tm,k)=>{const sg=tm===0?-1:1;return[((k%5)-2)*3.2+(((k/5)|0)%2?1.4:0),sg*(14-((k/5)|0)*2.4)];});}},
 
   goo:{name:'Rising Goo',kind:'RACE',allq:true,desc:'The goo is coming up behind you and you only get one life. Fall and you are out. Everyone who reaches the top goes through.',
-    build(w){w.limit=150;startPad(w,'#c9f7b5');const P=w.path;const rail=(z0,y0,z1,y1)=>{for(const sd of[-1,1])w.ramp(sd*5.25,z0,y0+1.1,z1,y1+1.1,.5,'#fff8ea',1.7);},prail=(y,z,d)=>{for(const sd of[-1,1])w.plat(sd*7.25,y+1.1,z,.5,d,'#fff8ea',1.7);};
-      rail(8,0,28,5);rail(110,13,132,20);prail(5,31,6);prail(5,58,6);prail(13,89,6);prail(13,107,6);
+    build(w){w.limit=150;startPad(w,'#c9f7b5');const P=w.path;const rail=(z0,y0,z1,y1)=>{for(const sd of[-1,1])w.ramp(sd*5.25,z0,y0+2,z1,y1+2,.5,'#fff8ea',2.6);},prail=(y,z,d)=>{for(const sd of[-1,1])w.plat(sd*7.25,y+2,z,.5,d,'#fff8ea',2.6);};
+      rail(8,0,28,5);rail(110,13,132,20);prail(5,31,6);prail(5,58,6);prail(13,89,6);prail(13,107,6);for(const sd of[-1,1]){w.plat(sd*6.55,6.6,40,.4,12.4,'#fff8ea',4.2);w.plat(sd*6.55,6.6,50.5,.4,7.4,'#fff8ea',4.2);w.plat(sd*6.55,14.6,98,.4,12.4,'#fff8ea',4.2);}
       w.ramp(0,8,0,28,5,10,stripeMat('#7f63ff','#9479ff',1,8));w.balls(-3.8,3.8,28,5,8.5,0,4,7,1.05);P.push({z:27.6,x:0,hw:3});
       w.plat(0,5,31,14,6,'#c9f7b5');w.cp(31,0,5,5);P.push({z:33.6,x:0,hw:3});
       const t1=w.tilter(0,5,40,12,'#ffd23f');P.push({z:40,x:0,hw:1.5},{z:46.4,x:0,hw:2});
-      const ss=[w.seesaw(-3.1,5,50.5,5.8,7,'#ff5d8f'),w.seesaw(3.1,5,50.5,5.8,7,'#1fc7b4')];P.push({z:54.5,ss});
+      const ss=[w.seesaw(0,5,50.6,12.4,9.2,'#ff5d8f')];P.push({z:54.5,ss});
       w.plat(0,5,58,14,6,'#c9f7b5');w.cp(58,0,5,5);P.push({z:60.6,x:0,hw:3});
-      [[-2.2,6.4,63.5],[2.2,7.8,68.5],[-2.2,9.2,73.5],[2.2,10.6,78.5],[-1.2,12,83.5]].forEach(([x,y,z],k)=>{w.plat(x,y,z,5.4,4.6,['#ff8a1f','#7f63ff','#1fc7b4','#ff5d8f','#ffb000'][k],1.4,'#ffffff');P.push({z:z+1.4,x,hw:.8,up:z-2});});
+      [[-2.2,6.4,63.5],[2.2,7.8,68.5],[-2.2,9.2,73.5],[2.2,10.6,78.5],[-1.2,12,83.5]].forEach(([x,y,z],k)=>{w.plat(x*.45,y,z,8.6,4.6,['#ff8a1f','#7f63ff','#1fc7b4','#ff5d8f','#ffb000'][k],1.4,'#ffffff');P.push({z:z+1.4,x:x*.45,hw:1.6,up:z-2});});
       w.plat(0,13,89,14,6,'#c9f7b5');w.cp(89,0,13,5);P.push({z:91.6,x:0,hw:3});
       w.spinner(0,13,89,5.6,1.6,0,{col:'#ff5d73'});
       const t2=w.tilter(0,13,98,12,'#ff8aa6');P.push({z:98,x:0,hw:1.5},{z:104.4,x:0,hw:2});
       w.plat(0,13,107,14,6,'#c9f7b5');w.cp(107,0,13,5);P.push({z:109.6,x:0,hw:3});
       w.ramp(0,110,13,132,20,10,stripeMat('#1fc7b4','#4fd8c8',1,8));w.balls(-3.8,3.8,132,20,110.5,13,7,8.5,1.1);P.push({z:131.6,x:0,hw:3});
       finishPad(w,132,20,'#c9f7b5');
-      w.tilt=null;w.seaY=-14;w.goo={y0:-9,rate:.34,delay:4,max:18};w.killY=-9;
+      w.tilt=null;w.seaY=-14;w.goo={y0:-9,rate:.32,delay:5,max:18};w.killY=-9;
       const tex=canvasTex(128,128,(g,W2,H2)=>{g.fillStyle='#62d957';g.fillRect(0,0,W2,H2);for(let i=0;i<40;i++){g.fillStyle=i%2?'rgba(170,255,140,.55)':'rgba(40,150,60,.35)';g.beginPath();g.arc(Math.random()*W2,Math.random()*H2,3+Math.random()*12,0,7);g.fill();}});
       tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(14,30);
       const gm=new THREE.Mesh(new THREE.PlaneGeometry(220,420),new THREE.MeshStandardMaterial({map:tex,roughness:.25,metalness:0,emissive:'#1c7a24',emissiveIntensity:.35,transparent:true,opacity:.93}));gm.rotation.x=-Math.PI/2;gm.position.set(0,-9,70);gm.receiveShadow=true;gm.userData.own=true;w.g.add(gm);
@@ -915,7 +915,7 @@ Object.assign(ROUNDS,{
   walls:{name:'Wall Wave',kind:'SURVIVAL',desc:'Walls slide across the stage. Find the gap, hop the low bars, climb the steps or smash the cracked panels. Do not get shoved off.',
     build(w){w.type='survive';w.limit=70;w.ai='walls';w.viewR=22;w.killY=-8;w.spawn=ringSpawn(.6,4.4);
       const HS=6.5,ZE=9.6,WH=2.6,TH=.8;
-      w.plat(0,0,0,HS*2,HS*2,checkerMat(6,6),1.4,'#ffd23f');for(const sx of[-1,1])w.plat(sx*(HS+.3),.5,0,.6,HS*2,stripeMat('#ff5d73','#fff8ea',1,8),1.9,'#ffffff');
+      w.plat(0,0,0,HS*2,HS*2,checkerMat(6,6),1.4,'#ffd23f');for(const sx of[-1,1])w.plat(sx*(HS+.3),1.3,0,.6,HS*2,stripeMat('#ff5d73','#fff8ea',1,8),2.7,'#ffffff');
       for(const sz of[-1,1]){for(const sx of[-1,1])w.rb(stripeMat('#7f63ff','#fff8ea',1,4),sx*7.7,1.9,sz*(ZE+.4),.7,3.8,.7,.25);w.rb(stripeMat('#ffd23f','#ff5d73',8,1),0,3.95,sz*(ZE+.4),16.1,.5,.7,.2);
 }
       const cols=['#ff5d73','#2f9bff','#1fc7b4','#ff8a1f','#8b6cff'];
@@ -925,15 +925,15 @@ Object.assign(ROUNDS,{
         const parts=[];const r=H(k*7+3);
         if(type==='gap'){const s=r<.5?-1:1,g=3.5;if(s>0)parts.push({x0:-HS,x1:HS-g,h:WH});else parts.push({x0:-HS+g,x1:HS,h:WH});}
         else if(type==='hole'){const g=3.1,gx=-3.6+r*HS;parts.push({x0:-HS,x1:gx-g/2,h:WH},{x0:gx+g/2,x1:HS,h:WH});}
-        else if(type==='low')parts.push({x0:-HS,x1:HS,h:.72,low:true});
-        else if(type==='step'){const sx=-3.4+r*6.8;parts.push({x0:-HS,x1:HS,h:2.25},{x0:sx-2,x1:sx+2,h:.95,step:true});}
+        else if(type==='low')parts.push({x0:-HS,x1:HS,h:.6,low:true});
+        else if(type==='step'){const sx=-3.4+r*6.8;parts.push({x0:-HS,x1:HS,h:1.8},{x0:sx-2.7,x1:sx+2.7,h:.9,step:true});}
         else{const n=5,bw=HS*2/n,a=Math.floor(r*n),b=(a+1+Math.floor(H(k*7+4)*(n-1)))%n;for(let i=0;i<n;i++)parts.push({x0:-HS+i*bw,x1:-HS+(i+1)*bw-.06,h:WH,brk:i===a||i===b});}
-        const W_={k,type,ts:t,v,dir,parts,te:t+(ZE*2+2)/v};const t0=t;W_.z=tt=>-dir*ZE+dir*v*(tt-t0);
+        const vv=type==='step'?v*.85:v,W_={k,type,ts:t,v:vv,dir,parts,te:t+(ZE*2+2)/vv};const t0=t;W_.z=tt=>-dir*ZE+dir*vv*(tt-t0);
         const col=cols[k%cols.length];
-        parts.forEach((P,j)=>{const c=new Col(0),wd=P.x1-P.x0,dp=P.step?1.2:TH;c.h.set(wd/2,P.h/2,dp/2);c.off=true;P.cx=(P.x0+P.x1)/2;P.dz=P.step?dir*(TH/2+.6):0;P.c=c;P.n=k*8+j;P.broken=false;
+        parts.forEach((P,j)=>{const c=new Col(0),wd=P.x1-P.x0,dp=P.step?1.2:P.low?.6:TH;if(P.low){c.h.set(wd/2,.3,.3);c.q.setFromAxisAngle(XAX,Math.PI/4);}else c.h.set(wd/2,P.h/2,dp/2);c.off=true;P.cx=(P.x0+P.x1)/2;P.dz=P.step?dir*(TH/2+.6):0;P.c=c;P.n=k*8+j;P.broken=false;
           const m=P.brk?stripeMat('#fff1b8','#ffd23f',5,5):P.low?stripeMat('#ff5d73','#fff8ea',8,1):P.step?stripeMat('#1fc7b4','#fff8ea',1,3):stripeMat(col,'#fff8ea',1,4);
-          c.mesh=w.rb(m,0,-99,0,wd,P.h,dp,P.low?.3:.22);
-          c.upd=tt=>{const on=tt>=W_.ts&&tt<=W_.te&&!P.broken;c.off=!on;c.pos.set(P.cx,on?P.h/2:-99,W_.z(tt)+P.dz);};
+          c.mesh=P.low?w.rb(m,0,-99,0,wd,.6,.6,.12):w.rb(m,0,-99,0,wd,P.h,dp,.22);if(P.low)c.mesh.quaternion.copy(c.q);
+          c.upd=tt=>{const on=tt>=W_.ts&&tt<=W_.te&&!P.broken;c.off=!on;c.pos.set(P.cx,on?(P.low?.43:P.h/2):-99,W_.z(tt)+P.dz);};
           c.sync=()=>{c.mesh.visible=!c.off;if(!c.off)c.mesh.position.copy(c.pos);};w.add(c);});
         waves.push(W_);t+=I+(type==='low'?-.6:0);k++;}
       w.wv=waves;const byN={};for(const W_ of waves)for(const P of W_.parts)if(P.brk)byN[P.n]=P;
@@ -944,9 +944,9 @@ Object.assign(ROUNDS,{
       w.wallAI=(b,t,ai)=>{let best=null,bt=1e9;for(const W_ of waves){if(t<W_.ts-.5||t>W_.te)continue;const d=(b.p.z-W_.z(t))*W_.dir;if(d<-.7)continue;const tt=d/W_.v;if(tt<bt){bt=tt;best=W_;}}
         res.tz=ai.hz||0;res.jump=false;res.tx=ai.hx||0;if(!best||bt>5)return res;const d=(b.p.z-best.z(t))*best.dir,o=ai.off||0;
         if(best.type==='gap'||best.type==='hole'){const P=best.parts;let gx;if(best.type==='hole')gx=(P[0].x1+P[1].x0)/2;else gx=P[0].x1>0?P[0].x1+1.4:P[0].x0-1.4;res.tx=gx+o*1.2;}
-        else if(best.type==='low'){res.tx=b.p.x;if(d>0&&d<.75+best.v*(.1+(1-ai.skill)*.06))res.jump=true;}
-        else if(best.type==='step'){const S=best.parts[1];res.tx=S.cx+o*1.2;if(d>0&&d<1.5+best.v*.08&&b.gr)res.jump=true;if(b.p.y>.7&&b.gr)res.jump=true;}
-        else{let bx=0,bd=1e9;for(const P of best.parts)if(P.brk&&!P.broken){const q=Math.abs(P.cx-b.p.x);if(q<bd){bd=q;bx=P.cx;}}res.tx=bd<1e9?bx+o*.8:b.p.x;}
+        else if(best.type==='low'){res.tx=b.p.x;if(d<2)res.tz=best.z(t)-best.dir*3;if(d>.5&&d<1+best.v*(.13+(1-ai.skill)*.05)&&b.gr)res.jump=true;}
+        else if(best.type==='step'){const S=best.parts[1];res.tx=S.cx+o*1.6;if(d<2.5)res.tz=best.z(t)-best.dir*3;if(d>0&&d<1.5+best.v*.08&&b.gr)res.jump=true;if(b.p.y>.7&&b.gr)res.jump=true;}
+        else{let bx=0,bd=1e9;for(const P of best.parts)if(P.brk&&!P.broken){const q=Math.abs(P.cx-b.p.x);if(q<bd){bd=q;bx=P.cx;}}res.tx=bd<1e9?bx+o*.8:b.p.x;if(d<2)res.tz=best.z(t)-best.dir*3;}
         return res;};}},
 });
 {const i=ROUND_POOL.indexOf('hall');if(i>=0)ROUND_POOL[i]='walls';else ROUND_POOL.push('walls');delete ROUNDS.hall;}
@@ -1100,6 +1100,8 @@ function endRound(){const type=W.type;
     if(!R.alive.some(id=>teamOf(id)===wt&&!R.out.includes(id)))wt=1-wt;R.wteam=wt;R.qual=R.alive.filter(id=>teamOf(id)===wt&&!R.out.includes(id));R.out=R.alive.filter(id=>!R.qual.includes(id));
     if(!R.qual.length&&R.alive.length){R.qual=[R.alive[0]];R.out=R.alive.slice(1);}}
   else{R.qual=R.alive.filter(id=>!R.out.includes(id));if(!R.qual.length&&R.out.length)R.qual=[R.out.pop()];
+    // several puffs often fall in the same moment: the last ones out still go through, so the usual number qualifies
+    if(type==='survive')while(R.qual.length<R.quota&&R.out.length)R.qual.push(R.out.pop());
     if(type==='final'&&R.qual.length>1){R.qual.sort((a,b)=>(ents.get(b)?.p.y??-99)-(ents.get(a)?.p.y??-99));R.out.push(...R.qual.splice(1));}}
   R.ph='end';R.pt=netTime();setR();}
 function directorTick(now){
@@ -1421,17 +1423,11 @@ function specList(){return[...ents.values()].filter(e=>e!==me&&entVisible(e)&&e.
 function nextSpec(){const l=specList();if(!l.length)return;const i=l.findIndex(e=>e.id===specId);specId=l[(i+1)%l.length].id;}
 
 // ---- grab feedback: a stretchy tether between grabber and grabbed, and a tag on screen ----
-const TETH=[],_ga=V(),_gb=V(),_gd=V(),_gq=new THREE.Quaternion(),_gup=V(0,1,0);let grabTagS='';
-function grabVis(vis){let n=0;
-  for(const e of vis){if(!(e.a&8))continue;let o=null;if(e.body&&e.body.grabT>0)o=ents.get(e.body.grabId);
-    if(!o){let bd=2.7;for(const q of vis){if(q===e||!(q.a&16))continue;const d=Math.hypot(q.p.x-e.p.x,q.p.z-e.p.z);if(d<bd){bd=d;o=q;}}}
-    if(!o||!o.ch.vis)continue;let m=TETH[n];if(!m){m=new THREE.Mesh(GEO.cyl,stripeMat('#ffd23f','#ff5d73',1,6));m.castShadow=false;scene.add(m);TETH.push(m);}n++;
-    _ga.set(e.p.x+Math.sin(e.yaw)*.75,e.p.y+.62,e.p.z+Math.cos(e.yaw)*.75);_gb.set(o.p.x,o.p.y+.55,o.p.z);_gd.subVectors(_gb,_ga);const L=_gd.length();
-    m.visible=L>.05;if(!m.visible)continue;m.position.copy(_ga).addScaledVector(_gd,.5);_gq.setFromUnitVectors(_gup,_gd.normalize());m.quaternion.copy(_gq);const th=.09+.04*Math.sin(performance.now()/90);m.scale.set(th,L,th);}
-  for(let i=n;i<TETH.length;i++)TETH[i].visible=false;
-  let s='';const b=me.body;if(b&&R.ph==='play'){if(b.grabT>0){const o=ents.get(b.grabId);s='HOLDING '+(o?o.name:'').toUpperCase();}else if(b.heldT>0)s='GRABBED!';}
+let grabTagS='';
+function grabVis(vis){
+  let s='';const b=me.body;if(b&&R.ph==='play'){if(b.grabT>0||b.heldT>0)s='GRABBED!';}
   if(s!==grabTagS){grabTagS=s;let el=$('grabtag');if(!el){el=document.createElement('div');el.id='grabtag';el.style.cssText='position:fixed;left:50%;bottom:22%;transform:translateX(-50%);padding:6px 16px;border:3px solid #23204a;border-radius:999px;font:900 18px/1.2 inherit;letter-spacing:1px;color:#23204a;box-shadow:0 3px 0 #23204a;pointer-events:none;z-index:6;display:none';document.body.appendChild(el);}
-    el.textContent=s;el.style.display=s?'block':'none';el.style.background=s==='GRABBED!'?'#ff8fa3':'#ffd23f';}}
+    el.textContent=s;el.style.display=s?'block':'none';el.style.background='#ffd23f';}}
 // ---- camera ----
 const _cp=V(),_look=V(),_fp=V(),_fl=V();
 function updateCamera(dt,t){const k=1-Math.exp(-10*dt);
