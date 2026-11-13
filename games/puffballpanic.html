@@ -1031,8 +1031,8 @@ const camTarget=V(0,1,0),keys=new Set(),stick={x:0,y:0,id:-1},lookT={id:-1,x:0,y
 const cv=renderer.domElement;
 function courseY(z){if(!W._prof||W._prof.w!==W){const N=Math.max(2,Math.ceil((Math.min(W.finZ,600)+20)/2)),A=new Float32Array(N).fill(NaN);
   for(let i=0;i<N;i++){const zz=i*2;let best=-1e9;for(const c of W.cols){if(c.hit||Math.abs(c.pos.x)>12||c.pos.y>60)continue;if(Math.abs(c.pos.z-zz)<c.br*.75&&c.pos.y>best)best=c.pos.y;}if(best>-1e9)A[i]=best;}
-  let l=0;for(let i=0;i<N;i++){if(isNaN(A[i]))A[i]=l;else l=A[i];}const S=new Float32Array(N);for(let i=0;i<N;i++){let s=0,n=0;for(let j=-3;j<=3;j++){const k=i+j;if(k>=0&&k<N){s+=A[k];n++;}}S[i]=s/n;}W._prof={w:W,S};}
-  const S=W._prof.S,i=clamp(Math.round(z/2),0,S.length-1);return S[i];}
+  let l=0;for(let i=0;i<N;i++){if(isNaN(A[i]))A[i]=l;else l=A[i];}const S=new Float32Array(N);for(let i=0;i<N;i++){let s=0,n=0;for(let j=-6;j<=6;j++){const k=i+j;if(k>=0&&k<N){s+=A[k];n++;}}S[i]=s/n;}W._prof={w:W,S};}
+  const S=W._prof.S,u=clamp(z/2,0,S.length-1),i=Math.floor(u),j=Math.min(i+1,S.length-1);return S[i]+(S[j]-S[i])*(u-i);}
 function banner(txt,cls,ms=2600){const b=$('banner');b.textContent=txt;b.className=(cls||'')+' pop';void b.offsetWidth;clearTimeout(bannerTO);if(ms)bannerTO=setTimeout(()=>{b.textContent='';$('sub').textContent='';},ms);}
 function feed(txt){const d=document.createElement('div');d.textContent=txt;$('feed').prepend(d);setTimeout(()=>d.remove(),4600);while($('feed').children.length>6)$('feed').lastChild.remove();}
 const show=(id,on)=>$(id).classList.toggle('hide',!on);
@@ -1126,14 +1126,16 @@ function specList(){return[...ents.values()].filter(e=>e!==me&&entVisible(e)&&e.
 function nextSpec(){const l=specList();if(!l.length)return;const i=l.findIndex(e=>e.id===specId);specId=l[(i+1)%l.length].id;}
 
 // ---- camera ----
-const _cp=V(),_look=V();
+const _cp=V(),_look=V(),_fp=V(),_fl=V();
 function updateCamera(dt,t){const k=1-Math.exp(-10*dt);
   if(mode==='menu'){const p=me.p;_cp.set(p.x+(innerWidth>760?-1.6:0),p.y+1.1,p.z-4.4);_look.set(p.x+(innerWidth>760?1.25:0),p.y+.25,p.z);camera.position.lerp(_cp,k);camera.lookAt(_look);camTarget.copy(p);return;}
   if(R.rid==='podium'){const a=performance.now()/2600;_cp.set(Math.sin(a)*7.5,4.6,Math.cos(a)*7.5);camera.position.lerp(_cp,k);camera.lookAt(0,4.3,0);camTarget.set(0,2.5,0);return;}
   if(TEST.cam&&W.type==='race'){const z=W.finZ*TEST.cam,y=courseY(z);camera.position.set(20,y+19,z-17);camera.lookAt(0,y-1,z+9);return;}
   if(R.ph==='play'&&t<-3.4){const f=sstep(0,1,clamp((t+9.5)/6,0,1));
     if(W.type==='race'){const z=lerp(W.finZ+4,2,f),y=courseY(z+4);_cp.set(14-f*6,y+21,z-15);_look.set(0,y,z+10);}else{const a=f*2.6+1;_cp.set(Math.sin(a)*W.viewR,W.center.y+11,Math.cos(a)*W.viewR);_look.copy(W.center);}
-    camera.position.copy(_cp);camera.lookAt(_look);camTarget.copy(_look);return;}
+    {const e=me,L=_fl.set(e.p.x,Math.max(e.p.y,W.killY+5)+.9,e.p.z),g=sstep(-5.6,-3.4,t);camTarget.copy(L);
+      if(g>0){const cp=Math.cos(camPitch),sp=Math.sin(camPitch);_fp.set(L.x-Math.sin(camYaw)*cp*camDist,L.y+sp*camDist+.6,L.z-Math.cos(camYaw)*cp*camDist);_cp.lerp(_fp,g);_look.lerp(_fp.copy(L).setY(L.y+.5),g);}}
+    camera.position.copy(_cp);camera.lookAt(_look);return;}
   let e=me;if(myStat!=='play'){e=ents.get(specId);if(!e||!entVisible(e)||e===me){const l=specList();e=l[0];specId=e?e.id:'';}}
   if(e){_look.set(e.p.x,Math.max(e.p.y,W.killY+5)+.9,e.p.z);if(camTarget.distanceToSquared(_look)>900)camTarget.copy(_look);else camTarget.lerp(_look,1-Math.exp(-14*dt));}
   const cp=Math.cos(camPitch),sp=Math.sin(camPitch);_cp.set(camTarget.x-Math.sin(camYaw)*cp*camDist,camTarget.y+sp*camDist+.6,camTarget.z-Math.cos(camYaw)*cp*camDist);
@@ -1189,7 +1191,7 @@ function frame(now){requestAnimationFrame(frame);let dt=Math.min(.1,(now-last)/1
   sun.target.position.copy(camTarget);sun.position.set(camTarget.x+22,camTarget.y+42,camTarget.z-17);
   renderer.render(scene,camera);}
 applyGfx();onR();requestAnimationFrame(frame);
-window.__game={warp(i){const c=W.cps[i];for(const e of ents.values())if(e.body&&(e===me||e.bot)){e.body.place(c.x+(Math.random()-.5)*c.w*2,c.y+1,c.z+Math.random()*2,0);e.body.cp=i+1;if(e.ai){e.ai.k=0;while(W.path[e.ai.k]&&W.path[e.ai.k].z-.4<c.z)e.ai.k++;}}},get R(){return R;},get W(){return W;},build:(r,s)=>buildWorld(r,s),get me(){return me;},ents,TEST,Net,solo,joinRoom,startMatch,toMenu,isDir,get stat(){return myStat;},get mode(){return mode;},get frames(){return frames;},
+window.__game={warp(i){const c=W.cps[i];for(const e of ents.values())if(e.body&&(e===me||e.bot)){e.body.place(c.x+(Math.random()-.5)*c.w*2,c.y+1,c.z+Math.random()*2,0);e.body.cp=i+1;if(e.ai){e.ai.k=0;while(W.path[e.ai.k]&&W.path[e.ai.k].z-.4<c.z)e.ai.k++;}}},get R(){return R;},get W(){return W;},build:(r,s)=>buildWorld(r,s),get camera(){return camera;},get me(){return me;},ents,TEST,Net,solo,joinRoom,startMatch,toMenu,isDir,get stat(){return myStat;},get mode(){return mode;},get frames(){return frames;},
   info(){return{mode,ph:R.ph,rid:R.rid,ri:R.ri,t:+tr().toFixed(1),alive:R.alive.length,qual:R.qual.length,out:R.out.length,quota:R.quota,stat:myStat,dir:isDir(),ents:ents.size,me:me.p.toArray().map(v=>+v.toFixed(1)),win:R.win};}};
 </script>
 </body>
