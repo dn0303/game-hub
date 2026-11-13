@@ -887,13 +887,13 @@ function worldEvent(k,i){if(online())Net.send({t:'e',k,n:i,s:R.seed});}
 // ---- bots ----
 function ensureBots(){if(R.ph!=='play')return;R.alive.forEach((id,i)=>{if(id[0]!=='b'||id.length>3)return;const e=getEnt(id,true);if(e.body||R.out.includes(id)||R.qual.includes(id))return;
     const b=e.body=new Body(e);if(e.fresh||e.p.y<-50){const s=W.spawn(i,R.alive.length);b.place(s[0],s[1],s[2],W.type==='race'?0:Math.atan2(-s[0],-s[2]));}else{b.place(e.p.x,e.p.y,e.p.z,e.yaw);b.v.copy(e.v);}
-    e.fresh=false;const n=parseInt(id.slice(1),10),sk=(.45+hash3(n,R.seed,7)*.5)*.9;b.spd=.82+sk*.13;
+    e.fresh=false;const n=parseInt(id.slice(1),10),sk=.45+hash3(n,R.seed,7)*.5;b.spd=.84+sk*.14;
     e.ai={inp:{mx:0,mz:0,jump:false,dive:false},k:0,ox:Math.random()*2-1,skill:sk,door:-1,dw:-1,tried:new Set(),st:0,sT:0,sZ:0,jcd:0,care:true,tx:0,tz:0,tT:0,tile:null,dx:0,dz:1};});}
 function aiHaz(e,b,t,dt,st){const ai=e.ai;ai.jcd-=dt;
   for(const h of W.haz){
     if(h.type==='arm'){if(Math.abs(b.p.y-.08-h.y)>1.1)continue;const dx=b.p.x-h.x,dz=b.p.z-h.z,r=Math.hypot(dx,dz);if(r>h.half+.9||r<.95)continue;
       const A=h.ang(t),w=(h.ang(t+.05)-A)/.05;if(Math.abs(w)<.05)continue;let g=(Math.atan2(-dz,dx)-A)*Math.sign(w);g=((g%Math.PI)+Math.PI)%Math.PI;
-      if(b.gr&&ai.jcd<=0&&g-.75/r<Math.abs(w)*.17){ai.jcd=.55;if(Math.random()<ai.skill+.06)st.jump=true;}}
+      if(b.gr&&ai.jcd<=0&&g-.75/r<Math.abs(w)*.17){ai.jcd=.55;if(Math.random()<ai.skill+.12)st.jump=true;}}
     else if(h.type==='ham'){const dz=h.z-b.p.z;if(dz<.9||dz>3.2||Math.abs(h.x-b.p.x)>2.3||!ai.care)continue;if(Math.abs(h.len*Math.sin(h.A(t+.1)))<2.3||Math.abs(h.len*Math.sin(h.A(t+.45)))<2.3)st.hold=true;}
     else if(h.type==='push'){const c=h.c,x0=h.x+h.dir*h.amp-h.w/2-.7,x1=h.x+h.dir*h.amp+h.w/2+.7,lo=Math.min(x0,x1,h.x-h.w/2),hi=Math.max(x0,x1,h.x+h.w/2);if(b.p.x<lo||b.p.x>hi)continue;
       const busy=h.E(t)>.02||h.E(t+.35)>.02||h.E(t+.15)>.02;
