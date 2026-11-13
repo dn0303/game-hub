@@ -784,7 +784,9 @@ Object.assign(ROUNDS,{
 });
 const ROUND_POOL=['sweep','knock','tipsy','spin','rotors','punch','steps','belts','slide','jelly','bowl','hall','drops'],FINAL_POOL=['crown','summit','topple','rumble'];
 const isFinal=rid=>!!(ROUNDS[rid]&&ROUNDS[rid].kind==='FINAL');
-function buildWorld(rid,seed){if(W)W.dispose();W=new World(rid,seed);ROUNDS[rid].build(W);W.def=ROUNDS[rid];W.update(-9,1/60);W.sync(0);W.onEvent=worldEvent;return W;}
+function buildWorld(rid,seed){if(W)W.dispose();W=new World(rid,seed);ROUNDS[rid].build(W);W.def=ROUNDS[rid];W.update(-9,1/60);W.sync(0);W.onEvent=worldEvent;warmWorld();return W;}
+// upload every texture and compile every shader now, so the intro flyover does not stutter as new parts come into view
+function warmWorld(){try{const seen=new Set();W.g.traverse(o=>{const m=o.material;if(!m)return;for(const mm of(Array.isArray(m)?m:[m]))for(const k of['map','emissiveMap','normalMap','alphaMap'])if(mm[k]&&!seen.has(mm[k])){seen.add(mm[k]);renderer.initTexture(mm[k]);}});renderer.compile(scene,camera);}catch(e){}}
 // ============================================================
 // Networking: hostless room over public MQTT relays (BroadcastChannel with #local)
 // ============================================================
@@ -1132,7 +1134,7 @@ function updateCamera(dt,t){const k=1-Math.exp(-10*dt);
   if(R.rid==='podium'){const a=performance.now()/2600;_cp.set(Math.sin(a)*7.5,4.6,Math.cos(a)*7.5);camera.position.lerp(_cp,k);camera.lookAt(0,4.3,0);camTarget.set(0,2.5,0);return;}
   if(TEST.cam&&W.type==='race'){const z=W.finZ*TEST.cam,y=courseY(z);camera.position.set(20,y+19,z-17);camera.lookAt(0,y-1,z+9);return;}
   if(R.ph==='play'&&t<-3.4){const f=sstep(0,1,clamp((t+9.5)/6,0,1));
-    if(W.type==='race'){const z=lerp(W.finZ+4,2,f),y=courseY(z+4);_cp.set(14-f*6,y+21,z-15);_look.set(0,y,z+10);}else{const a=f*2.6+1;_cp.set(Math.sin(a)*W.viewR,W.center.y+11,Math.cos(a)*W.viewR);_look.copy(W.center);}
+    if(W.type==='race'){const z=lerp(W.finZ+4,2,f),y=courseY(z+4);_cp.set(15-f*7,y+24,z-18);_look.set(0,y,z+12);}else{const a=f*2.6+1;_cp.set(Math.sin(a)*W.viewR,W.center.y+11,Math.cos(a)*W.viewR);_look.copy(W.center);}
     {const e=me,L=_fl.set(e.p.x,Math.max(e.p.y,W.killY+5)+.9,e.p.z),g=sstep(-5.6,-3.4,t);camTarget.copy(L);
       if(g>0){const cp=Math.cos(camPitch),sp=Math.sin(camPitch);_fp.set(L.x-Math.sin(camYaw)*cp*camDist,L.y+sp*camDist+.6,L.z-Math.cos(camYaw)*cp*camDist);_cp.lerp(_fp,g);_look.lerp(_fp.copy(L).setY(L.y+.5),g);}}
     camera.position.copy(_cp);camera.lookAt(_look);return;}
