@@ -4218,8 +4218,10 @@ const FURN=[
    mesh(new THREE.ConeGeometry(.14,.14,14,1,true),new THREE.MeshStandardMaterial({color:0x2f6b3a,emissive:0xffb060,emissiveIntensity:.4,side:THREE.DoubleSide}),.5,1.12,-.15,g)}},
  {id:'stockings',n:'Stocking Stand',p:1200,hw:.6,hd:.2,d:'A little stand with three stockings.',b(g){const w=W_();bx(g,1.2,.06,.3,w,0,1.25,0);for(const s of [-1,1])bx(g,.06,1.25,.3,w,s*.57,.62,0);bx(g,1.2,.06,.4,w,0,.03,0);
    [[0xd62839,-.35],[0x2f6b3a,0],[0x2f5a8a,.35]].forEach(([c,x])=>{const m=fm('stk'+c,{color:c,roughness:.9});bx(g,.16,.42,.1,m,x,.98,.02);bx(g,.24,.12,.1,m,x+.04,.74,.02);bx(g,.2,.1,.12,fm('cream',{color:0xf2e6cf,roughness:.95}),x,1.17,.02)})}}];
+// sized up to suit the big room (the tree stays a bit smaller so its star clears the ceiling)
+for(const f of FURN){f.s=f.id==='tree'?1.15:1.35;f.hw*=f.s;f.hd*=f.s;f.seats=(f.seats||[]).map(([x,z,r])=>[x*f.s,z*f.s,r])}
 const FURN_ID=Object.fromEntries(FURN.map(f=>[f.id,f]));
-function buildPiece(id){const f=FURN_ID[id],g=new THREE.Group(),A=[];f.b(g,A);g.userData.anim=A;return g}
+function buildPiece(id){const f=FURN_ID[id],o=new THREE.Group(),g=new THREE.Group(),A=[];f.b(g,A);g.scale.setScalar(f.s);o.add(g);o.userData.anim=A;return o}
 
 // ---------- save data: SAVE.hin = interior layout, SAVE.fur = furniture owned, SAVE.hown = wallpapers/floors owned
 const DEF_IN=()=>({w:'wp0',f:'fl0',it:[]});
@@ -4283,7 +4285,7 @@ function disposeTree(o){o.traverse(m=>{if(m.geometry&&m.geometry!==bulbGeo)m.geo
 function buildFurn(cfg){if(HOME.furn){homeS.remove(HOME.furn);disposeTree(HOME.furn)}
   const g=new THREE.Group(),A=[],seats=[],solid=[];
   for(const [id,x,z,r] of cfg.it){const f=FURN_ID[id],p=buildPiece(id);p.position.set(x,0,z);p.rotation.y=r*Math.PI/2;g.add(p);A.push(...p.userData.anim);
-    for(const s of f.seats||[]){const v=V3(s[0],0,s[1]).applyAxisAngle(UP,r*Math.PI/2);seats.push({x:x+v.x,z:z+v.z,yaw:(s[2]||0)+r*Math.PI/2,y:0})}
+    for(const s of f.seats||[]){const v=V3(s[0],0,s[1]).applyAxisAngle(UP,r*Math.PI/2);seats.push({x:x+v.x,z:z+v.z,yaw:(s[2]||0)+r*Math.PI/2,y:(f.s-1)*.8})}
     if(!f.soft){const [hw,hd]=footOf(id,r);solid.push({x0:x-hw,x1:x+hw,z0:z-hd,z1:z+hd})}}
   homeS.add(g);HOME.furn=g;HOME.fanim=A;HOME.seats=seats;HOME.solid=solid;try{staticMerge(g,{anim:A})}catch(e){}
   ROOMS.home.col=[...HOME.shell.col,...solid]}
