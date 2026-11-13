@@ -30,7 +30,7 @@ kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;bo
 #loadmsg{color:var(--mute)}
 
 /* screens */
-.screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow:auto}
+.screen{cursor:default;position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow:auto}
 #menu{background:linear-gradient(180deg,rgba(8,10,20,.55),rgba(8,10,20,.85));align-items:flex-start}
 .wrap{width:min(1080px,100%);margin:auto 0}
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
@@ -707,7 +707,16 @@ function lockMouse(){
 }
 const isLocked=()=>TEST||document.pointerLockElement===canvas;
 function lockFailed(){if(state==='paused')$('#pausemsg').textContent='The browser needs a moment before it can grab the mouse again. Click Resume once more.';}
-function onLocked(){if(state==='paused'){state=prevState||'play';show(null);if(state==='count'){R.lastCount=99;$('#count').classList.remove('hidden');}}}
+function onLocked(){
+  if(state==='paused'&&!document.hidden){state=prevState||'play';show(null);if(state==='count'){R.lastCount=99;$('#count').classList.remove('hidden');}}
+  else if(state!=='play'&&state!=='count'&&!TEST)unlockMouse(); // a lock that arrived late (e.g. after the tab was left) must not hide the cursor on a menu
+}
+function unlockMouse(){try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}
+// leaving the tab or window: pause the run and hand the cursor back
+function leaving(){if(state==='play'||state==='count')pause();if(state!=='play'&&state!=='count')unlockMouse();}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)leaving();});
+addEventListener('blur',leaving);
+addEventListener('pagehide',leaving);
 document.addEventListener('pointerlockchange',()=>{
   if(document.pointerLockElement===canvas)onLocked();
   else if(state==='play'||state==='count')pause();
@@ -722,7 +731,7 @@ function startRun(){
   startDrill();
   if(!isLocked())lockMouse();
 }
-function pause(){prevState=state;state='paused';$('#pausemsg').textContent='Your run is on hold.';show('pause');$('#count').classList.add('hidden');}
+function pause(){prevState=state;state='paused';unlockMouse();$('#pausemsg').textContent='Your run is on hold.';show('pause');$('#count').classList.add('hidden');}
 function toMenu(){state='menu';clearTargets();coverGroup.visible=false;R=null;if(document.pointerLockElement)document.exitPointerLock();$('#count').classList.add('hidden');renderMenu();show('menu');}
 function finish(){
   state='results'; sfx.end(); clearTargets();
