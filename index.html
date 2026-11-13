@@ -15,8 +15,8 @@
 /* Layout: a game shelf. Header strip, then a wrapping grid of game cards; each game opens in its own tab. */
 :root{
   --bg:#0e0d0d; --panel:#181615; --panel-2:#23201e; --line:#36312d;
-  --fg:#f6f2ef; --muted:#b3aaa3; --accent:#ff7a5c; --accent-ink:#2a0d05;
-  --hot:#ff5d73; --ok:#4fe0c0;
+  --fg:#f6f2ef; --muted:#b3aaa3; --accent:#36d67e; --accent-ink:#04210f;
+  --hot:#ff5d73; --ok:#7cf0b0;
   --display:"Bungee","Arial Black",Impact,sans-serif;
   --body:"Chakra Petch","Segoe UI",system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -26,7 +26,7 @@
 [hidden]{display:none!important}
 html,body{margin:0;min-height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
-  background-image:radial-gradient(circle at 1px 1px,rgba(255,122,92,.06) 1px,transparent 0);background-size:22px 22px}
+  background-image:radial-gradient(circle at 1px 1px,rgba(54,214,126,.06) 1px,transparent 0);background-size:22px 22px}
 .wrap{max-width:1120px;margin:0 auto;padding-block:calc(28px + env(safe-area-inset-top,0px)) 56px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:28px}
