@@ -1815,7 +1815,7 @@ function nearestInteract(){
   return null}
 const EXTRA_INTERACT=[];
 let fadeBusy=false;
-function fadeTo(fn){if(fadeBusy)return;fadeBusy=true;$('fade').style.opacity=1;setTimeout(()=>{fn();$('fade').style.opacity=0;setTimeout(()=>fadeBusy=false,350)},360)}
+function fadeTo(fn){if(fadeBusy)return;fadeBusy=true;$('fade').style.opacity=1;setTimeout(()=>{try{fn()}catch(e){console.error(e)}$('fade').style.opacity=0;setTimeout(()=>fadeBusy=false,350)},360)}
 function switchScene(){sceneOf(P.loc).add(me.root)}
 function enterRoom(k){sfx.door();fadeTo(()=>{const R=ROOMS[k];P.loc=k;P.mode='walk';P.seat=null;P.lift=null;P.air=null;P.pos.copy(R.door);P.pos.z-=1;P.vel.set(0,0,0);P.yaw=Math.PI;camS.yaw=Math.PI;camS.yawOff=0;switchScene();
   refreshShopLabels();hint('Cocoa bar on the right · Rudolph\'s Gear shop through the arch on the left · 🍪 Gingerbread Bakery past the cocoa bar. Walk up to anything and press <span class="kbd">E</span>.',6);
@@ -4228,10 +4228,11 @@ function footOf(id,r){const f=FURN_ID[id];return r%2?[f.hd,f.hw]:[f.hw,f.hd]}
 function cleanIn(x){if(!x||typeof x!=='object')return DEF_IN();const it=Array.isArray(x.it)?x.it.filter(a=>Array.isArray(a)&&FURN_ID[a[0]]).slice(0,HMAX).map(([id,px,pz,r])=>{r=(num(r)|0)&3;const [hw,hd]=footOf(id,r);
     return[id,clamp(Math.round(num(px)*4)/4,-HW_+hw,HW_-hw),clamp(Math.round(num(pz)*4)/4,-HD_+hd,HD_-hd),r]}):[];
   return{w:WALL_ID[x.w]?x.w:'wp0',f:FLOOR_ID[x.f]?x.f:'fl0',it}}
-SAVE.hin=cleanIn(SAVE.hin);if(!SAVE.fur||typeof SAVE.fur!=='object')SAVE.fur={};if(!Array.isArray(SAVE.hown))SAVE.hown=[];
-const hOwned=id=>{const d=WALL_ID[id]||FLOOR_ID[id];return!!d&&(d.p===0||SAVE.hown.includes(id))};
-const furOwned=id=>Math.max(0,SAVE.fur[id]|0),furOut=id=>SAVE.hin.it.filter(a=>a[0]===id).length+(HOME.carry&&HOME.carry.id===id?1:0);
-function homeSave(){SAVE.hin=cleanIn(SAVE.hin);save();hsT=0}
+function homeData(){if(!SAVE.hin||!Array.isArray(SAVE.hin.it))SAVE.hin=cleanIn(SAVE.hin);if(!SAVE.fur||typeof SAVE.fur!=='object')SAVE.fur={};if(!Array.isArray(SAVE.hown))SAVE.hown=[];return SAVE.hin} // a cloud save load replaces SAVE, so re-check every time
+homeData();
+const hOwned=id=>{homeData();const d=WALL_ID[id]||FLOOR_ID[id];return!!d&&(d.p===0||SAVE.hown.includes(id))};
+const furOwned=id=>(homeData(),Math.max(0,SAVE.fur[id]|0)),furOut=id=>homeData().it.filter(a=>a[0]===id).length+(HOME.carry&&HOME.carry.id===id?1:0);
+function homeSave(){homeData();SAVE.hin=cleanIn(SAVE.hin);save();hsT=0}
 
 // ---------- the room shell
 const nightTex=canvasTex(256,256,(g,W,H)=>{const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#0a1230');gr.addColorStop(.6,'#2a3a6a');gr.addColorStop(1,'#5a6a9a');g.fillStyle=gr;g.fillRect(0,0,W,H);
@@ -4277,7 +4278,7 @@ function setHomeSign(name){if(HOME.sign===name)return;HOME.sign=name;if(HOME.sig
   const s=signPlane([[name,.8,'#ffe27a'],["'s Cottage",.34,'#fff']],2.6,1,{bg:'#4a2a14',border:'#ffd27a',glow:.4});s.position.set(0,3.55,-HD_+.88);homeS.add(s);HOME.signObj=s}
 
 // ---------- building the furniture for whichever cottage you're in
-function homeCfg(i){const h=HOUSES[i];if(!h||!h.owner)return null;return h.owner.id===myId?SAVE.hin:(h.owner.cfg.in||DEF_IN())}
+function homeCfg(i){const h=HOUSES[i];if(!h||!h.owner)return null;return h.owner.id===myId?homeData():(h.owner.cfg.in||DEF_IN())}
 function disposeTree(o){o.traverse(m=>{if(m.geometry&&m.geometry!==bulbGeo)m.geometry.dispose()})}
 function buildFurn(cfg){if(HOME.furn){homeS.remove(HOME.furn);disposeTree(HOME.furn)}
   const g=new THREE.Group(),A=[],seats=[],solid=[];
@@ -4305,7 +4306,7 @@ EXTRA_INTERACT.unshift(sp=>{if(P.loc!=='mtn'||P.mode!=='walk')return null;for(co
 // ---------- carrying and placing furniture
 const _hv=V3();
 function carryMarker(id,r){const [hw,hd]=footOf(id,r),m=new THREE.Mesh(new THREE.PlaneGeometry(hw*2+.1,hd*2+.1),new THREE.MeshBasicMaterial({color:0x7dff9a,transparent:true,opacity:.35,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.03;return m}
-function startCarry(id){if(P.loc!=='home'||!HOME.isMine())return;if(HOME.carry)putAwayCarry(true);if(SAVE.hin.it.length>=HMAX){toast(`🏡 Your cottage can hold ${HMAX} pieces`);return}
+function startCarry(id){if(P.loc!=='home'||!HOME.isMine())return;if(HOME.carry)putAwayCarry(true);if(homeData().it.length>=HMAX){toast(`🏡 Your cottage can hold ${HMAX} pieces`);return}
   const o=new THREE.Group(),p=buildPiece(id);o.add(p);o.userData.anim=p.userData.anim;homeS.add(o);HOME.carry={id,r:0,obj:o,mk:null,ok:false};setCarryRot(0);
   hint('Walk to move it. <span class="kbd">R</span> or <span class="kbd">F</span> rotate · <span class="kbd">E</span> place · <span class="kbd">Q</span> put away',6)}
 function setCarryRot(r){const c=HOME.carry;c.r=r&3;c.obj.children[0].rotation.y=c.r*Math.PI/2;if(c.mk){c.obj.remove(c.mk);c.mk.geometry.dispose()}c.mk=carryMarker(c.id,c.r);c.obj.add(c.mk)}
@@ -4318,11 +4319,11 @@ function updateCarry(dt){const c=HOME.carry;if(!c)return;if(P.loc!=='home'){putA
   c.obj.position.x+=(s.x-c.obj.position.x)*Math.min(1,dt*18);c.obj.position.z+=(s.z-c.obj.position.z)*Math.min(1,dt*18);c.obj.position.y=.08+Math.sin(T*5)*.03;
   c.mk.material.color.set(s.ok?0x7dff9a:0xff5d73);for(const f of c.obj.userData.anim)f(T)}
 function placeCarry(){const c=HOME.carry;if(!c)return;if(!c.ok){toast('🚫 Something is in the way there');return}if(furOut(c.id)-1>=furOwned(c.id)){putAwayCarry(true);return}
-  SAVE.hin.it.push([c.id,c.x,c.z,c.r]);dropCarryObj();homeSave();refreshHome(true);sfx.blip(900)}
+  homeData().it.push([c.id,c.x,c.z,c.r]);dropCarryObj();homeSave();refreshHome(true);sfx.blip(900)}
 function dropCarryObj(){const c=HOME.carry;if(!c)return;homeS.remove(c.obj);disposeTree(c.obj);HOME.carry=null}
 function putAwayCarry(quiet){if(!HOME.carry)return;const n=FURN_ID[HOME.carry.id].n;dropCarryObj();if(!quiet)toast(`📦 ${n} went back into storage`)}
-function pickUp(idx){const a=SAVE.hin.it[idx];if(!a)return;SAVE.hin.it.splice(idx,1);homeSave();refreshHome(true);startCarry(a[0]);if(HOME.carry){setCarryRot(a[3]);HOME.carry.obj.position.set(a[1],0,a[2])}}
-function nearPiece(){let best=-1,bd=1e9;SAVE.hin.it.forEach(([id,x,z,r],i)=>{const [hw,hd]=footOf(id,r),dx=Math.max(0,Math.abs(P.pos.x-x)-hw),dz=Math.max(0,Math.abs(P.pos.z-z)-hd),d=Math.hypot(dx,dz);if(d<1.1&&d<bd){bd=d;best=i}});return best}
+function pickUp(idx){const a=homeData().it[idx];if(!a)return;homeData().it.splice(idx,1);homeSave();refreshHome(true);startCarry(a[0]);if(HOME.carry){setCarryRot(a[3]);HOME.carry.obj.position.set(a[1],0,a[2])}}
+function nearPiece(){let best=-1,bd=1e9;homeData().it.forEach(([id,x,z,r],i)=>{const [hw,hd]=footOf(id,r),dx=Math.max(0,Math.abs(P.pos.x-x)-hw),dz=Math.max(0,Math.abs(P.pos.z-z)-hd),d=Math.hypot(dx,dz);if(d<1.1&&d<bd){bd=d;best=i}});return best}
 HOME.isMine=()=>HOME.i>=0&&HOUSES[HOME.i]&&HOUSES[HOME.i].owner&&HOUSES[HOME.i].owner.id===myId;
 addEventListener('keydown',e=>{if(!HOME.carry||state!=='play'||panelKind||paused||typing()||e.repeat)return;
   if(e.code==='KeyR'||e.code==='KeyF'){e.preventDefault();e.stopImmediatePropagation();setCarryRot(HOME.carry.r+1);sfx.blip(600)}
@@ -4334,7 +4335,7 @@ addEventListener('keydown',e=>{if(!HOME.carry||state!=='play'||panelKind||paused
   if(Math.hypot(P.pos.x-HOME_DOOR.x,P.pos.z-HOME_DOOR.z)<1.8)return{label:'Go back outside',act:leaveHome};
   const s=nearSeat(HOME.seats);if(s)return{label:'Sit down',act:()=>sitOn(s)};
   if(!HOME.isMine())return null;
-  const k=nearPiece();if(k>=0){const n=FURN_ID[SAVE.hin.it[k][0]].n;return{label:`Move ${n} · Q put it away`,act:()=>pickUp(k),alt:()=>{SAVE.hin.it.splice(k,1);homeSave();refreshHome(true);toast(`📦 ${n} went back into storage`)}}}
+  const k=nearPiece();if(k>=0){const n=FURN_ID[homeData().it[k][0]].n;return{label:`Move ${n} · Q put it away`,act:()=>pickUp(k),alt:()=>{homeData().it.splice(k,1);homeSave();refreshHome(true);toast(`📦 ${n} went back into storage`)}}}
   return{label:'📖 Open the home catalog',act:()=>openPanel('homecat')}}}
 addEventListener('keydown',e=>{if(HOME.carry||state!=='play'||panelKind||paused||typing()||e.repeat||P.loc!=='home')return;if(e.code!=='KeyQ'&&e.code!=='KeyX')return;
   const it=curInteract;if(it&&it.alt){e.preventDefault();e.stopImmediatePropagation();it.alt()}},true);
@@ -4342,7 +4343,7 @@ addEventListener('keydown',e=>{if(HOME.carry||state!=='play'||panelKind||paused|
 // ---------- the home catalog
 let homeTab='furn';
 EXTRA_PANELS.homecat=c=>{if(!HOME.isMine()){c.innerHTML='<h2>Not your cottage</h2><div class="foot"><button class="btn" data-close>Close</button></div>';return}
-  const tabs=[['furn','🛋 Furniture'],['wall','🖼 Wallpaper'],['floor','🪵 Floors']],cfg=SAVE.hin;let body='';
+  const tabs=[['furn','🛋 Furniture'],['wall','🖼 Wallpaper'],['floor','🪵 Floors']],cfg=homeData();let body='';
   if(homeTab==='furn')body=FURN.map(f=>{const own=furOwned(f.id),out=furOut(f.id),left=own-out,th=thumbOf('fur:'+f.id,()=>buildPiece(f.id),{ry:-.6,pitch:.35});
     return `<div class="dcard ${out?'on':''}"><div class="dimg">${th?`<img src="${th}" alt="">`:''}</div><h3>${esc(f.n)}</h3><p>${esc(f.d)}</p><div class="drow"><span class="price">${own?`${out}/${own} placed`:fmt(f.p)+' pts'}</span>
       ${left>0?`<button class="btn small green" data-fplace="${f.id}">Place</button>`:''}<button class="btn small gold" data-fbuy="${f.id}" ${SAVE.points<f.p?'disabled':''}>${own?'+1':'Buy'} · ${fmt(f.p)}</button></div></div>`}).join('');
@@ -4357,18 +4358,18 @@ $('panelcard').addEventListener('click',e=>{const b=e.target.closest('button');i
   if('hcout' in d){openPanel('house');return}
   if(d.fbuy){const f=FURN_ID[d.fbuy];if(!f||SAVE.points<f.p)return;SAVE.points-=f.p;SAVE.fur[f.id]=furOwned(f.id)+1;saveT=1;save();sfx.coin&&sfx.coin();bigPop('🛋',f.n,'Press Place to put it in your cottage','#ffb36b');renderPanel();return}
   if(d.fplace){const id=d.fplace;if(furOwned(id)-furOut(id)<=0)return;closePanel();startCarry(id);return}
-  if(d.hbuy){const x=WALL_ID[d.hbuy]||FLOOR_ID[d.hbuy];if(!x||hOwned(x.id)||SAVE.points<x.p)return;SAVE.points-=x.p;SAVE.hown.push(x.id);saveT=1;if(WALL_ID[x.id])SAVE.hin.w=x.id;else SAVE.hin.f=x.id;homeSave();refreshHome(true);bigPop('🏡',x.n,'Your cottage got a makeover!','#ffb36b');renderPanel();return}
-  if(d.huse){const x=d.huse;if(!hOwned(x))return;if(WALL_ID[x])SAVE.hin.w=x;else SAVE.hin.f=x;homeSave();refreshHome(true);renderPanel();return}});
+  if(d.hbuy){const x=WALL_ID[d.hbuy]||FLOOR_ID[d.hbuy];if(!x||hOwned(x.id)||SAVE.points<x.p)return;SAVE.points-=x.p;SAVE.hown.push(x.id);saveT=1;if(WALL_ID[x.id])homeData().w=x.id;else homeData().f=x.id;homeSave();refreshHome(true);bigPop('🏡',x.n,'Your cottage got a makeover!','#ffb36b');renderPanel();return}
+  if(d.huse){const x=d.huse;if(!hOwned(x))return;if(WALL_ID[x])homeData().w=x;else homeData().f=x;homeSave();refreshHome(true);renderPanel();return}});
 
 // ---------- network: send the layout with the cottage, and which cottage you're inside
 {const b=cleanHS;cleanHS=h=>{const r=b(h);if(r&&h&&h.in)r.in=cleanIn(h.in);return r}}
-{const b=netExtra;netExtra=()=>{const o=b();if(o.hs)o.hs={...o.hs,in:SAVE.hin};if(P.loc==='home')o.hh=HOME.i;return o}}
+{const b=netExtra;netExtra=()=>{const o=b();if(o.hs)o.hs={...o.hs,in:homeData()};if(P.loc==='home')o.hh=HOME.i;return o}}
 {const base=world.onmsg;world.onmsg=m=>{base(m);if(m.k==='s'){const o=others.get(m.i);if(o)o.hh=m.l===3?num(m.hh,-1)|0:-1}}}
 {const b=updateOthers;updateOthers=dt=>{b(dt);for(const [id,o] of others){const vis=o.loc!=='home'||(P.loc==='home'&&o.hh===HOME.i);if(o.A.root.visible!==vis)o.A.root.visible=vis;const p=PETS.get(id);if(p&&p.obj.parent===homeS)p.obj.visible=vis}}}
 let homeT=0;
 {const b=updateExtras2;updateExtras2=dt=>{b(dt);if(HOME.carry&&P.loc!=='home')putAwayCarry(true);if(state!=='play'||P.loc!=='home')return;
   homeT-=dt;if(homeT<=0){homeT=.5;const h=HOUSES[HOME.i];if(!h||!h.owner){putAwayCarry(true);toast('🏡 The owner left, so you headed back outside');exitRoom();return}refreshHome(false)}
-  updateCarry(dt);for(const f of HOME.shell.A)f(T);for(const f of HOME.fanim||[])f(T)}}
+  if(!HOME.shell){refreshHome(true);if(!HOME.shell)return}updateCarry(dt);for(const f of HOME.shell.A)f(T);for(const f of HOME.fanim||[])f(T)}}
 Object.assign(window.__fx,{HOME,enterHome,FURN,WALLS,FLOORS,startCarry,placeCarry,pickUp,homeCfg,cleanIn,refreshHome});
 
 /* ================= Camera ================= */
