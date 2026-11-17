@@ -129,7 +129,7 @@ h2{margin:0 0 8px;font-size:28px;color:var(--red)}
     <li><b>Events</b> (turn them on or off in the lounge): kitchen fires (grab an extinguisher and hold Use on the flames), rush hour (a bus of customers), and power outages (flip the breaker in the stockroom).</li>
     <li>Throw ingredients and prepped toppings (R) across the kitchen: they land in the first tray, crate, pot or counter spot that takes them, and a teammate with empty hands can catch them.</li>
   </ul>
-  <p class="small" id="keys"><span class="k">WASD</span> move &nbsp; <span class="k">Mouse</span> look &nbsp; <span class="k">E</span> use (hold for jobs like chopping and washing) &nbsp; <span class="k">Click</span> swing &nbsp; <span class="k">Q</span> drop &nbsp; <span class="k">R</span> throw &nbsp; <span class="k">V</span> first person &nbsp; <span class="k">Space</span> jump &nbsp; <span class="k">Shift</span> run &nbsp; <span class="k">Enter</span> chat &nbsp; <span class="k">Esc</span> menu</p>
+  <p class="small" id="keys"><span class="k">WASD</span> move &nbsp; <span class="k">Mouse</span> look &nbsp; <span class="k">E</span> use (hold for jobs like chopping and washing; drops your item when nothing is nearby) &nbsp; <span class="k">Click</span> throw what you hold, or swing with empty hands &nbsp; <span class="k">Q</span> drop &nbsp; <span class="k">V</span> first person &nbsp; <span class="k">Space</span> jump &nbsp; <span class="k">Shift</span> run &nbsp; <span class="k">Enter</span> chat &nbsp; <span class="k">Esc</span> menu</p>
   <div style="text-align:right;margin-top:10px"><button class="btn" id="bHowX">Got it</button></div>
 </div></div>
 
@@ -488,7 +488,9 @@ for(const x of BARX2)SHOP.seats.push({x,z:BARZ,yaw:Math.PI,bx:x,by:1.03,bz:.4,sy
 {const t=14.6;SHOP.seats.push({x:t-1.1,z:5.6,yaw:Math.PI/2,bx:t-.33,by:.84,bz:5.6,sy:.5,bar:0});SHOP.seats.push({x:t+1.1,z:5.6,yaw:-Math.PI/2,bx:t+.33,by:.84,bz:5.6,sy:.5,bar:0});}
 const NSEAT=SHOP.seats.length;
 SHOP.seats.forEach((s,i)=>addSt('seat',i,s.x,s.bar?-.25:s.z,s.bar?1.5:1.9,2.3));
-function pathTo(seat,side){const s=SHOP.seats[seat];return[[side*22,WALKZ],[0,WALKZ],[0,7],[0,AISLE],[s.x,AISLE],[s.x,s.z]];}
+// side -1/1: walk in along the street; 2/3: step off the rush hour bus (front or back door). Leaving always walks off down the street.
+const BUSDOOR=[2.9,6.9];
+function pathTo(seat,side,out){const s=SHOP.seats[seat];if(side>=2&&out)side=1;return[...(side>=2?[[BUSDOOR[side-2],TRUCKZ-1.35],[BUSDOOR[side-2],WALKZ]]:[[side*22,WALKZ]]),[0,WALKZ],[0,7],[0,AISLE],[s.x,AISLE],[s.x,s.z]];}
 const ROBPATH=[[24,WALKZ],[1,WALKZ],[1,7],[1,AISLE],[REGP[0],AISLE],[REGP[0],REGP[1]+.2]];
 function pathLen(p){let l=0;for(let i=1;i<p.length;i++)l+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return l;}
 // point along a polyline at distance d (clamped); out = [x,z,yaw]
@@ -772,7 +774,7 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   C(10.1,0,-8.45,.33,.8,PAL.steelD);C(10.1,.8,-8.45,.35,.05,PAL.ink);addSolid(9.8,-8.75,10.4,-8.15,.85);
   C(11.2,0,-8.45,.3,.42,0xe0a53c);C(11.2,.38,-8.45,.27,.03,0x7fc4e8,D);M.add(GEO.cylLo,mat(11.45,.8,-8.75,.025,1.6,.025,0,0,.12),PAL.woodL);addSolid(10.9,-8.75,11.5,-8.15,.45);
   // ----- rice bowl wing: rice cookers, two woks under a hood, the donburi bar and the drinks counter -----
-  const plate=(txt,col,bg,w,h,x,y,z,ry=0,fs=40)=>{const t=canvasTex(256,64,(c,W,H)=>{c.fillStyle=bg;c.fillRect(0,0,W,H);c.fillStyle=col;c.font='900 '+fs+'px ui-rounded,system-ui,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(txt,W/2,H/2+2);});const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t}));p.position.set(x,y,z);p.rotation.y=ry;scene.add(p);return p;};
+  const plate=(txt,col,bg,w,h,x,y,z,ry=0,fs=40)=>{const t=canvasTex(512,128,(c,W,H)=>{c.fillStyle=bg;c.fillRect(0,0,W,H);c.fillStyle=col;let f=fs*2;c.font='900 '+f+'px ui-rounded,system-ui,sans-serif';const mw=W*Math.min(.92,(w/h)*H/W*.92);while(f>14&&c.measureText(txt).width>Math.min(W-24,mw)){f-=2;c.font='900 '+f+'px ui-rounded,system-ui,sans-serif';}c.textAlign='center';c.textBaseline='middle';c.fillText(txt,W/2,H/2+2);});const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t}));p.position.set(x,y,z);p.rotation.y=ry;scene.add(p);return p;};
   counter(12.4,-9,17.05,-8.1);B(12.4,.96,-9,17.05,1.6,-8.94,PAL.tile,.02,D);for(let x=12.6;x<17;x+=.5)B(x,.97,-8.95,x+.02,1.58,-8.93,0xc2d2cc,.003,D);
   counter(17.05,-9,18,-1.65);B(17.94,.96,-9,18,1.6,-1.65,PAL.tile,.02,D);for(let z=-8.8;z<-1.7;z+=.5)B(17.93,.97,z,17.95,1.58,z+.02,0xc2d2cc,.003,D);
   // rice cookers: white body, red band, a control panel facing the cook
@@ -804,6 +806,13 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   {const[x,z]=FUSE;B(x-.14,1.15,z-.32,x+.04,1.95,z+.32,0x8d8f98,.03);B(x-.16,1.2,z-.27,x-.13,1.9,z+.27,0xa8abb3,.02,D);for(let k=0;k<4;k++)B(x-.17,1.32+k*.12,z-.2,x-.15,1.38+k*.12,z+.05,PAL.ink,.01,D);
     const t=canvasTex(256,96,(c,W,H)=>{for(let k=-2;k<12;k++){c.fillStyle=k%2?'#2b2430':'#f2c14e';c.beginPath();c.moveTo(k*24,0);c.lineTo(k*24+24,0);c.lineTo(k*24-12,H);c.lineTo(k*24-36,H);c.fill();}c.fillStyle='#2b2430';c.fillRect(20,20,W-40,H-40);c.fillStyle='#f2c14e';c.font='900 38px ui-rounded,system-ui,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('BREAKER',W/2,H/2+2);});
     const p=new THREE.Mesh(new THREE.PlaneGeometry(.9,.34),new THREE.MeshBasicMaterial({map:t}));p.position.set(x-.17,2.2,z);p.rotation.y=-X90;scene.add(p);}
+  // ----- section signs: a steel gantry over each island with the same sign on the front and the back -----
+  const gantry=(x0,x1,z0,txt,bg)=>{const z=z0-.43,w=Math.min(2.4,x1-x0-.5),cx=(x0+x1)/2;for(const x of[x0+.12,x1-.12])B(x-.025,.96,z-.03,x+.025,2.42,z+.03,PAL.steel,.01,D);B(x0+.1,2.38,z-.04,x1-.1,2.44,z+.04,PAL.steelD,.01,D);
+    B(cx-w/2-.04,2.02,z-.012,cx+w/2+.04,2.4,z+.012,bg===undefined?0x2b2430:new THREE.Color(bg).getHex(),.015,D);for(const ry of[0,Math.PI])plate(txt,'#fff3dc',bg,w,.34,cx,2.21,z+(ry?-.016:.016),ry,txt.length>12?32:38);};
+  gantry(-7.3,-2.25,ISLZ,'BROTH BASES','#c8402e');gantry(1.5,4.85,ISLZ,'NOODLES & EGGS','#c98a12');gantry(6.1,9.7,ISLZ,'PREP & CHOP','#3f8f4a');
+  gantry(-3.15,2.85,TOPZ,'TOPPINGS','#3a64b8');gantry(2.9,5.45,TOPZ,'PLATING','#55505e');gantry(12.0,16.0,ISLZ,'RICE BOWL MAINS','#7a3f99');
+  for(const[t,x,w]of[['SINK',-7.75,1.0],['CLEAN BOWLS',-6.15,1.2],['STOCK POTS',-3.0,1.5],['PLATING',1.95,1.1]])plate(t,'#fff3dc','#2b2430',w,.26,x,1.8,-8.93,0,t.length>8?32:40);
+  plate('DRINKS & BOBA','#fff3dc','#1f8f84',1.9,.34,17.93,2.55,-4.3,-X90,32);
   // ----- islands: crates sit beside the station that uses them -----
   for(const q of ISL)counter(q[0],q[2]-.5,q[1],q[2]+.5);
   for(const x of BOARDX){B(x-.4,.96,ISLZ-.29,x+.4,1.0,ISLZ+.29,PAL.woodL,.02);B(x+.26,1.0,ISLZ-.2,x+.32,1.02,ISLZ+.15,PAL.steel,.008,D);B(x+.26,1.0,ISLZ+.15,x+.32,1.03,ISLZ+.26,PAL.ink,.01,D);}
@@ -917,7 +926,7 @@ function buildBus(){const g=new THREE.Group(),m=new Merger(),gl=new Merger(),A=(
   A(rboxC(9,2.5,2.4,.3,4,1),mat(0,1.85,0),0x3fae8f);A(rboxC(9.02,.5,2.42,.1,4,1),mat(0,.85,0),0x2b2430);A(rboxC(8.6,.18,2.2,.08,4,1),mat(0,3.15,0),0xfbf6ea);A(rboxC(9.04,.12,2.44,.04,4,1),mat(0,1.45,0),0xf2c14e);
   for(let k=0;k<6;k++)for(const s of[-1,1])gl.add(rboxC(1.15,.75,.04,.06,4,1),mat(-3.6+k*1.35,2.3,s*1.21),k%2?0xffe7a8:0xffd98a,0);gl.add(rboxC(.04,1.2,2.1,.1,4,1),mat(4.51,2.1,0),0x9fd8ff,0);
   for(const s of[-1,1]){gl.add(GEO.sphLo,mat(4.52,1.0,s*.85,.02,.13,.15),0xfff3b0,0);gl.add(GEO.sphLo,mat(-4.52,1.1,s*.9,.02,.1,.14),0xff5040,0);}
-  A(rboxC(.9,1.9,.05,.05,4,1),mat(3.4,1.6,1.21),0x2b2430);A(rboxC(.9,1.9,.05,.05,4,1),mat(-.6,1.6,1.21),0x2b2430);
+  for(const x of[3.4,-.6]){A(rboxC(.9,1.95,.05,.05,4,1),mat(x,1.55,-1.21),0x2b2430);gl.add(rboxC(.36,.9,.02,.04,4,1),mat(x-.22,2.0,-1.235),0x9fd8ff,0);gl.add(rboxC(.36,.9,.02,.04,4,1),mat(x+.22,2.0,-1.235),0x9fd8ff,0);A(rboxC(.95,.12,.4,.04,4,1),mat(x,.32,-1.3),0x55555f);}
   for(const x of[-3,3.1])for(const s of[-1,1]){A(GEO.cyl,mat(x,.5,s*1.1,.5,.32,.5,X90),0x26262c);A(GEO.cyl,mat(x,.5,s*1.27,.25,.03,.25,X90),0xc9ced8);}
   g.add(m.mesh(CLAY,true,false),new THREE.Mesh(gl.build(),GLOW));
   const dst=canvasTex(512,96,(x,w,h)=>{x.fillStyle='#1c1c22';x.fillRect(0,0,w,h);x.fillStyle='#ffb340';x.font='900 58px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('SLURP SHOP',w/2,h/2+3);});
@@ -998,17 +1007,18 @@ function openShop(){if(!G||G.open)return;const now=netTime(),c=G.cfg;G.open=1;G.
 // ---------- events: kitchen fires, rush hour, power outages ----------
 const FIREABLE=[['pot',0],['pot',1],['pot',2],['grill',0],['grill',1],['grill',2],['wok',0],['wok',1]];
 const fireAt=(k,i)=>G.fire.findIndex(f=>f[0]===k&&f[1]===i);
+const fuseNeed=()=>Math.max(1,Math.ceil((G.np||1)/2)),fuseOn=()=>{const hs=(G.out&&G.out.h)||{},t=netTime();let n=0;for(const k in hs)if(t-hs[k]<=2.6)n++;return n;};
 const powerOut=()=>!!G&&!!G.out&&netTime()<G.out.u;
 const stName=(k,i)=>k==='pot'?'stock pot '+(i+1):k==='grill'?'the grill':'the wok';
 function ignite(k,i){if(fireAt(k,i)>=0||G.fire.length>=5)return;G.fire.push([k,i,r2(netTime())]);if(k==='pot')G.pots[i]={s:0,b:0,t0:0,n:0};else if(k==='grill')G.grill[i].s=0;else G.wok[i].s=0;dirtyG=true;evSay('fire',stName(k,i));}
 // the director announces an event: big alert on every screen + a feed line
-function evSay(k,s=''){evAlert(k,s);if(Net.room)Net.send({t:'ev',k,s});const T={fire:'<b style="color:#e0503c">FIRE at '+s+'!</b> Grab a fire extinguisher (on the wall by the sink, or next to the rice cookers) and hold the use key on it.',fireout:'The fire is out. Phew!',fireout1:'One fire is out. Keep spraying!',rush:'<b>RUSH HOUR!</b> A bus full of hungry customers just pulled up.',rushend:'Rush hour is over. Nice hustle!',out:'<b>POWER OUTAGE!</b> Flip the breaker in the stockroom, or wait it out.',on:'The power is back on!'}[k];if(T)feed(T);}
+function evSay(k,s=''){evAlert(k,s);if(Net.room)Net.send({t:'ev',k,s});const T={fire:'<b style="color:#e0503c">FIRE at '+s+'!</b> Grab a fire extinguisher (on the wall by the sink, or next to the rice cookers) and hold the use key on it.',fireout:'The fire is out. Phew!',fireout1:'One fire is out. Keep spraying!',rush:'<b>RUSH HOUR!</b> A bus full of hungry customers just pulled up.',rushend:'Rush hour is over. Nice hustle!',out:'<b>POWER OUTAGE!</b> '+(fuseNeed()>1?'At least '+fuseNeed()+' chefs have to hold the breaker in the stockroom together':'Flip the breaker in the stockroom')+', or wait it out.',on:'The power is back on!'}[k];if(T)feed(T);}
 function evTick(now){const ev=G.cfg.ev;
   if(ev&1){for(let i=0;i<G.grill.length;i++){const g=G.grill[i];if(g.s&&now-g.t0>GRILLT()+BURNT+6)ignite('grill',i);}for(let i=0;i<G.wok.length;i++){const g=G.wok[i];if(g.s&&now-g.t0>WOKT()+BURNT+6)ignite('wok',i);}
     if(now>G.nextF){const c=FIREABLE.filter(([k,i])=>fireAt(k,i)<0&&(k==='pot'?G.pots[i].s>=2:k==='grill'?G.grill[i].s:G.wok[i].s));if(c.length){const[k,i]=c[(Math.random()*c.length)|0];ignite(k,i);G.nextF=now+110+Math.random()*80;}else G.nextF=now+20;}
     for(const f of G.fire.slice())if(now-f[2]>16){f[2]=r2(now);const nb=FIREABLE.filter(([k,i])=>k===f[0]&&Math.abs(i-f[1])===1&&fireAt(k,i)<0);if(nb.length){const[k,i]=nb[(Math.random()*nb.length)|0];ignite(k,i);}}
     if(G.fire.length&&now>G.fireT){G.fireT=now+9;rate(2);}}
-  if(ev&2&&now>G.nextRu&&!(now<G.rush.u)){G.rush={t0:r2(now),u:r2(now+45)};G.nextRu=now+45+150+Math.random()*90;G.nextC=now+4;dirtyG=true;evSay('rush');}
+  if(ev&2&&now>G.nextRu&&!(now<G.rush.u)){G.rush={t0:r2(now),u:r2(now+45)};G.nextRu=now+45+150+Math.random()*90;G.nextC=now+5.6;dirtyG=true;evSay('rush');}
   if(G.rush.t0&&!G.rush.e&&now>=G.rush.u){G.rush.e=1;dirtyG=true;evSay('rushend');}
   if(ev&4&&now>G.nextO&&!powerOut()){G.out={t0:r2(now),u:r2(now+35)};G.nextO=now+35+170+Math.random()*90;dirtyG=true;evSay('out');}
   if(G.out.t0&&!G.out.e&&now>=G.out.u){G.out.e=1;dirtyG=true;evSay('on');}}
@@ -1089,7 +1099,11 @@ function tryAct(s,h,go,pid){const now=netTime(),is=k=>!!h&&h[0]===k,bowl=is('bow
       if(is('don')){if(h[2]>=0)return R('This bowl already has '+DON[h[2]].name.toLowerCase(),{off:1});if(G.dbins[s.i]<=0)return R('Out of '+D.name.toLowerCase()+' topping: cook it in the wok',{off:1});if(go)G.dbins[s.i]--;return R('Top the rice: '+D.name,{h:['don',1,s.i,h[3],0],fx:'pop'});}
       if(bowl&&!h[4])return R('Scoop rice from the rice cooker first',{off:1});return R(D.name+' tray: '+G.dbins[s.i],{off:1});}
     case'ext':{if(!h)return R('Grab the fire extinguisher',{h:['ext'],fx:'pop'});if(is('ext'))return R('Hang the extinguisher back up',{h:null,fx:'drop'});return R('Fire extinguisher',{off:1});}
-    case'fuse':{if(!powerOut())return R('Breaker box. Power is on',{off:1});if(h)return R('Empty your hands to flip the breaker',{off:1});if(go){G.out.u=now;}return R('Flip the breaker to bring the power back',{hold:1.8,work:1,h:null,fx:'thud'});}
+    case'fuse':{if(!powerOut())return R('Breaker box. Power is on',{off:1});if(h)return R('Empty your hands to flip the breaker',{off:1});
+      // at least half the chefs have to hold the breaker at the same time
+      const need=fuseNeed(),hs=G.out.h||(G.out.h={});for(const k in hs)if(now-hs[k]>2.6)delete hs[k];const me_=String(pid??'me'),cnt=Object.keys(hs).length+(hs[me_]?0:1);
+      if(go){hs[me_]=r2(now);if(Object.keys(hs).length>=need){G.out.u=now;G.out.h={};}}
+      return R(need>1?'Hold the breaker together ('+Math.min(cnt,need)+'/'+need+' chefs)':'Flip the breaker to bring the power back',{hold:need>1?1.1:1.8,work:1,h:null,fx:'thud'});}
     case'pan':if(!h)return R('Grab a frying pan',{h:['pan'],fx:'pop'});if(is('pan'))return R('Hang it up',{h:null,fx:'drop'});return R('Frying pans',{off:1});
     case'mop':if(!h)return R('Take the mop',{h:['mop'],fx:'pop'});if(is('mop'))return R('Put the mop away',{h:null,fx:'drop'});return R('Mop bucket',{off:1});
     case'pc':return R('Use the computer',{ui:1});
@@ -1139,7 +1153,7 @@ function genOrder(ty){const T=CUST[ty],c=G.cfg,pick=(mask,len)=>{const a=[];for(
   return{b,n:nn,m:dk>=0?m&3:m,tea:dr,dk};}
 function spawnCust(np,rush){const free=[];for(let i=0;i<NSEAT;i++)if(G.seats[i]===0&&!G.cust.some(c=>c.seat===i&&c.st<4))free.push(i);const act=G.cust.filter(c=>c.st<4).length;if(!free.length||act>=(rush?NSEAT:Math.min(NSEAT,2+G.lvl+np)))return false;
   const ok=CUST.map((c,i)=>G.lvl>=c.lvl?i:-1).filter(i=>i>=0);let tot=0;for(const i of ok)tot+=CUST[i].w;let r=Math.random()*tot,ty=ok[0];for(const i of ok){r-=CUST[i].w;if(r<=0){ty=i;break;}}
-  const bar=free.filter(i=>SHOP.seats[i].bar),side=Math.random()<.5?-1:1,o=genOrder(ty),now=netTime();
+  const bar=free.filter(i=>SHOP.seats[i].bar),now=netTime(),side=rush&&G.rush.t0&&now>G.rush.t0+5.2&&now<G.rush.u?2+(Math.random()<.5?1:0):Math.random()<.5?-1:1,o=genOrder(ty);
   const pick=bar.length&&Math.random()<.75?bar[(Math.random()*bar.length)|0]:free[(Math.random()*free.length)|0];
   G.cust.push({id:G.nid++,ty,seat:pick,st:0,t0:now,d:r2(pathLen(pathTo(pick,side))/CUST[ty].spd),b:o.b,n:o.n,m:o.m,tea:o.tea,dk:o.dk,e:0,why:'',need:CUST[ty].id==='big'?2:1,gotT:0,q:2,side,left:1,pay:0});if(Net.room)Net.send({t:'t',s:'',k:'door'});SFX.door();return true;}
 function dirTick(){const now=netTime(),np=ents.size+1;
@@ -1154,11 +1168,11 @@ function dirTick(){const now=netTime(),np=ents.size+1;
   if(now>G.nextC){const iv=rush?2.4:Math.max(7,21-G.lvl*2)*DIFF.f[G.cfg.f].k*crewK(np).iv/clamp(stars()/4.2,.75,1.15);G.nextC=now+(spawnCust(np,rush)?iv*(.7+Math.random()*.6):3);}
   for(let i=G.cust.length-1;i>=0;i--){const c=G.cust[i],T=CUST[c.ty],el=now-c.t0,n=c.seat+1;
     if(c.st===0){if(el>=c.d){c.st=1;c.t0=now;}}
-    else if(c.st===1||c.st===2){if(el>(c.st===1?45*(G.up&16?1.35:1)*DIFF.p[G.cfg.p].k:patience(c))){c.st=5;c.t0=now;c.d=r2(pathLen(pathTo(c.seat,c.side))/T.spd);rate(1,T.id==='crit'?3:1);say('Seat '+n+' gave up and left angry','angry');}}
+    else if(c.st===1||c.st===2){if(el>(c.st===1?45*(G.up&16?1.35:1)*DIFF.p[G.cfg.p].k:patience(c))){c.st=5;c.t0=now;c.d=r2(pathLen(pathTo(c.seat,c.side,1))/T.spd);rate(1,T.id==='crit'?3:1);say('Seat '+n+' gave up and left angry','angry');}}
     else if(c.st===3){if(el>(T.id==='big'?12:9)){const crit=T.id==='crit',bad=c.e>=2||(crit&&c.e>=1);let price=(c.dk>=0?DON[c.dk].price:BROTH[c.b].price+NOODLE[c.n].extra)+3*pop5(c.m)+(c.tea?DRINK[c.tea-1].price:0);if(T.id==='big')price*=2;price=Math.round(price*(c.e===0?1:bad?.3:.7));const tip=c.e===0?Math.round(price*.5*c.left*T.tip*(G.up&32?1.4:1)):0;
         G.seats[c.seat]=2;G.served++;rate(c.e===0?(c.left>.4?5:4):bad?1:3,crit?3:1);c.t0=now;const why=c.why?' ('+esc(c.why)+')':'';
-        if(T.id==='dash'){c.st=6;c.pay=price;c.d=r2(pathLen(pathTo(c.seat,c.side))/5.4);say('Seat '+n+' is running off without paying! Smack them!','siren');}
-        else{c.st=4;c.d=r2(pathLen(pathTo(c.seat,c.side))/T.spd);G.money+=price+tip;
+        if(T.id==='dash'){c.st=6;c.pay=price;c.d=r2(pathLen(pathTo(c.seat,c.side,1))/5.4);say('Seat '+n+' is running off without paying! Smack them!','siren');}
+        else{c.st=4;c.d=r2(pathLen(pathTo(c.seat,c.side,1))/T.spd);G.money+=price+tip;
           if(c.e===0)say(T.name+' at seat '+n+' paid <b style="color:#3fa565">+$'+price+'</b>'+(tip?' and tipped <b style="color:#3fa565">$'+tip+'</b>':''),'cash');
           else if(bad)say('<b style="color:#c8402e">Seat '+n+' hated it</b>'+why+'. Only paid <b>$'+price+'</b>','angry');
           else say('Seat '+n+' was not happy'+why+'. Paid <b>$'+price+'</b>, no tip','cash');}
@@ -1219,7 +1233,7 @@ function initMe(){me=new Ent(Net.id);Object.assign(me,{rad:.34,gr:true,landV:0,s
 function respawn(){me.p.set(-3+Math.random()*4,0,-2+Math.random());me.v.set(0,0,0);me.hand=null;me.stumT=0;me.yaw=Math.PI;camYaw=Math.PI;camPitch=.5;}
 function stumble(t,vx,vy,vz){me.stumT=Math.max(me.stumT,t);me.v.x+=vx;me.v.y=Math.max(me.v.y,vy);me.v.z+=vz;me.gr=false;}
 const _pp=[0,0,0];
-function custPos(c,now,out){const T=CUST[c.ty],p=pathTo(c.seat,c.side),L=pathLen(p),el=now-c.t0;
+function custPos(c,now,out){const T=CUST[c.ty],p=pathTo(c.seat,c.side,c.st>=4),L=pathLen(p),el=now-c.t0;
   if(c.st===0)pathAt(p,Math.min(L,el*T.spd),out);else if(c.st<=3){const s=SHOP.seats[c.seat];out[0]=s.x;out[1]=s.z;out[2]=s.yaw;}else{pathAt(p,Math.max(0,L-el*(c.st===6?5.4:T.spd)),out);out[2]+=Math.PI;}return out;}
 function robPos(now,out){const r=G.rob;pathAt(ROBPATH,Math.max(0,robDist(now)),out);if(r.st>=3)out[2]+=Math.PI;else if(r.st===2)out[2]=Math.PI;return out;}
 function findTarget(){const h=me.hand,fx=Math.sin(camYaw),fz=Math.cos(camYaw);let best=null,bs=1e9;
@@ -1239,7 +1253,7 @@ function updMe(dt){const b=me,now=performance.now()/1000,nt=netTime();b.hitCD-=d
   if(b.gr&&!stum&&b.slipCD<=0&&b.p.y<.1){const s2=b.v.x*b.v.x+b.v.z*b.v.z;if(s2>9)for(const p of G.pud)if((p[1]-b.p.x)**2+(p[2]-b.p.z)**2<.42){b.slipCD=2.5;SFX.slip();const k=1.25;stumble(1.15,b.v.x*(k-1),4.5,b.v.z*(k-1));act({k:'slip',x:r2(b.p.x+b.v.x*.25),z:r2(b.p.z+b.v.z*.25)});banner('Whoops!','Mop that puddle up',1.6);break;}}
   // use / hold-to-work
   target=busy?null:findTarget();const tr=target&&target.r;b.work=0;
-  if(IN.use){IN.use=false;if(tr&&!tr.off){if(tr.ui)openPC();else if(tr.hold){holdKey=target.key;holdT=.0001;}else act(target.a);}else if(tr&&tr.off)SFX.nope(.5);}
+  if(IN.use){IN.use=false;if(tr&&!tr.off){if(tr.ui)openPC();else if(tr.hold){holdKey=target.key;holdT=.0001;}else act(target.a);}else if(b.hand&&!busy)IN.drop=true;else if(tr&&tr.off)SFX.nope(.5);}
   if(holdT>0){if(IN.useHeld&&target&&target.key===holdKey&&tr.hold&&!tr.off){holdT+=dt;b.work=1;b.yaw+=wrapPi(Math.atan2(target.x-b.p.x,target.z-b.p.z)-b.yaw)*damp(12,dt);workS-=dt;if(workS<=0){workS=.26;if(tr.work)(target.a.k==='board'?SFX.chop:SFX.wash)();}
       if(holdT>=tr.hold){act(target.a);holdT=.0001;target=findTarget();if(!target||target.key!==holdKey||!target.r.hold||target.r.off)holdT=0;}}else holdT=0;}
   if(IN.drop){IN.drop=false;if(b.hand&&!busy)act({k:'drop',x:r2(b.p.x+Math.sin(b.yaw)*.75),z:r2(b.p.z+Math.cos(b.yaw)*.75)});}
@@ -1283,7 +1297,7 @@ function syncSlow(){const now=netTime(),L=G.lvl;
   {const v=VIS.ptray,n=G.pearls;for(let k=0;k<6;k++)v.ps[k].visible=k<Math.ceil(n/5);setLabel(v.lab,'Boba pearls '+n);}
   const po=powerOut();setLabel(VIS.drinkLab[0],po?'No power':DRINK[1].name);setLabel(VIS.drinkLab[1],po?'No power':DRINK[2].name);setLabel(VIS.drinkLab[2],DRINK[0].name);
   for(const l of VIS.extLab)alertLab(l,G.fire.length?'GRAB ME!':'Extinguisher',G.fire.length?['#d2263c','#fff']:null);
-  VIS.fuse.lv.rotation.z=po?.9:0;VIS.fuse.lv.position.y=po?1.42:1.55;alertLab(VIS.fuse.lab,po?'FLIP THE BREAKER':'Breaker',po?['#f2c14e','#2b2430']:null);
+  VIS.fuse.lv.rotation.z=po?.9:0;VIS.fuse.lv.position.y=po?1.42:1.55;alertLab(VIS.fuse.lab,po?(fuseNeed()>1?'HOLD TOGETHER '+Math.min(fuseOn(),fuseNeed())+'/'+fuseNeed():'FLIP THE BREAKER'):'Breaker',po?['#f2c14e','#2b2430']:null);
   for(const f of VIS.fire)f.g.visible=fireAt(f.k,f.i)>=0;
   // floor items
   const seen=new Set();for(const f of G.floor){seen.add(f[0]);let m=VIS.floor.get(f[0]);if(!m){m=newItemMesh();scene.add(m);VIS.floor.set(f[0],m);m.rotation.y=f[0]*1.3;}setItemMesh(m,f[3]);m.position.set(f[1],f[3][0]==='mop'?.05:groundAt(f[1],f[2],.1,3),f[2]);if(f[3][0]==='mop')m.rotation.z=1.45;}
@@ -1410,7 +1424,7 @@ addEventListener('keydown',e=>{if(mode!=='game')return;if(chatOpen){if(e.code===
 addEventListener('keyup',e=>{if(KEYS[e.code]){down.delete(e.code);axes();}else if(e.code==='ShiftLeft'||e.code==='ShiftRight')IN.run=false;else if(e.code==='KeyE')IN.useHeld=false;});
 addEventListener('blur',()=>{down.clear();axes();IN.run=false;IN.useHeld=false;});
 function closeChat(){chatOpen=false;$('chat').classList.add('hide');$('chat').blur();}
-renderer.domElement.addEventListener('mousedown',e=>{if(mode!=='game'||paused||TOUCH||pcOpen)return;audioInit();if(!document.pointerLockElement&&!window.__nopause){lock();return;}if(e.button===0)IN.hit=true;else if(e.button===2){IN.use=true;IN.useHeld=true;}});
+renderer.domElement.addEventListener('mousedown',e=>{if(mode!=='game'||paused||TOUCH||pcOpen)return;audioInit();if(!document.pointerLockElement&&!window.__nopause){lock();return;}if(e.button===0){if(me.hand&&THROWABLE(me.hand[0]))IN.thr=true;else IN.hit=true;}else if(e.button===2){IN.use=true;IN.useHeld=true;}});
 addEventListener('mouseup',e=>{if(e.button===2)IN.useHeld=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(document.pointerLockElement!==renderer.domElement||paused)return;const k=S.sens*.00024;camYaw-=e.movementX*k;camPitch=clamp(camPitch+e.movementY*k,S.fp?-.45:-.1,1.25);});
@@ -1450,7 +1464,7 @@ function matchSeat(h){if(!h)return-1;const k=h[0];if(k==='bowl'&&(h[4]||h[1]<0||
   for(const c of G.cust){if(c.st!==2||c.t0>=bt)continue;const ok=k==='cup'?c.tea&&!c.gotT&&c.tea-1===h[1]:c.need>0&&(k==='don'?c.dk===h[2]&&c.m===h[3]:c.dk<0&&c.b===h[1]&&c.n===nType(h[2])&&c.m===h[3]);if(ok){bt=c.t0;best=c.seat;}}return best;}
 function hint(){const h=me.hand,now=netTime();
   if(G.fire.length)return h&&h[0]==='ext'?'Hold Use on the flames to put the fire out':'FIRE! Grab an extinguisher (sink wall or next to the rice cookers)';if(h&&h[0]==='ext')return'Hang the extinguisher back up, or just drop it';
-  if(powerOut())return'Power is out: flip the breaker in the stockroom. The soda fountain is dead until then';
+  if(powerOut())return fuseNeed()>1?'Power is out: '+fuseNeed()+' chefs must hold the breaker in the stockroom at the same time':'Power is out: flip the breaker in the stockroom. The soda fountain is dead until then';
   if(h&&h[0]==='dtop')return'Put it on the '+DON[h[1]].name.toLowerCase()+' tray at the rice bowl bar';if(h&&h[0]==='pearls')return'Tip the pearls into the pearl tray on the drinks counter';
   if(h&&h[0]==='cup'){const ms=matchSeat(h);return ms>=0?'Drink up! Serve seat '+(ms+1):h[1]===2?'Add boba pearls at the pearl tray to make boba milk tea':'Nobody is waiting on this drink right now';}
   if(h&&h[0]==='don'){const ms=matchSeat(h);if(ms>=0)return'Rice bowl up! Serve seat '+(ms+1);return h[2]<0?'Top the rice at the rice bowl bar':'Add egg or green onion if the ticket wants it, then serve';}
@@ -1478,7 +1492,7 @@ function hud(dt){if(bannerT>0){bannerT-=dt;if(bannerT<=0)$('banner').style.opaci
   // prompt
   const tr=target&&target.r,pe=$('prompt');show('prompt',!!tr&&!pcOpen&&!paused);
   if(tr){const key=tr.off?'':TOUCH?(tr.hold?'Hold <b>Use</b>: ':'<b>Use</b>: '):(tr.hold?'Hold <span class="k">E</span> ':'<span class="k">E</span> ');setTxt('ptxt',key+esc(tr.t),true);pe.classList.toggle('off',!!tr.off);}
-  if(h){const ms2=matchSeat(h);setTxt('hand',(h[0]==='bowl'?bowlIcons(h):h[0]==='don'?donIcons(h):[itemIcon(h)]).map(img).join('')+' '+esc(h[0]==='cash'?'$'+h[1]+' cash':itemName(h))+(ms2>=0?' · ready for seat '+(ms2+1):'')+(THROWABLE(h[0])?'<span style="opacity:.6"> · '+(TOUCH?'Throw':'R')+' to throw</span>':''),true);$('hand').classList.toggle('match',ms2>=0);}show('hand',!!h);
+  if(h){const ms2=matchSeat(h);setTxt('hand',(h[0]==='bowl'?bowlIcons(h):h[0]==='don'?donIcons(h):[itemIcon(h)]).map(img).join('')+' '+esc(h[0]==='cash'?'$'+h[1]+' cash':itemName(h))+(ms2>=0?' · ready for seat '+(ms2+1):'')+(THROWABLE(h[0])?'<span style="opacity:.6"> · '+(TOUCH?'Throw':'Click')+' to throw</span>':''),true);$('hand').classList.toggle('match',ms2>=0);}show('hand',!!h);
   drawPC();
   if(S.fps)setTxt('fps',Math.round(fpsAvg)+' fps'+(pixScale<1?' · '+Math.round(pixScale*100)+'%':'')+(shadowsOn?'':' · low'));}
 // ----- loop -----
@@ -1510,13 +1524,13 @@ const EVA={open:['SHOP OPEN!','Customers are on the way','#3f9b5a','fanfare','bo
 const EDGE={fireout1:'77,120,201',fire:'220,40,30',rush:'240,130,30',out:'20,20,60',on:'242,193,78',fireout:'77,120,201',rushend:'95,174,98',open:'95,174,98'};
 let evQ=[],evBusyT=0;
 function evAlert(k,s=''){const E=EVA[k];if(!E||mode!=='game')return;evQ.push([k,s]);if(evQ.length>3)evQ.shift();if(performance.now()>evBusyT)evNext();}
-function evNext(){const q=evQ.shift();if(!q)return;const[k,s]=q,E=EVA[k],a=$('evA');a.style.setProperty('--evc',E[2]);$('evIc').innerHTML=img(E[4]);setTxt('evT',E[0]);setTxt('evS',k==='fire'?'At '+s+'. Grab an extinguisher!':E[1]);
+function evNext(){const q=evQ.shift();if(!q)return;const[k,s]=q,E=EVA[k],a=$('evA');a.style.setProperty('--evc',E[2]);$('evIc').innerHTML=img(E[4]);setTxt('evT',E[0]);setTxt('evS',k==='fire'?'At '+s+'. Grab an extinguisher!':k==='out'&&fuseNeed()>1?fuseNeed()+' chefs must hold the breaker in the stockroom together':E[1]);
   a.classList.remove('go');void a.offsetWidth;a.classList.add('go');evBusyT=performance.now()+(k==='fire'||k==='rush'||k==='out'?2600:1800);if(SFX[E[3]])SFX[E[3]]();
   const ed=$('evEdge');ed.style.setProperty('--ec',EDGE[k]||'220,40,30');if(k!=='fire'){ed.classList.remove('flash');void ed.offsetWidth;ed.classList.add('flash');}if(k==='fire'||k==='out')shake=Math.max(shake,.35);}
 let evChipSig='';
 function evTickHud(dt){if(evQ.length&&performance.now()>evBusyT)evNext();if(mode!=='game'||!G)return;const now=netTime(),nf=G.fire.length,ru=G.rush.t0&&!G.rush.e&&now<G.rush.u,po=powerOut();
   const ed=$('evEdge');if(nf){ed.style.setProperty('--ec',EDGE.fire);ed.classList.remove('flash');ed.classList.add('on');}else ed.classList.remove('on');
-  let h='';if(nf)h+='<div class="evc fire">'+img('fire')+(nf>1?nf+' FIRES':'FIRE')+'!</div>';if(ru)h+='<div class="evc rush">'+img('bus')+'RUSH '+Math.ceil(G.rush.u-now)+'s</div>';if(po)h+='<div class="evc out">'+img('bolt')+'NO POWER '+Math.ceil(G.out.u-now)+'s</div>';
+  let h='';if(nf)h+='<div class="evc fire">'+img('fire')+(nf>1?nf+' FIRES':'FIRE')+'!</div>';if(ru)h+='<div class="evc rush">'+img('bus')+'RUSH '+Math.ceil(G.rush.u-now)+'s</div>';if(po){const nd=fuseNeed();h+='<div class="evc out">'+img('bolt')+'NO POWER '+Math.ceil(G.out.u-now)+'s'+(nd>1?' · breaker '+Math.min(fuseOn(),nd)+'/'+nd:'')+'</div>';}
   $('c').classList.toggle('out',!!po);
   if(h!==evChipSig){evChipSig=h;$('evChips').innerHTML=h;}}
 </script>
