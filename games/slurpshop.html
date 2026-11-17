@@ -8,7 +8,7 @@
 :root{--ink:#2b2430;--paper:#fff3dc;--red:#c8402e;--redD:#8f2a20;--wood:#b07a4a;--gold:#f2c14e;--green:#3fa565;--sh:rgba(20,12,10,.45)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#141a33;color:var(--ink);font-family:ui-rounded,"SF Pro Rounded","Arial Rounded MT Bold","Nunito","Trebuchet MS",system-ui,sans-serif;font-weight:800;user-select:none;-webkit-user-select:none;touch-action:none}
-#c{position:fixed;inset:0}#c canvas{display:block;width:100%;height:100%}
+#c{position:fixed;inset:0}#c canvas{display:block;width:100%;height:100%}#c.fx canvas{filter:saturate(1.14) contrast(1.06)}#c::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 58%,rgba(10,8,25,.32) 100%)}
 .hide{display:none!important}
 .card{background:var(--paper);border-radius:20px;border:3px solid var(--ink);box-shadow:0 7px 0 var(--ink),0 16px 26px var(--sh)}
 .chip{background:var(--paper);border-radius:14px;border:2.5px solid var(--ink);box-shadow:0 3px 0 var(--ink)}
@@ -154,7 +154,7 @@ h2{margin:0 0 8px;font-size:28px;color:var(--red)}
 // Slurp Shop - core: utils, renderer, materials, geometry helpers, audio, particles
 // ============================================================
 import * as THREE from 'three';
-const GAME='slurpshop',NETVER=2;
+const GAME='slurpshop',NETVER=3;
 const $=id=>document.getElementById(id);
 const HASH=location.hash.slice(1).split('&');
 const flag=n=>HASH.includes(n);
@@ -187,7 +187,7 @@ const lampA=new THREE.PointLight(0xffb468,26,17,2);lampA.position.set(0,3.1,4.2)
 // ---------- quality ----------
 let pixScale=1,shadowsOn=true,autoDropT=0;
 function applyGfx(){const base=Math.min(devicePixelRatio||1,S.gfx===0?1:S.gfx===2||TOUCH?1.5:2);shadowsOn=S.gfx!==0&&!(S.gfx===2&&autoDrop>=3);
-  pixScale=S.gfx===2?[1,.85,.7,.7,.58][autoDrop]:1;lampA.visible=lampB.visible=S.gfx!==0&&!(S.gfx===2&&autoDrop>=4);hemi.intensity=lampA.visible?1.25:1.7;renderer.setPixelRatio(Math.max(.5,base*pixScale));
+  $('c').classList.toggle('fx',S.gfx!==0&&!(S.gfx===2&&autoDrop>=2));pixScale=S.gfx===2?[1,.85,.7,.7,.58][autoDrop]:1;lampA.visible=lampB.visible=S.gfx!==0&&!(S.gfx===2&&autoDrop>=4);hemi.intensity=lampA.visible?1.0:1.45;renderer.setPixelRatio(Math.max(.5,base*pixScale));
   renderer.shadowMap.enabled=shadowsOn;sun.castShadow=shadowsOn;renderer.shadowMap.needsUpdate=true;scene.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial)o.material.needsUpdate=true;});resize();}
 let autoDrop=0,slowAcc=0,fpsAvg=60;
 function autoQuality(dt){fpsAvg=lerp(fpsAvg,1/Math.max(dt,.001),.05);if(S.gfx!==2||document.hidden)return;autoDropT+=dt;if(autoDropT<4)return;
@@ -200,6 +200,12 @@ function clayShader(sh){sh.fragmentShader=sh.fragmentShader.replace('#include <o
   'float clayRim=pow(1.0-saturate(dot(normalize(vViewPosition),normal)),2.4);outgoingLight+=(diffuseColor.rgb*.5+.22)*clayRim*.16;\n#include <opaque_fragment>');}
 function clayMat(o={}){const m=new THREE.MeshStandardMaterial(Object.assign({vertexColors:true,roughness:.8,metalness:0},o));m.onBeforeCompile=clayShader;m.customProgramCacheKey=()=>'clay';return m;}
 const CLAY=clayMat();
+// soft image-based light so surfaces pick up warm bounce and steel reads as steel
+function makeEnv(){const es=new THREE.Scene(),bg=new THREE.Mesh(new THREE.SphereGeometry(20,24,12),new THREE.MeshBasicMaterial({side:THREE.BackSide,vertexColors:true}));const g=bg.geometry,p=g.attributes.position,c=[];
+  for(let i=0;i<p.count;i++){const y=p.getY(i)/20,k=Math.max(0,y);c.push(.16+.5*k,.13+.42*k,.12+.36*k);}g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));es.add(bg);
+  for(const [x,y,z,w,h,col] of[[0,12,0,14,14,0xfff0d8],[-14,6,-6,6,4,0xffc890],[14,5,6,6,4,0x9fb8ff]]){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide}));m.position.set(x,y,z);m.lookAt(0,0,0);es.add(m);}
+  const pm=new THREE.PMREMGenerator(renderer);const rt=pm.fromScene(es,.04);pm.dispose();return rt.texture;}
+scene.environment=makeEnv();CLAY.envMapIntensity=.3;
 const PAL={cream:0xf6ead8,wood:0xb07a4a,woodD:0x7d4f2e,woodL:0xd8a878,red:0xc8402e,redD:0x8f2a20,ink:0x2b2430,white:0xffffff,steel:0xb9c0c8,steelD:0x7b848f,black:0x26262c,gold:0xf2c14e,green:0x5fae62,greenD:0x2f6b3f,tile:0xe9e4da,blue:0x4d78c9,pink:0xf2a0a8,yellow:0xf6d55c,brown:0x6b4226,paper:0xfff3dc,grey:0x8d8f98,skin:0xf4c9a0};
 const COLORS=[0xd9483b,0x3f7fd9,0x3fae6a,0xf09a2e,0x8b5fd6,0xe8679f,0x2bb5b0,0xd9c23a];
 const _c=new THREE.Color(),_m=new THREE.Matrix4(),_m2=new THREE.Matrix4(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_v=V(),_n=V(),_n3=new THREE.Matrix3(),_t=V(),_t2=V();
@@ -373,23 +379,25 @@ function moveBody(b,dt){b.v.y-=GRAV*dt;if(b.v.y<-40)b.v.y=-40;b.p.addScaledVecto
 // Overcooked-style lines: each ingredient sits in an open crate next to the station that uses it.
 // Back counter (z=BACKZ): sink, bowls, broth pots, tea, pans, grill, trash. Row A (z=ISLZ): broth bases | big pot | noodles+eggs | pork+boards+onion.
 // Row B (z=TOPZ): the topping bar with nori and corn crates beside their trays, plus plating spots.
-const BACKZ=-8.55,ISLZ=-5.1,TOPZ=-2.4,POTX=[-4.4,-3.0,-1.6],GRILLX=[7.5,8.7],BIGX=-.3,BIGR=.95,BOARDX=[7.4,8.3],BINX=[.65,1.5,2.35,-1.9,-1.05];
+const BACKZ=-8.55,ISLZ=-5.1,TOPZ=-2.4,POTX=[-4.4,-3.0,-1.6],GRILLX=[7.35,8.1,8.85],BIGX=-.3,BIGR=.95,BOARDX=[7.4,8.3],BINX=[.65,1.5,2.35,-1.9,-1.05];
 const SLOTS=[[3.3,TOPZ],[4.15,TOPZ],[5.0,TOPZ],[1.5,BACKZ],[2.4,BACKZ],[5.85,BACKZ]];
 // ingredient crate positions, indexed like ING
 const DISP=[[1.9,ISLZ],[-6.9,ISLZ],[4.45,ISLZ],[9.25,ISLZ],[-6.05,ISLZ],[6.5,ISLZ],[-5.2,ISLZ],[-2.75,TOPZ],[-.2,TOPZ],[-4.35,ISLZ],[-3.5,ISLZ],[2.75,ISLZ],[3.6,ISLZ],[-2.65,ISLZ]];
 // crate tag colour by line: red = broth base, gold = noodles/eggs, green = prep, blue = toppings
 const ING_TAG=[0xf2c14e,0xc8402e,0xf2c14e,0x5fae62,0xc8402e,0x5fae62,0xc8402e,0x4d78c9,0x4d78c9,0xc8402e,0xc8402e,0xf2c14e,0xf2c14e,0xc8402e];
-const ingWhere=i=>({[0xc8402e]:'the broth island',[0xf2c14e]:'the noodle island',[0x5fae62]:'the prep island',[0x4d78c9]:'the topping bar'})[ING_TAG[i]];
+const ingWhere=i=>({[0xc8402e]:'the broth island',[0xf2c14e]:'the noodle island',[0x5fae62]:'the prep island',[0x4d78c9]:'the topping bar'})[ING_TAG[i]]+' (or its storage shelf)';
 const ISL=[[-7.3,-2.25,ISLZ],[1.5,4.85,ISLZ],[6.1,9.7,ISLZ],[-3.15,5.45,TOPZ]];
 // six baskets around the big pot of boiling water
 const BASK=[];for(let k=0;k<6;k++){const a=k/6*Math.PI*2+Math.PI/6;BASK.push({x:BIGX+Math.sin(a)*.55,z:ISLZ+Math.cos(a)*.55,sx:BIGX+Math.sin(a)*1.05,sz:ISLZ+Math.cos(a)*1.05});}
 const BARX=[-6.6,-4.8,-3,-1.2,.6,2.4,4.2,6],BARZ=1.5;
 // storage room shelves are just stock on display now. b = back wall, l = left wall
-const SHELF=[];for(let i=0;i<5;i++)SHELF.push({x:-15.9+i*1.3,z:-8.45,yaw:0,side:'b'});for(let i=0;i<5;i++)SHELF.push({x:-16.45,z:-6.6+i*1.3,yaw:Math.PI/2,side:'l'});
+// big labeled storage shelves, one bay per ingredient (6 on the back wall, 8 on the left wall). They share stock with the kitchen crates.
+const SHELF=[];for(let i=0;i<6;i++)SHELF.push({x:-16.15+i*1.2,z:-8.5,side:'b'});for(let i=0;i<8;i++)SHELF.push({x:-16.5,z:-7.0+i*1.2,side:'l'});
 const DOOR=[0,8.1],REGP=[8.4,BARZ],DELIV=[-13,6.1],TRUCKX=-13,TRUCKZ=11.6,WALKZ=9.05,AISLE=3.2,PCP=[-10.65,.9];
 function addSt(k,i,x,z,r=1.75,y=1.5){SHOP.st.push({k,i,x,z,r,y});}
 for(let i=0;i<ING.length;i++)addSt('shelf',i,DISP[i][0],DISP[i][1],1.25,1.5);
-addSt('sink',0,-7.75,BACKZ,1.7,1.6);addSt('bowls',0,-6.15,BACKZ,1.6,1.7);for(let i=0;i<3;i++)addSt('pot',i,POTX[i],BACKZ,1.55,2);for(let i=0;i<2;i++)addSt('grill',i,GRILLX[i],BACKZ,1.45,1.6);BASK.forEach((b,i)=>addSt('bask',i,b.sx,b.sz,1.15,1.6));
+for(let i=0;i<ING.length;i++){const s=SHELF[i];addSt('store',i,s.side==='b'?s.x:s.x+.75,s.side==='b'?s.z+.75:s.z,1.25,1.7);}
+addSt('sink',0,-7.75,BACKZ,1.7,1.6);addSt('bowls',0,-6.15,BACKZ,1.6,1.7);for(let i=0;i<3;i++)addSt('pot',i,POTX[i],BACKZ,1.55,2);for(let i=0;i<GRILLX.length;i++)addSt('grill',i,GRILLX[i],BACKZ,1.2,1.6);BASK.forEach((b,i)=>addSt('bask',i,b.sx,b.sz,1.15,1.6));
 addSt('tea',0,.3,BACKZ,1.5,1.8);addSt('pan',0,4.1,BACKZ,1.5,2);addSt('trash',0,10.1,-8.45,1.6,1.3);addSt('mop',0,11.2,-8.45,1.6,1.5);
 for(let i=0;i<2;i++)addSt('board',i,BOARDX[i],ISLZ,1.3,1.5);for(let i=0;i<5;i++)addSt('bin',i,BINX[i],TOPZ,1.25,1.45);SLOTS.forEach((p,i)=>addSt('slot',i,p[0],p[1],1.3,1.3));
 addSt('pc',0,PCP[0],PCP[1],1.9,1.7);addSt('reg',0,REGP[0],.25,1.9,1.7);
@@ -545,16 +553,18 @@ function buildTruck(){const g=new THREE.Group(),m=new Merger(),gl=new Merger(),A
 function progBar(){const cv=document.createElement('canvas');cv.width=96;cv.height=20;const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,depthWrite:false,transparent:true}));sp.scale.set(.9,.19,1);sp.renderOrder=8;sp.userData={cv,tex,key:''};sp.visible=false;scene.add(sp);return sp;}
 function setBar(b,f,col=0x6fdc6f){if(f==null){b.visible=false;return;}b.visible=true;const u=b.userData,q=Math.round(clamp(f,0,1)*40),key=q+'|'+col;if(u.key===key)return;u.key=key;const x=u.cv.getContext('2d');x.clearRect(0,0,96,20);x.fillStyle='#2b2430';rr(x,1,1,94,18,9);x.fill();x.fillStyle='#'+col.toString(16).padStart(6,'0');if(q>0){rr(x,4,4,Math.max(12,88*q/40),12,6);x.fill();}u.tex.needsUpdate=true;}
 // ---------- the shop ----------
-const VIS={pot:[],bask:[],board:[],bin:[],bowls:[],sink:[],slot:[],shelf:[],seat:[],egg:null,reg:null,menuTex:null,menuCv:null,floor:new Map(),pud:[],labs:[],lant:[],bars:{}};
+const VIS={pot:[],bask:[],board:[],bin:[],bowls:[],sink:[],slot:[],shelf:[],store:[],seat:[],egg:null,reg:null,menuTex:null,menuCv:null,floor:new Map(),pud:[],labs:[],lant:[],bars:{}};
 const GLOW=new THREE.MeshBasicMaterial({vertexColors:true});
 const KCOL=0x3f9bb3,KCOLD=0x2f7a90;
 function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new Merger(),OV=new Merger();
   const B=(x0,y0,z0,x1,y1,z1,col,r=.05,mg=M)=>mg.add(rboxC(+(x1-x0).toFixed(3),+(y1-y0).toFixed(3),+(z1-z0).toFixed(3),r,4,1),mat((x0+x1)/2,(y0+y1)/2,(z0+z1)/2),col);
   const C=(x,y,z,r,h,col,mg=M,geo=GEO.cyl)=>mg.add(geo,mat(x,y+h/2,z,r,h,r),col);
   const SP=(x,y,z,sx,sy,sz,col,mg=M)=>mg.add(GEO.sph,mat(x,y,z,sx,sy,sz),col);
+  // soft contact shadows under furniture (cheap fake ambient occlusion)
+  const AOR=[];const ao=(x0,z0,x1,z1,p=.45,a=1)=>AOR.push([x0-p,z0-p,x1+p,z1+p,a]);
   // ----- floors -----
   const wood=canvasTex(256,256,(x,w,h)=>{x.fillStyle='#a8703f';x.fillRect(0,0,w,h);for(let i=0;i<4;i++){for(let j=0;j<3;j++){const o=(i%2)*60+j*128-40;x.fillStyle=['#b98250','#ad7442','#c08a57','#a66c3b'][(i*3+j)%4];x.fillRect(o,i*64+1,126,62);x.fillStyle='rgba(60,30,10,.16)';for(let k=0;k<3;k++)x.fillRect(o+8+k*37,i*64+14+k*13,60,1.5);}x.fillStyle='#6b4226';x.fillRect(0,i*64,w,2);}});
-  const tile=canvasTex(128,128,(x,w,h)=>{x.fillStyle='#d6d0c2';x.fillRect(0,0,w,h);x.fillStyle='#fbf6ea';x.fillRect(2,2,60,60);x.fillRect(66,66,60,60);x.fillStyle='#9fd3cf';x.fillRect(66,2,60,60);x.fillRect(2,66,60,60);});
+  const tile=canvasTex(256,256,(x,w,h)=>{x.fillStyle='#b9b2a3';x.fillRect(0,0,w,h);const R=mulberry(11);for(let j=0;j<2;j++)for(let i=0;i<2;i++){const c=(i+j)%2?['#86bdb7','#8fc4be','#82b8b2']:['#efe7d6','#f4ecdc','#e9e0ce'];const x0=i*128+3,y0=j*128+3;const g=x.createLinearGradient(x0,y0,x0+122,y0+122);g.addColorStop(0,c[0]);g.addColorStop(.5,c[1]);g.addColorStop(1,c[2]);x.fillStyle=g;x.fillRect(x0,y0,122,122);x.fillStyle='rgba(255,255,255,.18)';x.fillRect(x0,y0,122,3);x.fillRect(x0,y0,3,122);for(let k=0;k<70;k++){x.fillStyle=R()<.5?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)';x.fillRect(x0+R()*118,y0+R()*118,3,3);}}});
   const conc=canvasTex(128,128,(x,w,h)=>{x.fillStyle='#8b8f99';x.fillRect(0,0,w,h);const R=mulberry(5);for(let k=0;k<300;k++){x.fillStyle=R()<.5?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';x.fillRect(R()*w,R()*h,3,3);}x.strokeStyle='rgba(40,40,50,.35)';x.lineWidth=2;x.strokeRect(0,0,w,h);});
   const pave=canvasTex(128,128,(x,w,h)=>{x.fillStyle='#6b6f7e';x.fillRect(0,0,w,h);x.strokeStyle='#545866';x.lineWidth=3;x.strokeRect(0,0,64,64);x.strokeRect(64,64,64,64);x.strokeRect(64,0,64,64);x.strokeRect(0,64,64,64);});
   const road=canvasTex(256,64,(x,w,h)=>{x.fillStyle='#34374a';x.fillRect(0,0,w,h);x.fillStyle='#f2e6b8';x.fillRect(20,29,110,6);});
@@ -585,15 +595,15 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   for(const x of[-7.6,-3.6,3.6,7.6,11])lantern(x,2.75,8.45);for(const x of[-5.5,5.5])lantern(x,2.4,5.6,0xffc46a);
   lantern(-13,2.7,-3,0xfff0c8);
   // ----- bar, register, tables -----
-  B(-7.8,0,-.2,9.8,.96,.7,PAL.woodD,.05);B(-7.88,.96,-.28,9.88,1.03,.78,PAL.woodL,.03);addSolid(-7.8,-.25,9.8,.75,1.03);B(-7.8,.1,.7,9.8,.2,.8,PAL.steelD,.03,D);B(-7.8,.5,-.28,9.8,.6,-.2,PAL.red,.02,D);
+  B(-7.8,0,-.2,9.8,.96,.7,PAL.woodD,.05);ao(-7.8,-.2,9.8,.7);B(-7.88,.96,-.28,9.88,1.03,.78,PAL.woodL,.03);addSolid(-7.8,-.25,9.8,.75,1.03);B(-7.8,.1,.7,9.8,.2,.8,PAL.steelD,.03,D);B(-7.8,.5,-.28,9.8,.6,-.2,PAL.red,.02,D);
   for(let i=0;i<8;i++){const x=BARX[i];C(x,0,BARZ,.05,.66,PAL.steelD);C(x,0,BARZ,.2,.04,PAL.steelD);C(x,.66,BARZ,.25,.08,PAL.red);addSolid(x-.2,BARZ-.2,x+.2,BARZ+.2,.7);if(i%2===0){B(x+.62,1.03,.5,x+.78,1.18,.62,PAL.paper,.02,D);C(x+.9,1.03,.56,.04,.18,PAL.red,D,GEO.cylLo);}}
   B(8.1,1.03,.05,8.7,1.2,.6,PAL.black,.04);B(8.15,1.2,.1,8.65,1.42,.35,PAL.steelD,.04);GL.add(rboxC(.4,.14,.02,.005,4,1),mat(8.4,1.32,.36),0x8ff0b0,0);B(8.13,1.06,.6,8.67,1.16,.66,PAL.gold,.02);
-  for(const t of[-5.5,5.5]){B(t-.6,.74,5,t+.6,.82,6.2,PAL.woodL,.03);C(t,0,5.6,.09,.74,PAL.woodD);C(t,0,5.6,.32,.05,PAL.woodD);addSolid(t-.55,5.05,t+.55,6.15,.82);
+  for(const t of[-5.5,5.5]){ao(t-.7,5,t+.7,6.2,.4,.7);B(t-.6,.74,5,t+.6,.82,6.2,PAL.woodL,.03);C(t,0,5.6,.09,.74,PAL.woodD);C(t,0,5.6,.32,.05,PAL.woodD);addSolid(t-.55,5.05,t+.55,6.15,.82);
     for(const s of[-1,1]){const cx=t+s*1.1;B(cx-.24,.42,5.36,cx+.24,.5,5.84,PAL.red,.03);for(const a of[-1,1])for(const b of[-1,1])C(cx+a*.19,0,5.6+b*.19,.03,.42,PAL.woodD,M,GEO.cylLo);B(cx+s*.2,.5,5.36,cx+s*.26,1.05,5.84,PAL.woodD,.02);}
     C(t,.82,5.6,.06,.14,PAL.paper,D);SP(t,.98,5.6,.05,.05,.05,PAL.red,D);}
   for(const p of[[-8.4,7.5],[11.4,7.5],[11.4,1.3],[-8.4,1.3]]){C(p[0],0,p[1],.3,.5,0x9a5a3a);for(let k=0;k<5;k++)SP(p[0]+Math.cos(k*1.26)*.22,.85+(k%2)*.3,p[1]+Math.sin(k*1.26)*.22,.3,.4,.3,k%2?PAL.green:PAL.greenD,D);SP(p[0],1.35,p[1],.3,.45,.3,PAL.green,D);addSolid(p[0]-.3,p[1]-.3,p[0]+.3,p[1]+.3,.6);}
   // ----- kitchen: back counter (the hot line) -----
-  const counter=(x0,z0,x1,z1)=>{B(x0,0,z0,x1,.12,z1,KCOLD,.03);B(x0+.03,.12,z0+.03,x1-.03,.86,z1-.03,KCOL,.06);B(x0-.05,.86,z0-.05,x1+.05,.96,z1+.05,PAL.steel,.04);addSolid(x0,z0,x1,z1,.96);};
+  const counter=(x0,z0,x1,z1)=>{ao(x0,z0,x1,z1);B(x0,0,z0,x1,.12,z1,KCOLD,.03);B(x0+.03,.12,z0+.03,x1-.03,.86,z1-.03,KCOL,.06);B(x0-.05,.86,z0-.05,x1+.05,.96,z1+.05,PAL.steel,.04);addSolid(x0,z0,x1,z1,.96);};
   counter(-8.85,-9,9.5,-8.1);B(-8.85,.96,-9,9.5,1.6,-8.94,PAL.tile,.02,D);for(let x=-8.6;x<9.4;x+=.5)B(x,.97,-8.95,x+.02,1.58,-8.93,0xc2d2cc,.003,D);
   B(-8.6,2.0,-9,6.4,2.06,-8.65,PAL.woodL,.02,D);for(let k=0;k<13;k++){const x=-8.3+k*1.1+(k%3)*.07;if(k%4===1)C(x,2.06,-8.8,.11,.26,[PAL.red,PAL.gold,PAL.green,PAL.blue][k%4],D);else if(k%4===3)B(x-.14,2.06,-8.92,x+.14,2.3,-8.7,[PAL.cream,PAL.pink,PAL.tile][k%3],.03,D);else C(x,2.06,-8.8,.09,.18,[PAL.steel,PAL.woodL,PAL.paper][k%3],D);}
   // sink
@@ -602,10 +612,16 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   B(-6.6,.96,-8.9,-5.7,1.0,-8.2,PAL.woodL,.02,D);
   // stove
   B(-5.2,.96,-8.95,-.85,1.0,-8.12,PAL.black,.02);for(const x of POTX){C(x,1.0,BACKZ,.36,.03,0x3a3a42);for(const kx of[-.3,.3])C(x+kx,.5,-8.07,.045,.05,PAL.steel,D,GEO.cylLo);}
-  // grill (two grates)
-  B(6.9,.96,-8.95,9.3,1.08,-8.12,PAL.black,.04);for(const x of GRILLX){B(x-.52,1.08,-8.88,x+.52,1.1,-8.2,0x3a3a42,.02,D);for(let k=0;k<6;k++)B(x-.48,1.1,-8.8+k*.11,x+.48,1.13,-8.78+k*.11,PAL.steelD,.005,D);}B(6.95,.5,-8.1,9.25,.62,-8.06,PAL.red,.01,D);
+  // one big flat-top grill with a steel hood
+  {const x0=6.75,x1=9.45;B(x0,.96,-8.98,x1,1.1,-8.1,PAL.black,.05);B(x0+.08,1.1,-8.9,x1-.08,1.12,-8.18,0x34343c,.02);
+    for(let k=0;k<7;k++)B(x0+.14,1.12,-8.82+k*.1,x1-.14,1.15,-8.79+k*.1,PAL.steelD,.006,D);
+    B(x0+.05,1.1,-8.18,x1-.05,1.2,-8.1,PAL.steel,.02,D);for(let k=0;k<4;k++)C(x0+.45+k*.6,.6,-8.06,.05,.06,PAL.red,D,GEO.cylLo);B(x0+.1,.45,-8.1,x1-.1,.52,-8.06,PAL.steel,.01,D);
+    B(x0-.1,2.25,-9,x1+.1,2.35,-8.0,PAL.steel,.04);B(x0,2.35,-9,x1,2.75,-8.6,PAL.steelD,.06);B(x0-.1,2.15,-8.06,x1+.1,2.27,-7.98,PAL.steelD,.02,D);
+    const gs=canvasTex(256,64,(x,w,h)=>{x.fillStyle='#2b2430';x.fillRect(0,0,w,h);x.fillStyle='#ff8a3d';x.font='900 40px ui-rounded,system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('GRILL',w/2,h/2+2);});
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.28),new THREE.MeshBasicMaterial({map:gs}));p.position.set((x0+x1)/2,2.21,-7.97);scene.add(p);
+    GL.add(rboxC(x1-x0-.3,.02,.06,.01,4,1),mat((x0+x1)/2,2.24,-8.05),0xffd9a0,0);}
   // the big pot of boiling water in the middle
-  {const x=BIGX,z=ISLZ;C(x,0,z,BIGR+.1,.55,0x3a3a42);C(x,.55,z,BIGR+.14,.06,PAL.black);GL.add(GEO.tor,mat(x,.62,z,BIGR*.8,BIGR*.8,.15,X90),0x4aa8ff,0);const pts=[[0,0],[BIGR,0],[BIGR+.04,.04],[BIGR+.04,.58],[BIGR+.09,.62],[BIGR-.03,.62],[BIGR-.03,.05],[0,.05]].map(p=>new THREE.Vector2(p[0],p[1]));M.add(new THREE.LatheGeometry(pts,28),mat(x,.6,z),PAL.steel,0);M.add(GEO.cyl,mat(x,1.1,z,BIGR-.04,.02,BIGR-.04),0x9fd4ee,0);for(const s2 of[-1,1])M.add(GEO.tor,mat(x+s2*(BIGR+.1),1.05,z,.09,.07,.09,X90,0,X90),PAL.ink,0);addSolid(x-BIGR*.85,z-BIGR*.85,x+BIGR*.85,z+BIGR*.85,1.22);}
+  {const x=BIGX,z=ISLZ;ao(x-BIGR,z-BIGR,x+BIGR,z+BIGR,.3);C(x,0,z,BIGR+.1,.55,0x3a3a42);C(x,.55,z,BIGR+.14,.06,PAL.black);GL.add(GEO.tor,mat(x,.62,z,BIGR*.8,BIGR*.8,.15,X90),0x4aa8ff,0);const pts=[[0,0],[BIGR,0],[BIGR+.04,.04],[BIGR+.04,.58],[BIGR+.09,.62],[BIGR-.03,.62],[BIGR-.03,.05],[0,.05]].map(p=>new THREE.Vector2(p[0],p[1]));M.add(new THREE.LatheGeometry(pts,28),mat(x,.6,z),PAL.steel,0);M.add(GEO.cyl,mat(x,1.1,z,BIGR-.04,.02,BIGR-.04),0x9fd4ee,0);for(const s2 of[-1,1])M.add(GEO.tor,mat(x+s2*(BIGR+.1),1.05,z,.09,.07,.09,X90,0,X90),PAL.ink,0);addSolid(x-BIGR*.85,z-BIGR*.85,x+BIGR*.85,z+BIGR*.85,1.22);}
   // tea urn
   C(0.3,.96,-8.6,.22,.55,PAL.steel);C(0.3,1.51,-8.6,.23,.05,PAL.ink);SP(0.3,1.6,-8.6,.05,.05,.05,PAL.ink);B(0.27,1.1,-8.4,0.33,1.14,-8.3,PAL.ink,.01,D);for(let k=0;k<3;k++)C(0.75,.96+k*.05,-8.6,.07,.13,0xf4f1ea,D);GL.add(GEO.sphLo,mat(0.3,1.3,-8.375,.03),0x8ff0b0,0);
   // pan rail, trash, mop
@@ -627,13 +643,19 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
     C(-10.95,0,z,.04,.45,PAL.steelD);C(-10.95,.45,z,.24,.07,PAL.red);
     const wb=canvasTex(256,160,(x,w,h)=>{x.fillStyle='#fbfbf6';x.fillRect(0,0,w,h);x.strokeStyle='#2b2430';x.lineWidth=6;x.strokeRect(3,3,w-6,h-6);x.fillStyle='#c8402e';x.font='900 26px system-ui,sans-serif';x.fillText('ORDER HERE',40,38);x.fillStyle='#3a6fd8';x.font='700 18px system-ui,sans-serif';['crates go to','their kitchen spot!','more bowls?'].forEach((t,i)=>x.fillText('- '+t,28,72+i*26));});
     const p=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1),new THREE.MeshBasicMaterial({map:wb}));p.position.set(-9.17,2.05,z);p.rotation.y=-X90;scene.add(p);}
-  // ----- storage room (deliveries land here, then get carried to the kitchen) -----
-  for(let i=0;i<SHELF.length;i++){const s=SHELF[i];
-    if(s.side==='b'){const x0=s.x-.58,x1=s.x+.58;for(const x of[x0,x1-.06])B(x,0,-9,x+.06,2.2,-8.0,PAL.woodD,.02);for(const y of[.1,.8,1.5])B(x0,y,-9,x1,y+.06,-8.0,PAL.woodL,.02);B(x0,2.14,-9,x1,2.2,-8.0,PAL.woodD,.02);addSolid(x0,-9,x1,-8.0,2.2);}
-    else{const z0=s.z-.58,z1=s.z+.58,a=-17,b=-15.95;for(const z of[z0,z1-.06])B(a,0,z,b,2.2,z+.06,PAL.woodD,.02);for(const y of[.1,.8,1.5])B(a,y,z0,b,y+.06,z1,PAL.woodL,.02);B(a,2.14,z0,b,2.2,z1,PAL.woodD,.02);addSolid(a,z0,b,z1,2.2);}
-    for(let k=0;k<4;k++){if((i*7+k*3)%5===0)continue;const y=[.16,.86][k>>1],o=(k%2?.24:-.24);const m=s.side==='b'?mat(s.x+o,y,-8.5,.62,.62,.62,0,(i+k)*.3):mat(-16.45,y,s.z+o,.62,.62,.62,0,Math.PI/2+(i+k)*.3);M.add(itemGeo(['crate',(i*3+k)%ING.length]),m,null);}}
-  // rice sacks, a pallet of crates, hand truck
-  for(let k=0;k<4;k++)SP(-10+(k%2)*.55,.28+((k/2)|0)*.4,-8.4,.32,.26,.24,0xf1e6cc);B(-10.35,.06,-7.95,-9.7,.12,-7.7,PAL.red,.01,D);
+  // ----- storage room: big labeled shelves, one bay per ingredient -----
+  const signTex=i=>canvasTex(256,112,(x,w,h)=>{const c='#'+ING_TAG[i].toString(16).padStart(6,'0');x.fillStyle='#2b2430';x.fillRect(0,0,w,h);x.fillStyle=c;x.fillRect(0,0,w,14);x.fillStyle='#fff3dc';x.fillRect(8,20,84,84);drawIcon(x,ING[i].id,50,62,78);x.fillStyle='#fff3dc';x.textAlign='left';x.textBaseline='middle';
+    const words=ING[i].name.split(' ');x.font='900 '+(words.length>1?30:36)+'px ui-rounded,system-ui,sans-serif';if(words.length>1){x.fillText(words[0],102,46);x.fillText(words.slice(1).join(' '),102,82);}else x.fillText(words[0],102,64);});
+  for(let i=0;i<SHELF.length;i++){const s=SHELF[i],bk=s.side==='b';
+    // a bay is 1.15 wide, 1.0 deep and 2.3 tall, with three boards
+    const box=(u0,y0,v0,u1,y1,v1,col,r,mg)=>bk?B(s.x+u0,y0,-9+v0,s.x+u1,y1,-9+v1,col,r,mg):B(-17+v0,y0,s.z+u0,-17+v1,y1,s.z+u1,col,r,mg);
+    for(const u of[-.575,.515])box(u,0,0,u+.06,2.3,1.0,PAL.woodD,.02);for(const y of[.08,.82,1.56])box(-.56,y,0,.56,y+.07,1.0,PAL.woodL,.02);box(-.575,2.24,0,.575,2.32,1.0,PAL.woodD,.02);box(-.56,.02,0,.56,2.24,.05,0x5a3a22,.01);
+    if(bk){addSolid(s.x-.58,-9,s.x+.58,-8.0,2.3);ao(s.x-.58,-9,s.x+.58,-8.0);}else{addSolid(-17,s.z-.58,-16.0,s.z+.58,2.3);ao(-17,s.z-.58,-16.0,s.z+.58);}
+    // bottom board holds sacks of back stock, just for looks
+    for(let k=0;k<2;k++){const u=k?.26:-.26;const p=bk?[s.x+u,.32,-8.55]:[-16.55,.32,s.z+u];SP(p[0],p[1],p[2],.24,.22,.3,k%2?0xf1e6cc:0xe6d6b4,D);}
+    const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.05,.46),new THREE.MeshBasicMaterial({map:signTex(i)}));if(bk)sg.position.set(s.x,2.58,-7.97);else{sg.position.set(-15.97,2.58,s.z);sg.rotation.y=X90;}scene.add(sg);
+    box(-.55,2.33,.96,.55,2.84,1.0,PAL.ink,.01,D);}
+  // a pallet of crates
   B(-16.6,0,2.2,-15.2,.14,3.6,PAL.woodL,.02);for(let k=0;k<3;k++)M.add(itemGeo(['crate',k]),mat(-16.2+(k%2)*.6,.14+((k/2)|0)*.42,2.6+(k%2)*.5,1,1,1,0,k*.3),null);addSolid(-16.6,2.2,-15.2,3.6,.9);
   B(-9.8,.002,4.4,-9.5,.01,7.7,PAL.yellow,.004,D);B(-16.3,.002,4.4,-16,.01,7.7,PAL.yellow,.004,D);
   {const c=canvasTex(256,96,(x,w,h)=>{x.fillStyle='#f2c14e';x.fillRect(0,0,w,h);x.fillStyle='#2b2430';x.font='900 40px ui-rounded,system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('STORAGE',w/2,h/2);});const p=new THREE.Mesh(new THREE.PlaneGeometry(1.4,.52),new THREE.MeshBasicMaterial({map:c}));p.position.set(-8.83,2.3,-4.35);p.rotation.y=X90;scene.add(p);}
@@ -649,6 +671,17 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   bld(-32,-9,-17.4,8.3,6.5,0x2b3150);for(let i=0;i<3;i++)GL.add(rboxC(1.6,1.3,.05,.02,4,1),mat(-29+i*4,2.4,8.33),0xffd98a,0);bld(12.4,-9,27,8.3,5.5,0x3a2f48);for(let i=0;i<3;i++)GL.add(rboxC(1.6,1.3,.05,.02,4,1),mat(15+i*4,2.4,8.33),0xffd98a,0);
   bld(-40,-24,40,-9.4,4.6,0x262b44);GL.add(GEO.sph,mat(-30,34,-70,5),0xfff6d8,0);
   for(let k=0;k<70;k++){const a=R()*6.283,e=.25+R()*1.1,d=110;GL.add(GEO.sphLo,mat(Math.cos(a)*Math.cos(e)*d,Math.sin(e)*d,Math.sin(a)*Math.cos(e)*d,.22+R()*.2),0xdfe6ff,0);}
+  // walls get a soft dark band at the floor too
+  for(const r of[[-17,-9,12,-9],[-17,-9,-17,8.3],[12,-9,12,8.3],[-9,-9,-9,-6.7],[-9,-2,-9,8.3]])ao(r[0],r[1],r[2],r[3],.45,.75);
+  {const t=canvasTex(128,128,(x,w,h)=>{x.fillStyle='#000';x.fillRect(0,0,w,h);x.filter='blur(9px)';x.fillStyle='#fff';x.fillRect(40,40,48,48);});t.colorSpace=THREE.NoColorSpace;
+    const pos=[],uv=[],col=[],idx=[];AOR.forEach(r=>{const[x0,z0,x1,z1,a]=r,p=Math.min(.45,(x1-x0)/2,(z1-z0)/2),xs=[x0,x0+p*1.6,x1-p*1.6,x1],zs=[z0,z0+p*1.6,z1-p*1.6,z1],us=[0,.45,.55,1],b0=pos.length/3;
+      for(let j=0;j<4;j++)for(let i=0;i<4;i++){pos.push(xs[i],0,zs[j]);uv.push(us[i],1-us[j]);col.push(a,a,a);}
+      for(let j=0;j<3;j++)for(let i=0;i<3;i++){const q=b0+j*4+i;idx.push(q,q+5,q+1,q,q+4,q+5);}});
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
+    const am=new THREE.MeshBasicMaterial({map:t,color:0x000000,transparent:true,opacity:.55,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+    am.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <color_vertex>','#include <color_vertex>\nvAoA=color.r;').replace('void main() {','varying float vAoA;\nvoid main() {');sh.fragmentShader=sh.fragmentShader.replace('void main() {','varying float vAoA;\nvoid main() {').replace('#include <opaque_fragment>','diffuseColor.a*=vAoA;\n#include <opaque_fragment>');};
+    // the texture's alpha is the shadow; colour stays black
+    am.alphaMap=t;am.map=null;am.vertexColors=true;const m=new THREE.Mesh(g,am);m.position.y=.008;m.renderOrder=1;scene.add(m);}
   const sm=M.mesh(CLAY,true,true),dm=D.mesh(CLAY,false,true),gm=new THREE.Mesh(GL.build(),GLOW);gm.frustumCulled=false;scene.add(sm,dm,gm);
   VIS.front.add(FA.mesh(CLAY,true,true));VIS.over=OV.mesh(CLAY,false,false);scene.add(VIS.over);VIS.truck=buildTruck();
   // ----- dynamic station visuals -----
@@ -658,7 +691,7 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   for(let i=0;i<3;i++){const x=POTX[i],pm=new THREE.Mesh(potG,CLAY);pm.castShadow=true;pm.position.set(x,1.03,BACKZ);const liq=new THREE.Mesh(GEO.cyl,clayMat({vertexColors:false,color:0x9fd4ee,roughness:.35}));liq.scale.set(.375,.02,.375);liq.position.set(x,1.5,BACKZ);
     const fl2=new THREE.Mesh(GEO.tor,new THREE.MeshBasicMaterial({color:0x4aa8ff}));fl2.scale.set(.3,.3,.12);fl2.rotation.x=X90;fl2.position.set(x,1.035,BACKZ);scene.add(pm,liq,fl2);VIS.pot.push({pm,liq,fl:fl2,lab:lab(x,2.3,BACKZ),bar:bar('pot'+i,x,1.95,BACKZ),x});}
   VIS.big=BASK.map((b,i)=>{const nm=newItemMesh();nm.position.set(b.x,1.09,b.z);nm.castShadow=false;scene.add(nm);const ring=new THREE.Mesh(GEO.tor,clayMat({vertexColors:false,color:0x55555f}));ring.scale.set(.2,.2,.05);ring.rotation.x=X90;ring.position.set(b.x,1.13,b.z);scene.add(ring);return{nm,st:0,bar:bar('big'+i,b.x,1.55+(i%2)*.24,b.z)};});VIS.bigLab=lab(BIGX,2.25,ISLZ,.95);
-  VIS.grill=GRILLX.map((x,i)=>{const m=newItemMesh();m.position.set(x,1.12,BACKZ);scene.add(m);return{m,x,st:0,bar:bar('grill'+i,x,1.65,BACKZ),lab:lab(x,2.05,BACKZ,.8)};});
+  VIS.grill=GRILLX.map((x,i)=>{const m=newItemMesh();m.position.set(x,1.15,BACKZ);scene.add(m);return{m,x,st:0,bar:bar('grill'+i,x,1.62,BACKZ),lab:lab(x,1.95,BACKZ-.1,.7)};});
   for(let i=0;i<2;i++){const m=newItemMesh();m.position.set(BOARDX[i]-.05,1.0,ISLZ);scene.add(m);VIS.board.push({m,lab:lab(BOARDX[i],1.75,ISLZ,.9)});}
   for(let i=0;i<5;i++){const ps=[];for(let k=0;k<8;k++){const m=new THREE.Mesh(pieceGeo(i),CLAY);m.position.set(BINX[i]-.24+(k%3)*.24+((k/3|0)%2)*.12,.99+((k/6)|0)*.04,TOPZ-.15+((k/3|0)%2)*.3);m.rotation.y=k*1.9;m.scale.setScalar(1.3);m.visible=false;scene.add(m);ps.push(m);}VIS.bin.push({ps,lab:lab(BINX[i],1.75,TOPZ,.85)});}
   for(let i=0;i<SLOTS.length;i++){const m=newItemMesh();m.position.set(SLOTS[i][0],.965,SLOTS[i][1]);scene.add(m);VIS.slot.push(m);}
@@ -667,6 +700,8 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   for(let i=0;i<6;i++){const m=new THREE.Mesh(db,CLAY);m.position.set(-8.45+(i%3)*.38+((i/3)|0)*.9,.99,BACKZ);m.rotation.z=((i%3)-1)*.12;scene.add(m);VIS.sink.push(m);}VIS.sinkLab=lab(-7.75,1.95,BACKZ);
   for(let i=0;i<ING.length;i++){const[x,z]=DISP[i],g=itemGeo(['ing',i]),boxes=[];for(let k=0;k<4;k++){const m=new THREE.Mesh(g,CLAY);m.castShadow=true;m.position.set(x+(k%2?.15:-.15),1.0+(k>>1)*.07,z+(k>>1?.1:-.08));m.rotation.y=k*1.3;m.scale.setScalar(.95);scene.add(m);boxes.push(m);}
     VIS.shelf.push({boxes,lab:lab(x,1.72,z,.72)});}
+  VIS.store=SHELF.map((sh,i)=>{const g=itemGeo(['ing',i]),bk=sh.side==='b',boxes=[];for(let k=0;k<6;k++){const u=((k%3)-1)*.33,y=k<3?.9:1.64,m=new THREE.Mesh(g,CLAY);m.castShadow=true;if(bk)m.position.set(sh.x+u,y,-8.45);else m.position.set(-16.45,y,sh.z+u);m.rotation.y=(bk?0:X90)+k*.5;m.scale.setScalar(1.3);scene.add(m);boxes.push(m);}
+    return{boxes,lab:bk?lab(sh.x,2.05,-7.9,.7):lab(-15.9,2.05,sh.z,.7)};});
   for(let i=0;i<NSEAT;i++){const s=SHOP.seats[i],m=newItemMesh();m.position.set(s.bx,s.by,s.bz);scene.add(m);VIS.seat.push({m,cup:(()=>{const c=newItemMesh();c.position.set(s.bx+(s.bar?.36:0),s.by,s.bz+(s.bar?0:.36));scene.add(c);return c;})()});}
   VIS.reg=lab(REGP[0],1.8,.3,1.1);VIS.pcLab=lab(-9.8,1.85,PCP[1]);setLabel(VIS.pcLab,'Order supplies');VIS.teaLab=lab(.3,2.05,-8.6);VIS.mopLab=lab(11.2,1.5,-8.45);setLabel(VIS.mopLab,'Mop');VIS.trashLab=lab(10.1,1.3,-8.45);setLabel(VIS.trashLab,'Trash');
   VIS.panLab=lab(4.1,2.25,-8.85,.85);setLabel(VIS.panLab,'Pans');
@@ -736,7 +771,7 @@ Object.assign(SFX,{sizzle(v=1){nz(.6,.12*v,3800,{type:'highpass'});},water(v=1){
   honk(v=1){tone(392,.22,.16*v,{type:'square'});tone(330,.3,.16*v,{type:'square',d:.26});},dash(v=1){nz(.12,.12*v,1400,{f2:500});},level(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,.35,.15,{d:i*.1,type:'triangle'}));},nope(v=1){tone(220,.16,.16*v,{type:'square',f2:160});},angry(v=1){tone(300,.3,.14*v,{f2:140,type:'sawtooth'});},door(v=1){tone(1175,.4,.1*v,{type:'triangle'});tone(880,.5,.1*v,{type:'triangle',d:.15});}});
 let G=null;
 const pop5=m=>{let n=0;for(let i=0;i<5;i++)if(m&(1<<i))n++;return n;};
-function newGame(){const now=netTime();G={v:0,money:80,rs:22.5,rc:5,served:0,lvl:1,up:0,stock:[8,2,2,2,0,0,0,0,0,0,0,0,0,0],bins:[0,0,0,0,0],pots:[0,1,2].map(()=>({s:0,b:0,t0:0,n:0})),big:BASK.map(()=>({k:0,v:0,t0:0})),grill:[0,1].map(()=>({s:0,t0:0,ti:2,n:0})),boards:[-1,-1],
+function newGame(){const now=netTime();G={v:0,money:80,rs:22.5,rc:5,served:0,lvl:1,up:0,stock:[8,2,2,2,0,0,0,0,0,0,0,0,0,0],bins:[0,0,0,0,0],pots:[0,1,2].map(()=>({s:0,b:0,t0:0,n:0})),big:BASK.map(()=>({k:0,v:0,t0:0})),grill:GRILLX.map(()=>({s:0,t0:0,ti:2,n:0})),boards:[-1,-1],
     clean:6,sink:0,slots:SLOTS.map(()=>null),floor:[],seats:Array(NSEAT).fill(0),cust:[],pud:[],deliv:[],truck:0,rob:{st:0,t0:0,hp:3,amt:0,d0:0},ack:{},nid:1,nextC:now+7,nextR:now+150,dwT:0};}
 function lvlFor(n){let l=0;for(const a of LVL_AT)if(n>=a)l++;return l;}
 function saveGame(){if(!G||!G.served)return;let b=null;try{b=JSON.parse(lsGet('ss_best','null'));}catch(e){}if(!b||G.served>b.served)lsSet('ss_best',JSON.stringify({served:G.served,lvl:G.lvl,money:G.money}));}
@@ -752,7 +787,7 @@ const howTop=T=>T.prep==='boil'?'boil eggs and carry them here':T.prep==='chop'?
 // One place decides what a station does for a given hand. go=false only describes it (for the prompt), go=true does it.
 function tryAct(s,h,go,pid){const now=netTime(),is=k=>!!h&&h[0]===k,bowl=is('bowl'),R=(t,o)=>Object.assign({t},o);
   switch(s.k){
-    case'shelf':{const I=ING[s.i];if(is('crate')){const c=h[1];if(c!==s.i)return R('This is the '+I.name.toLowerCase()+' crate. Find the '+ING[c].name.toLowerCase()+' one',{off:1});if(go)G.stock[c]=Math.min(99,G.stock[c]+ING[c].qty);return R('Unpack +'+ING[c].qty+' '+ING[c].name.toLowerCase(),{h:null,fx:'thud'});}
+    case'store':case'shelf':{const I=ING[s.i];if(is('crate')){const c=h[1];if(c!==s.i)return R('This spot is for '+I.name.toLowerCase()+'. '+ING[c].name+' goes to '+ingWhere(c),{off:1});if(go)G.stock[c]=Math.min(99,G.stock[c]+ING[c].qty);return R('Unpack +'+ING[c].qty+' '+ING[c].name.toLowerCase(),{h:null,fx:'thud'});}
       if(G.lvl<I.lvl)return R(I.name+' unlocks at level '+I.lvl,{off:1});
       if(!h){if(G.stock[s.i]<=0)return R('Out of '+I.name.toLowerCase()+'. Order more on the computer',{off:1});if(go)G.stock[s.i]--;return R('Take '+I.name.toLowerCase(),{h:['ing',s.i],fx:'pop'});}
       if(is('ing')&&h[1]===s.i){if(go)G.stock[s.i]++;return R('Put back',{h:null,fx:'drop'});}return R(I.name+': '+G.stock[s.i],{off:1});}
@@ -787,7 +822,13 @@ function tryAct(s,h,go,pid){const now=netTime(),is=k=>!!h&&h[0]===k,bowl=is('bow
       if(bowl&&!h[4]&&h[1]<0&&!h[2]&&!h[3]){if(go)G.clean++;return R('Put the bowl back',{h:null,fx:'drop'});}return R('Clean bowls: '+G.clean,{off:1});
     case'sink':if(bowl){if(!h[4])return R(h[1]<0&&!h[2]&&!h[3]?'That bowl is already clean':'Scrape it into the trash first',{off:1});if(G.sink>=6)return R('The sink is full. Wash some',{off:1});if(go)G.sink++;return R('Put in the sink',{h:null,fx:'drop'});}
       if(!h){if(G.sink<=0)return R('Sink is empty',{off:1});if(go){G.sink--;G.clean++;if(isDir()&&Math.random()<.14)addPud(-8.6+Math.random()*1.4,-4.9+Math.random()*.6);}return R('Wash a bowl ('+G.sink+' dirty)',{hold:1.4,work:1,h:null,fx:'wash'});}return R('Sink',{off:1});
-    case'slot':{const it=G.slots[s.i];if(h&&!it){if(go)G.slots[s.i]=h;return R('Set down',{h:null,fx:'drop'});}if(!h&&it){if(go)G.slots[s.i]=null;return R('Pick up '+itemName(it).toLowerCase(),{h:it,fx:'pop'});}return h?R('Spot is taken',{off:1}):R('Counter spot',{off:1});}
+    case'slot':{const it=G.slots[s.i];
+      // Overcooked style: put a topping straight onto a bowl sitting on the counter, or set a bowl next to prepped toppings
+      {const tb=(bw,top)=>{const ti=top[0]==='prep'?top[1]:TOP.findIndex(t=>!t.prep&&t.from===top[1]);if(ti<0||bw[4]||top[0]==='ing'&&G.lvl<TOP[ti].lvl)return null;return{ti,bit:1<<ti,n:top[0]==='prep'?top[2]:TOP[ti].yield};};
+       const isTop=x=>x&&(x[0]==='prep'||x[0]==='ing'&&TOP.some(t=>!t.prep&&t.from===x[1]));
+       if(it&&it[0]==='bowl'&&isTop(h)){const q=tb(it,h);if(q){if(it[3]&q.bit)return R('That bowl already has '+TOP[q.ti].name.toLowerCase(),{off:1});const left=q.n-1;if(go)G.slots[s.i]=['bowl',it[1],it[2],it[3]|q.bit,0];return R('Put '+TOP[q.ti].name.toLowerCase()+' on the bowl',{h:left>0?['prep',q.ti,left]:null,fx:'pop'});}}
+       if(bowl&&isTop(it)){const q=tb(h,it);if(q){if(h[3]&q.bit)return R('Already has '+TOP[q.ti].name.toLowerCase(),{off:1});const left=q.n-1;if(go)G.slots[s.i]=left>0?['prep',q.ti,left]:null;return R('Add '+TOP[q.ti].name.toLowerCase(),{h:['bowl',h[1],h[2],h[3]|q.bit,0],fx:'pop'});}}}
+      if(h&&!it){if(go)G.slots[s.i]=h;return R('Set down',{h:null,fx:'drop'});}if(!h&&it){if(go)G.slots[s.i]=null;return R('Pick up '+itemName(it).toLowerCase(),{h:it,fx:'pop'});}return h?R('Spot is taken',{off:1}):R('Counter spot',{off:1});}
     case'trash':if(bowl){if(h[4])return R('Dirty bowls go in the sink',{off:1});if(h[1]<0&&!h[2]&&!h[3])return R('Trash',{off:1});return R('Scrape the bowl out',{h:['bowl',-1,0,0,1],fx:'plop'});}
       if(is('ing')||is('tea')||is('prep')||is('raw')||is('burnt'))return R('Throw away',{h:null,fx:'plop'});return R('Trash',{off:1});
     case'tea':if(G.lvl<4)return R('Tea unlocks at level 4',{off:1});if(!h)return R('Pour green tea',{hold:1,h:['tea'],fx:'water'});if(is('tea'))return R('Pour it back',{h:null,fx:'water'});return R('Tea urn',{off:1});
@@ -863,7 +904,7 @@ class Ent{
   setNet(d,h){if(!Array.isArray(d)||d.length<8||!d.every(Number.isFinite))return;this.np.set(d[0],d[1],d[2]);this.nv.set(d[3],d[4],d[5]);this.nyaw=d[6];this.fl=d[7]|0;this.nt=performance.now()/1000;this.hand=okItem(h)?h:null;if(this.fresh){this.fresh=false;this.p.copy(this.np);this.yaw=this.nyaw;}}
   smooth(dt){const age=Math.min(.3,performance.now()/1000-this.nt);_t.copy(this.np).addScaledVector(this.nv,age);if(_t.distanceToSquared(this.p)>100)this.p.copy(_t);else this.p.lerp(_t,damp(13,dt));this.yaw+=wrapPi(this.nyaw-this.yaw)*damp(12,dt);this.v.copy(this.nv);}
 }
-function okItem(h){if(!Array.isArray(h)||h.length<1||h.length>5)return false;const k=h[0];if(k==='bowl')return h.length===5&&h.slice(1).every(Number.isInteger)&&h[1]>=-1&&h[1]<BROTH.length&&(h[2]===0||(h[2]>=1&&h[2]<=NOODLE.length)||(h[2]>=11&&h[2]<=10+NOODLE.length))&&h[3]>=0&&h[3]<32;if(k==='ing'||k==='crate')return Number.isInteger(h[1])&&h[1]>=0&&h[1]<10;if(k==='cash')return Number.isInteger(h[1])&&h[1]>=0&&h[1]<1e6;if(k==='raw')return h.length===3&&h[1]===2&&Number.isInteger(h[2])&&h[2]>0&&h[2]<20;if(k==='burnt')return h.length===1;if(k==='prep')return h.length===3&&Number.isInteger(h[1])&&h[1]>=0&&h[1]<5&&Number.isInteger(h[2])&&h[2]>0&&h[2]<20;return k==='mop'||k==='tea'||k==='pan';}
+function okItem(h){if(!Array.isArray(h)||h.length<1||h.length>5)return false;const k=h[0];if(k==='bowl')return h.length===5&&h.slice(1).every(Number.isInteger)&&h[1]>=-1&&h[1]<BROTH.length&&(h[2]===0||(h[2]>=1&&h[2]<=NOODLE.length)||(h[2]>=11&&h[2]<=10+NOODLE.length))&&h[3]>=0&&h[3]<32;if(k==='ing'||k==='crate')return Number.isInteger(h[1])&&h[1]>=0&&h[1]<ING.length;if(k==='cash')return Number.isInteger(h[1])&&h[1]>=0&&h[1]<1e6;if(k==='raw')return h.length===3&&h[1]===2&&Number.isInteger(h[2])&&h[2]>0&&h[2]<20;if(k==='burnt')return h.length===1;if(k==='prep')return h.length===3&&Number.isInteger(h[1])&&h[1]>=0&&h[1]<5&&Number.isInteger(h[2])&&h[2]>0&&h[2]<20;return k==='mop'||k==='tea'||k==='pan';}
 const ents=new Map();let me=null,joinT=-1e9,gotW=false,helloT=0,aseq=0,actT=0;
 function getEnt(id){let e=ents.get(id);if(!e){e=new Ent(id);ents.set(id,e);}return e;}
 function dropEnt(id){const e=ents.get(id);if(!e)return;if(G&&isDir()&&e.hand&&e.hand[0]!=='mop'&&e.hand[0]!=='pan'&&G.floor.length<24){G.floor.push([G.nid++,r2(clamp(e.p.x,-10.6,10.6)),r2(clamp(e.p.z,-6,12)),e.hand]);dirtyG=true;}if(e.name)feed(esc(e.name)+' left');e.ch.dispose();ents.delete(id);}
@@ -880,7 +921,7 @@ function netTick(){if(!Net.room)return;const now=performance.now();
   if(now-tP>90){tP=now;Net.send({t:'p',d:[r2(me.p.x),r2(me.p.y),r2(me.p.z),r2(me.v.x),r2(me.v.y),r2(me.v.z),r2(me.yaw),me.fl],h:me.hand});}
   if(now-helloT>1800)sendHello();for(const e of ents.values())if(now-e.heard>7000)dropEnt(e.id);
   if(isDir()&&((dirtyG&&now-tG>160)||now-tG>1300)){tG=now;dirtyG=false;Net.send({t:'G',g:G,j:me.j});}}
-function okG(g){return g&&typeof g==='object'&&Number.isFinite(g.money)&&Array.isArray(g.stock)&&g.stock.length===ING.length&&Array.isArray(g.big)&&g.big.length===BASK.length&&Array.isArray(g.grill)&&g.grill.length===2&&Array.isArray(g.bins)&&g.bins.length===5&&Array.isArray(g.pots)&&g.pots.length===3&&Array.isArray(g.boards)&&Array.isArray(g.slots)&&g.slots.length===SLOTS.length&&Array.isArray(g.floor)&&Array.isArray(g.seats)&&g.seats.length===NSEAT&&Array.isArray(g.cust)&&Array.isArray(g.pud)&&Array.isArray(g.deliv)&&g.rob&&g.ack&&typeof g.ack==='object'&&
+function okG(g){return g&&typeof g==='object'&&Number.isFinite(g.money)&&Array.isArray(g.stock)&&g.stock.length===ING.length&&Array.isArray(g.big)&&g.big.length===BASK.length&&Array.isArray(g.grill)&&g.grill.length===GRILLX.length&&Array.isArray(g.bins)&&g.bins.length===5&&Array.isArray(g.pots)&&g.pots.length===3&&Array.isArray(g.boards)&&Array.isArray(g.slots)&&g.slots.length===SLOTS.length&&Array.isArray(g.floor)&&Array.isArray(g.seats)&&g.seats.length===NSEAT&&Array.isArray(g.cust)&&Array.isArray(g.pud)&&Array.isArray(g.deliv)&&g.rob&&g.ack&&typeof g.ack==='object'&&
   g.cust.every(c=>c&&CUST[c.ty]&&SHOP.seats[c.seat]&&BROTH[c.b]&&NOODLE[c.n]&&Number.isFinite(c.t0))&&g.floor.every(f=>Array.isArray(f)&&okItem(f[3]))&&g.slots.every(s=>s===null||okItem(s))&&g.pots.every(p=>p&&BROTH[p.b|0])&&g.boards.every(b=>Number.isInteger(b)&&b>=-1&&b<15);}
 Net.onMsg=m=>{if(m.t==='x'){dropEnt(m.i);return;}const isNew=!ents.has(m.i),e=getEnt(m.i);e.heard=performance.now();
   switch(m.t){
@@ -942,13 +983,14 @@ function syncSlow(){const now=netTime(),L=G.lvl;
     if(B.k===1){const T=NOODT(B.v);st=e<T?1:e<T+MUSHT?2:3;setItemMesh(v.nm,['nood',B.v,st===3?1:0]);setBar(v.bar,st===1?e/T:st===2?(e-T)/MUSHT:null,st===2?0xffb340:0x6fdc6f);}
     else if(B.k===2){st=e<EGGT()?1:2;setItemMesh(v.nm,['eggs']);setBar(v.bar,st===1?e/EGGT():null);}else{setItemMesh(v.nm,null);setBar(v.bar,null);}v.st=st;if(B.k)busy++;}
   setLabel(VIS.bigLab,busy?'Boiling water '+busy+'/6':'Boiling water');
-  for(let i=0;i<2;i++){const g=G.grill[i],v=VIS.grill[i],e=now-g.t0,st=g.s?(e<GRILLT()?1:e<GRILLT()+BURNT?2:3):0;v.st=st;setItemMesh(v.m,st===0?null:st===3?['burnt']:st===2?['prep',g.ti,g.n]:['raw',g.ti,g.n]);
+  for(let i=0;i<GRILLX.length;i++){const g=G.grill[i],v=VIS.grill[i],e=now-g.t0,st=g.s?(e<GRILLT()?1:e<GRILLT()+BURNT?2:3):0;v.st=st;setItemMesh(v.m,st===0?null:st===3?['burnt']:st===2?['prep',g.ti,g.n]:['raw',g.ti,g.n]);
     setBar(v.bar,st===1?e/GRILLT():st===2?(e-GRILLT())/BURNT:null,st===2?0xff6a3d:0x6fdc6f);setLabel(v.lab,st===0?'Grill':st===1?'Grilling':st===2?'Done!':'Burnt!');}
   for(let i=0;i<2;i++){const bi=G.boards[i];setItemMesh(VIS.board[i].m,bi>=10?['prep',bi-10,TOP[bi-10].yield]:bi>=0?['ing',bi]:null);setLabel(VIS.board[i].lab,bi>=10?'Ready':bi>=0?'Chop!':'Board');}
   for(let i=0;i<5;i++){const n=G.bins[i],v=VIS.bin[i],ok=L>=TOP[i].lvl;for(let k=0;k<8;k++)v.ps[k].visible=ok&&k<n;setLabel(v.lab,ok?TOP[i].name+' tray '+n:'Lv '+TOP[i].lvl);}
   for(let i=0;i<14;i++)VIS.bowls[i].visible=i<G.clean;setLabel(VIS.bowlLab,'Bowls '+G.clean);for(let i=0;i<6;i++)VIS.sink[i].visible=i<G.sink;setLabel(VIS.sinkLab,G.sink?'Dirty '+G.sink:'Sink');
   for(let i=0;i<SLOTS.length;i++)setItemMesh(VIS.slot[i],G.slots[i]);
-  for(let i=0;i<ING.length;i++){const v=VIS.shelf[i],ok=L>=ING[i].lvl,n=G.stock[i];for(let k=0;k<v.boxes.length;k++)v.boxes[k].visible=ok&&k<n;setLabel(v.lab,ok?ING[i].name+' ×'+n:'Lv '+ING[i].lvl);}
+  for(let i=0;i<ING.length;i++){const v=VIS.shelf[i],ok=L>=ING[i].lvl,n=G.stock[i];for(let k=0;k<v.boxes.length;k++)v.boxes[k].visible=ok&&k<n;setLabel(v.lab,ok?ING[i].name+' ×'+n:'Lv '+ING[i].lvl);
+    const w=VIS.store[i];for(let k=0;k<w.boxes.length;k++)w.boxes[k].visible=ok&&k<n;setLabel(w.lab,ok?(n?'×'+n:'empty'):'Lv '+ING[i].lvl);}
   for(let i=0;i<NSEAT;i++){const c=custAt(i),v=VIS.seat[i];setItemMesh(v.m,c&&c.st===3?['bowl',c.b,c.n+1,c.m,0]:G.seats[i]===2&&!c?['bowl',-1,0,0,1]:null);setItemMesh(v.cup,c&&c.st===3&&c.tea?['tea']:null);}
   setLabel(VIS.reg,'$'+G.money);setLabel(VIS.teaLab,L>=4?'Tea':'Tea Lv 4');
   // floor items
@@ -1106,7 +1148,7 @@ initMe();buildShop();newGame();G.nextC=1e12;G.nextR=1e12;drawMenu();
 $('name').value=lsGet('ss_name','');setLook(+lsGet('ss_ci',(Math.random()*8)|0)&7);me.name=$('name').value||'Chef';me.ch.setName(me.name);
 {const j=cleanCode(flagVal('join'));if(j)$('code').value=j;}
 applyGfx();showBest();requestAnimationFrame(frame);
-window.__game={skip:s=>{clockOff+=s;for(let i=0;i<Math.ceil(s/.2);i++)if(isDir())dirTick();syncSlow();},get me(){return me;},get G(){return G;},ents,Net,IN,S,SHOP,VIS,solo:()=>enterGame(null),host:c=>enterGame({code:c||rndCode(),host:true}),join:c=>enterGame({code:c,host:false}),act,logic,isDir,dirTick,openPC,
+window.__game={scene,renderer,skip:s=>{clockOff+=s;for(let i=0;i<Math.ceil(s/.2);i++)if(isDir())dirTick();syncSlow();},get me(){return me;},get G(){return G;},ents,Net,IN,S,SHOP,VIS,solo:()=>enterGame(null),host:c=>enterGame({code:c||rndCode(),host:true}),join:c=>enterGame({code:c,host:false}),act,logic,isDir,dirTick,openPC,
   tp:(x,z,y)=>{me.p.set(x,y||0,z);me.v.set(0,0,0);},cam:(y,p)=>{camYaw=y;camPitch=p;},get target(){return target;},
   info:()=>({mode,lvl:G.lvl,money:G.money,served:G.served,cust:G.cust.length,ents:ents.size,dir:isDir(),fps:Math.round(fpsAvg),p:[r2(me.p.x),r2(me.p.y),r2(me.p.z)],h:me.hand,t:target&&target.r.t})};
 </script>
