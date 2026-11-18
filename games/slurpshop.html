@@ -66,7 +66,7 @@ h2{margin:0 0 8px;font-size:28px;color:var(--red)}
 #plist{display:flex;gap:5px;flex-wrap:wrap;font-size:12px;max-width:300px}#plist div{display:flex;align-items:center;gap:5px;background:rgba(255,243,220,.92);border-radius:10px;padding:2px 8px 2px 4px;border:2px solid var(--ink)}#plist i{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid var(--ink)}
 #tickets{display:flex;flex-direction:column;gap:6px}
 .tk{display:flex;align-items:center;gap:4px;background:var(--paper);border:2.5px solid var(--ink);border-radius:12px;padding:3px 8px 6px 4px;position:relative;box-shadow:0 3px 0 var(--ink);font-size:13px;min-width:120px}
-.tk b{background:var(--ink);color:#fff;border-radius:8px;padding:2px 7px;font-size:14px;margin-right:2px}.tk img{width:26px;height:26px}.tk i{position:absolute;left:5px;right:5px;bottom:2px;height:3px;border-radius:2px;background:#ddd;overflow:hidden}.tk i u{display:block;height:100%;background:var(--green)}
+.tk b{background:var(--ink);color:#fff;border-radius:8px;padding:2px 7px;font-size:14px;margin-right:2px}.tk img{width:26px;height:26px}.tk .tl{display:inline-flex;flex-direction:column;align-items:center;gap:1px;min-width:28px}.tk .tl b{font-size:8.5px;line-height:1.2;padding:1px 4px;border-radius:5px;margin:0;color:#fff;white-space:nowrap;letter-spacing:.2px}.tk{padding-bottom:8px}.tk i{position:absolute;left:5px;right:5px;bottom:2px;height:3px;border-radius:2px;background:#ddd;overflow:hidden}.tk i u{display:block;height:100%;background:var(--green)}
 .tk.new{background:#ffe9a8}.tk.ok{background:#d9f5df}.tk.hot i u{background:var(--red)}.tk.hot{animation:hot .5s infinite alternate}@keyframes hot{to{transform:translateX(3px)}}
 #feed{position:absolute;right:12px;top:calc(64px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:5px;align-items:flex-end;font-size:13.5px;max-width:36vw}
 #feed div{background:rgba(255,243,220,.95);border:2px solid var(--ink);border-radius:12px;padding:4px 10px;animation:fin .25s}@keyframes fin{from{transform:translateX(30px);opacity:0}}
@@ -130,7 +130,7 @@ body.lg #left{display:none}@media (max-width:1100px){body.lg #clock{display:none
 #tHit{right:118px;bottom:calc(24px + env(safe-area-inset-bottom));--c:#8b5fd6}
 #tJump{right:40px;bottom:calc(126px + env(safe-area-inset-bottom));--c:var(--green)}
 #tDrop{right:122px;bottom:calc(100px + env(safe-area-inset-bottom));--c:var(--wood);width:56px;height:56px}
-@media (max-width:900px){#room span{display:none}#stats .chip{font-size:14px;padding:4px 8px}#stats{gap:5px}#lvl{display:none!important}#stars .sw{font-size:17px}#money{font-size:17px!important}#clkBar{width:120px}#clkN{display:none}#clkH{font-size:18px}#clock img{width:24px;height:24px}#warn{font-size:11.5px;top:52px}#goal{display:none}.tk img{width:22px;height:22px}}
+@media (max-width:900px){#room span{display:none}#stats .chip{font-size:14px;padding:4px 8px}#stats{gap:5px}#lvl{display:none!important}#stars .sw{font-size:17px}#money{font-size:17px!important}#clkBar{width:120px}#clkN{display:none}#clkH{font-size:18px}#clock img{width:24px;height:24px}#warn{font-size:11.5px;top:52px}#goal{display:none}.tk img{width:22px;height:22px}.tk .tl b{font-size:7.5px;padding:0 3px}.tk .tl{min-width:24px}}
 @media (max-height:480px){#lounge{top:6px;bottom:6px;width:min(310px,48vw)}body.lg #clock{display:none}#lgCode{font-size:32px}.lglogo{font-size:20px}#lounge .lgp{padding:10px 12px 0;gap:6px}.lgfoot{margin:4px -12px 0;padding:8px 12px 8px}.lgfoot .btn.big{font-size:17px;padding:9px 14px}h1{font-size:30px}#menu{padding:8px}#menu .card{padding:12px 16px;gap:7px;width:min(430px,100%)}.tag,#best{display:none}.btn.big{font-size:18px;padding:9px 16px}.btn{padding:9px 13px}input.inp{padding:8px 11px}#sw b{width:27px;height:27px}#banner{font-size:22px}#banner small{font-size:13px}.tk{font-size:11px;padding:2px 6px 5px 3px}.tk img{width:19px;height:19px}}
 @media (max-width:640px){h1{font-size:40px}#menu{padding:10px;align-items:flex-end}#menu .card{width:100%;padding:16px}#feed{font-size:12px}}
 </style>
@@ -492,8 +492,11 @@ function drawIcon(x,name,cx,cy,s){x.save();x.translate(cx,cy);x.scale(s/32,s/32)
 function icon(name){if(_ic[name])return _ic[name];const c=document.createElement('canvas');c.width=c.height=64;drawIcon(c.getContext('2d'),name,32,32,60);return _ic[name]=c.toDataURL();}
 const img=n=>'<img src="'+icon(n)+'" alt="">';
 // ticket icon: rice bowls and drinks get a coloured name tag so similar ones are easy to tell apart
-const TKL={d0:['GYUDON','#8a4a2a'],d1:['TERIYAKI','#c0601f'],d2:['KATSUDON','#c98a12'],d3:['CURRY','#a8651a'],k0:['GREEN TEA','#3f6e5a'],k1:['MELON SODA','#1fa84f'],k2:['MILK TEA','#9a7350'],k3:['BOBA','#5a3a2a']};
-const tkImg=n=>TKL[n]?'<span class="tl">'+img(n)+'<b style="background:'+TKL[n][1]+'">'+TKL[n][0]+'</b></span>':img(n);
+const TKL={d0:['GYUDON','#8a4a2a'],d1:['TERIYAKI','#c0601f'],d2:['KATSUDON','#c98a12'],d3:['CURRY RICE','#a8651a'],k0:['GREEN TEA','#3f6e5a'],k1:['MELON SODA','#1fa84f'],k2:['MILK TEA','#9a7350'],k3:['BOBA','#5a3a2a']};
+// every ticket picture gets a small name under it (ramen broths, noodles and toppings too)
+Object.assign(TKL,{b0:['SHOYU','#8a4b22'],b1:['TONKOTSU','#9a8a6a'],b2:['MISO','#b0702a'],b3:['SPICY','#c8302a'],b4:['SHIO','#6a8aa0'],b5:['CURRY','#b07a1a'],n0:['THIN','#8a7a3a'],n1:['THICK','#7a6a4a'],n2:['SOBA','#6a4a30'],
+  egg:['EGG','#c98a12'],onion:['ONION','#3f8a3a'],chashu:['CHASHU','#a0503a'],nori:['NORI','#2f4a3a'],corn:['CORN','#b8960a']});
+const tkImg=n=>'<span class="tl">'+img(n)+'<b style="background:'+(TKL[n]?TKL[n][1]:'#2b2430')+'">'+(TKL[n]?TKL[n][0]:n.toUpperCase())+'</b></span>';
 // order = [broth, topping mask, tea]; list of icon names for it
 // an order: ramen (dk<0: broth b, noodles n) or a rice bowl (dk = DON index); mask = toppings/garnish bits; tea = drink kind+1 (0 none)
 function orderIcons(b,n,mask,tea,dk){const a=dk>=0?['d'+dk]:['b'+b,'n'+n];for(let i=0;i<TOP.length;i++)if(mask&(1<<i))a.push(TOP[i].id);if(tea)a.push('k'+(tea-1));return a;}
