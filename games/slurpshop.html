@@ -122,6 +122,12 @@ body.lg #left{display:none}@media (max-width:1100px){body.lg #clock{display:none
 #chat{position:fixed;left:50%;bottom:180px;transform:translateX(-50%);width:min(420px,90vw);z-index:25}
 #netmsg{position:fixed;left:12px;bottom:calc(8px + env(safe-area-inset-bottom));font-size:12px;color:#fff;opacity:.6;z-index:11;pointer-events:none}
 #fps{position:fixed;right:10px;bottom:6px;font-size:11px;color:#fff;opacity:.6;z-index:11;pointer-events:none}
+#tut{position:fixed;right:max(12px,env(safe-area-inset-right));top:calc(64px + env(safe-area-inset-top));z-index:26;width:min(320px,calc(100vw - 24px));padding:12px 14px 12px;border-color:#8f6cf0;box-shadow:0 6px 0 #4b3590,0 0 26px rgba(143,108,240,.55);pointer-events:auto}
+#tut.pop{animation:tutPop .45s ease-out}@keyframes tutPop{0%{transform:scale(.85);opacity:.3}60%{transform:scale(1.04)}100%{transform:none;opacity:1}}
+.tuth{display:flex;align-items:center;justify-content:space-between;font-size:12px;letter-spacing:1.5px;color:#6a4fd0}.tuth .btn{--c:#8d8f98;font-size:12px;padding:3px 10px;box-shadow:0 3px 0 var(--ink);border-width:2px}
+.tutbar{height:6px;border-radius:4px;background:#e4dcf7;margin:7px 0 8px;overflow:hidden}.tutbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#8f6cf0,#c56cf0);transition:width .4s}
+#tutT{display:block;font-size:19px;line-height:1.15}#tutD{margin:5px 0 0;font-size:14px;font-weight:700;line-height:1.4}.tutf{display:flex;align-items:center;gap:8px;margin-top:8px}.tutf:has(.hide+.hide){display:none}
+@media (max-height:480px){#tut{top:calc(54px + env(safe-area-inset-top));width:min(300px,42vw);padding:7px 10px}#tutT{font-size:14px}#tutD{font-size:11px;line-height:1.3}.tutbar{margin:4px 0 5px}.tutf{margin-top:5px}#tutNx{padding:3px 12px}}
 #touch{position:fixed;inset:0;z-index:12;pointer-events:none}
 #joy{position:absolute;left:22px;bottom:calc(26px + env(safe-area-inset-bottom));width:124px;height:124px;border-radius:50%;background:rgba(255,243,220,.35);border:3px solid rgba(43,36,48,.6);pointer-events:auto}
 #joy i{position:absolute;left:34px;top:34px;width:50px;height:50px;border-radius:50%;background:var(--red);border:3px solid var(--ink)}
@@ -144,7 +150,7 @@ body.lg #left{display:none}@media (max-width:1100px){body.lg #clock{display:none
   <div><label class="l">Apron</label><div id="sw"></div></div>
   <button class="btn big" id="bHost">Open a shop (host)</button>
   <div class="row"><input class="inp" id="code" maxlength="5" placeholder="CODE" autocomplete="off" style="text-transform:uppercase;letter-spacing:3px;text-align:center"><button class="btn" id="bJoin" style="--c:var(--green)">Join</button></div>
-  <div class="row"><button class="btn" id="bSolo" style="--c:#3f7fd9">Play solo</button><button class="btn" id="bHow" style="--c:var(--wood)">How to play</button></div>
+  <div class="row"><button class="btn" id="bSolo" style="--c:#3f7fd9">Play solo</button><button class="btn" id="bTut" style="--c:#8f6cf0">Tutorial</button><button class="btn" id="bHow" style="--c:var(--wood)">How to play</button></div>
   <p class="small" id="best"></p>
 </div></div>
 
@@ -229,12 +235,15 @@ body.lg #left{display:none}@media (max-width:1100px){body.lg #clock{display:none
   <div class="set">Look speed <input type="range" id="sSens" min="3" max="30" value="10" style="flex:1"></div>
   <div class="set">Show FPS <div class="seg" id="sFps"><b data-v="1">On</b><b data-v="0">Off</b></div></div>
   <button class="btn" id="bResume" style="--c:var(--green)">Back to work</button>
+  <button class="btn hide" id="bTutSkip" style="--c:#8f6cf0">Skip tutorial</button>
   <button class="btn" id="bHow2" style="--c:var(--wood)">How to play</button>
   <button class="btn" id="bLeave">Leave</button>
   <p class="small">The shop keeps running while you are paused.</p>
 </div></div>
 
 <input class="inp hide" id="chat" maxlength="60" placeholder="Say something..." autocomplete="off">
+<div id="tut" class="card hide"><div class="tuth"><span id="tutN">STEP 1</span><button class="btn sm" id="tutSkip">Skip</button></div><div class="tutbar"><i id="tutBar"></i></div>
+  <b id="tutT"></b><p id="tutD"></p><div class="tutf"><button class="btn sm hide" id="tutNx" style="--c:var(--green)">Next</button><span class="small hide" id="tutNk">or press <span class="k">N</span></span></div></div>
 <div id="touch" class="hide">
   <div id="joy"><i id="joyk"></i></div>
   <button class="btn tb" id="tDrop">Drop</button>
@@ -1152,7 +1161,7 @@ function nextDay(){if(!G||!isDir()||!G.rep)return;if(G.dead){const cfg=G.cfg;new
 // ---------- events: kitchen fires, rush hour, power outages ----------
 const FIREABLE=[['pot',0],['pot',1],['pot',2],['grill',0],['grill',1],['grill',2],['wok',0],['wok',1]];
 const fireAt=(k,i)=>G.fire.findIndex(f=>f[0]===k&&f[1]===i);
-const fuseNeed=()=>Math.max(1,Math.ceil((G.np||1)/2)),fuseOn=()=>{const hs=(G.out&&G.out.h)||{},t=netTime();let n=0;for(const k in hs)if(t-hs[k]<=2.6)n++;return n;};
+const fuseNeed=()=>1,fuseOn=()=>{const hs=(G.out&&G.out.h)||{},t=netTime();let n=0;for(const k in hs)if(t-hs[k]<=2.6)n++;return n;};
 const powerOut=()=>!!G&&!!G.out&&netTime()<G.out.u;
 const stName=(k,i)=>k==='pot'?'stock pot '+(i+1):k==='grill'?'the grill':'the wok';
 function ignite(k,i){if(fireAt(k,i)>=0||G.fire.length>=5)return;G.fire.push([k,i,r2(netTime())]);if(k==='pot')G.pots[i]={s:0,b:0,t0:0,n:0};else if(k==='grill')G.grill[i].s=0;else G.wok[i].s=0;dirtyG=true;evSay('fire',stName(k,i));}
@@ -1248,7 +1257,7 @@ function tryAct(s,h,go,pid){const now=netTime(),is=k=>!!h&&h[0]===k,bowl=is('bow
       if(bowl&&!h[4])return R('Scoop rice from the rice cooker first',{off:1});return R(D.name+' tray: '+G.dbins[s.i],{off:1});}
     case'ext':{if(!h)return R('Grab the fire extinguisher',{h:['ext'],fx:'pop'});if(is('ext'))return R('Hang the extinguisher back up',{h:null,fx:'drop'});return R('Fire extinguisher',{off:1});}
     case'fuse':{if(!powerOut())return R('Breaker box. Power is on',{off:1});if(h)return R('Empty your hands to flip the breaker',{off:1});
-      // at least half the chefs have to hold the breaker at the same time
+      // one chef flipping the breaker is enough
       const need=fuseNeed(),hs=G.out.h||(G.out.h={});for(const k in hs)if(now-hs[k]>2.6)delete hs[k];const me_=String(pid??'me'),cnt=Object.keys(hs).length+(hs[me_]?0:1);
       if(go){hs[me_]=r2(now);if(Object.keys(hs).length>=need){G.out.u=now;G.out.h={};}}
       return R(need>1?'Hold the breaker together ('+Math.min(cnt,need)+'/'+need+' chefs)':'Flip the breaker to bring the power back',{hold:need>1?1.1:1.8,work:1,h:null,fx:'thud'});}
@@ -1542,8 +1551,9 @@ function enterGame(room){audioInit();myName();Net.close();clearEnts();
   respawn();drawMenu();lastLvl=G.lvl;lastRob=0;mode='game';paused=false;closePC(true);for(const id of['menu','pause','how'])$(id).classList.add('hide');$('hud').classList.remove('hide');$('feed').innerHTML='';
   if(TOUCH)$('touch').classList.remove('hide');else lock();
   const r=$('room');if(room){r.classList.remove('hide');r.innerHTML='Room <b>'+room.code+'</b><span> · tap to copy invite</span>';}else r.classList.add('hide');
-  feed(room&&!room.host?'Joining the shop...':'Pick the menu and difficulty in the lounge, then open the shop.');showLounge(true);}
-function leave(){saveGame();if(Net.room)Net.send({t:'x'});Net.close();clearEnts();gotW=true;mode='menu';paused=false;closePC(true);if(document.pointerLockElement)document.exitPointerLock();
+  feed(room&&!room.host?'Joining the shop...':'Pick the menu and difficulty in the lounge, then open the shop.');showLounge(true);
+  if(!room&&(tutForce||!tutSeen()))tutStart();else if(!tutSeen())feed('New here? The <b>Tutorial</b> on the main menu walks you through a bowl of ramen.');}
+function leave(){tutEnd(null);saveGame();if(Net.room)Net.send({t:'x'});Net.close();clearEnts();gotW=true;mode='menu';paused=false;closePC(true);if(document.pointerLockElement)document.exitPointerLock();
   newGame();G.nextC=1e12;G.nextR=1e12;drawMenu();me.hand=null;showLounge(false);for(const id of['hud','pause','touch'])$(id).classList.add('hide');$('menu').classList.remove('hide');showBest();}
 function showBest(){let s=null;try{s=JSON.parse(lsGet('ss_best','null'));}catch(e){}$('best').textContent=s&&s.served?'Best shift: '+s.served+' bowls served, reached level '+s.lvl+'. Every shift starts fresh.':'Every shift starts fresh. Send friends the room code to cook together.';}
 $('bHost').onclick=()=>enterGame({code:rndCode(),host:true});
@@ -1552,7 +1562,7 @@ $('bSolo').onclick=()=>enterGame(null);
 $('bHow').onclick=$('bHow2').onclick=()=>{$('how').classList.remove('hide');};$('bHowX').onclick=()=>$('how').classList.add('hide');
 $('room').onclick=()=>{const url=location.href.split('#')[0]+'#join='+Net.room;(navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>feed('Invite link copied'),()=>feed('Room code: '+Net.room));};
 $('menubtn').onclick=()=>setPause(true);$('bResume').onclick=()=>{setPause(false);if(!TOUCH)lock();};$('bLeave').onclick=leave;
-function setPause(p){paused=p;$('pause').classList.toggle('hide',!p);if(p&&document.pointerLockElement)document.exitPointerLock();IN.mx=IN.mz=0;IN.run=false;IN.useHeld=false;down.clear();}
+function setPause(p){paused=p;showPauseTut();$('pause').classList.toggle('hide',!p);if(p&&document.pointerLockElement)document.exitPointerLock();IN.mx=IN.mz=0;IN.run=false;IN.useHeld=false;down.clear();}
 function seg(id,key,fn){const el=$(id);const upd=()=>[...el.children].forEach(b=>b.classList.toggle('on',+b.dataset.v===S[key]));[...el.children].forEach(b=>b.onclick=()=>{S[key]=+b.dataset.v;lsSet('ss_'+key,S[key]);upd();fn&&fn();SFX.ui();});upd();}
 seg('sGfx','gfx',()=>{autoDrop=0;slowAcc=0;applyGfx();});seg('sSnd','snd',()=>{if(AU.out)AU.out.gain.value=S.snd?.8:0;});seg('sMus','mus',()=>{if(AU.mus)AU.mus.gain.value=S.mus?.5:0;});seg('sFps','fps',()=>{$('fps').textContent='';});seg('sFp','fp');
 function toggleFp(){S.fp=S.fp?0:1;lsSet('ss_fp',S.fp);[...$('sFp').children].forEach(b=>b.classList.toggle('on',+b.dataset.v===S.fp));if(!S.fp&&camPitch<-.1)camPitch=-.1;SFX.ui();}
@@ -1608,6 +1618,7 @@ const KEYS={KeyW:[0,1],ArrowUp:[0,1],KeyS:[0,-1],ArrowDown:[0,-1],KeyA:[-1,0],Ar
 function axes(){let x=0,z=0;for(const k of down){const a=KEYS[k];if(a){x+=a[0];z+=a[1];}}IN.mx=clamp(x,-1,1);IN.mz=clamp(z,-1,1);}
 addEventListener('keydown',e=>{if(mode!=='game')return;if(chatOpen){if(e.code==='Enter'){const s=$('chat').value.trim().slice(0,60);if(s){me.ch.say(s);feed('<b>'+esc(me.name)+':</b> '+esc(s));Net.send({t:'c',s});}closeChat();}else if(e.code==='Escape')closeChat();return;}
   if(pcOpen){if(e.code==='Escape'||e.code==='KeyE'||e.code==='Space'){closePC();e.preventDefault();}return;}
+  if(e.code==='KeyN'&&tut.on&&TUT[tut.i].next&&!paused&&!e.repeat){tutNext();return;}
   if(lgOpen&&e.code==='KeyL'){showLounge(false);lgHid=true;e.preventDefault();return;}
   if(e.code==='KeyL'&&G&&!G.open&&!paused){if(G.rep){rcptHid=false;rcptSig='';}else showLounge(true);return;}if(e.code==='KeyV'&&!paused&&!e.repeat){toggleFp();return;}
   if(e.code==='Escape'){setPause(!paused);return;}if(paused||e.repeat)return;
@@ -1749,7 +1760,7 @@ function frame(t){requestAnimationFrame(frame);const dt=clamp((t-last)/1000,.001
   me.ch.g.visible=mode==='game';if(mode==='game')pUpd(me,dt);me.ch.label.visible=mode==='game'&&Net.room!=='';for(const e of ents.values())pUpd(e,dt);
   slowT-=dt;if(slowT<=0){slowT=.2;syncSlow();}syncFast(dt);syncEvents(dt);
   if(holdT>0&&target&&target.r.hold){VIS.hold.position.set(target.x,2.05,target.z);setBar(VIS.hold,holdT/(target.r.hold*holdMul()),0xffd23f);}else VIS.hold.visible=false;
-  updCam(dt);updParts(dt);updFloats(dt);endShadows();hud(dt);evTickHud(dt);musicTick();autoQuality(dt);renderer.render(scene,camera);}
+  updCam(dt);updParts(dt);updFloats(dt);endShadows();hud(dt);evTickHud(dt);tutTick(dt);musicTick();autoQuality(dt);renderer.render(scene,camera);}
 setInterval(()=>{if(!document.hidden)return;const t=performance.now();let dt=Math.min(1.2,(t-last)/1000);last=t;while(dt>0){logic(Math.min(.05,dt));dt-=.05;}},250);
 // ----- boot -----
 initMe();buildShop();newGame();G.nextC=1e12;G.nextR=1e12;drawMenu();
@@ -1775,6 +1786,79 @@ function evTickHud(dt){if(evQ.length&&performance.now()>evBusyT)evNext();if(mode
   let h='';if(dm)h+='<div class="evc fire">'+img('lock')+'SHUTDOWN '+Math.max(0,Math.ceil(G.doom-now))+'s</div>';if(nf)h+='<div class="evc fire">'+img('fire')+(nf>1?nf+' FIRES':'FIRE')+'!</div>';if(ru)h+='<div class="evc rush">'+img('bus')+'RUSH '+Math.ceil(G.rush.u-now)+'s</div>';if(po){const nd=fuseNeed();h+='<div class="evc out">'+img('bolt')+'NO POWER '+Math.ceil(G.out.u-now)+'s'+(nd>1?' · breaker '+Math.min(fuseOn(),nd)+'/'+nd:'')+'</div>';}
   $('c').classList.toggle('out',!!po);
   if(h!==evChipSig){evChipSig=h;$('evChips').innerHTML=h;}}
+// ============================================================
+// First-time tutorial: a coach card with one job at a time and a bouncing arrow over the right station.
+// It runs in the closed shop before the first night, then hands over to the lounge to open up.
+// ============================================================
+const tut={on:false,i:0,c0:0,p0:null,t:0,sig:''};
+let tutForce=false;
+const tutSeen=()=>lsGet('ss_tut','')==='1'||lsGet('ss_best',null)!=null;
+const KE=TOUCH?'<b>Use</b>':'<span class="k">E</span>',KHE=TOUCH?'hold <b>Use</b>':'hold <span class="k">E</span>';
+const hk=k=>!!me.hand&&me.hand[0]===k,cleanBowl=()=>hk('bowl')&&!me.hand[4];
+function stNear(k,f){let b=null,bd=1e9;for(const s of SHOP.st){if(s.k!==k||(f&&!f(s)))continue;const d=Math.hypot(s.x-me.p.x,s.z-me.p.z);if(d<bd){bd=d;b=s;}}return b;}
+const crate=i=>stNear('shelf',s=>s.i===i)||stNear('store',s=>s.i===i);
+const B0=()=>BROTH[0].base,N0=()=>NOODLE[0].ing;
+// each step: t title, d text, at() the station to point at, done() when it is finished, next = info card (press N / tap Next)
+const TUT=[
+  {t:'Welcome to Midnight Shift!',d:()=>TOUCH?'Drag the joystick to walk and drag on the screen to look around. Walk a few steps.':'Walk with <span class="k">WASD</span>, look with the mouse and hold <span class="k">Shift</span> to run. <span class="k">V</span> switches to first person. Walk a few steps.',
+   done:()=>tut.p0&&Math.hypot(me.p.x-tut.p0.x,me.p.z-tut.p0.z)>2.5},
+  {t:'Fill a pot with water',d:()=>'Every ramen starts with broth. Go to a broth pot (follow the yellow arrow) and '+KHE+' with empty hands.',
+   at:()=>stNear('pot',s=>G.pots[s.i].s===0&&(s.i<2||G.up&1)),done:()=>G.pots.some(p=>p.s>=1)},
+  {t:'Grab a broth base',d:()=>'Broth bases live in the <b>BROTH BASES</b> crates. Press '+KE+' at the '+ING[B0()].name.toLowerCase()+' crate to pick one up.',
+   at:()=>crate(B0()),done:()=>G.pots.some(p=>p.s>=2)||hk('ing')&&BROTH.some(b=>b.base===me.hand[1])},
+  {t:'Make the broth',d:()=>'Bring it to the pot of water and press '+KE+' to drop it in. Broth takes a little while to cook.',
+   at:()=>stNear('pot',s=>G.pots[s.i].s===1),done:()=>G.pots.some(p=>p.s>=2)},
+  {t:'Grab some noodles',d:()=>'Noodles are in the <b>NOODLES &amp; EGGS</b> crates. Press '+KE+' to take '+ING[N0()].name.toLowerCase()+'.',
+   at:()=>crate(N0()),done:()=>G.big.some(b=>b.k===1)||hk('ing')&&NOODLE.some(n=>n.ing===me.hand[1])},
+  {t:'Cook the noodles',d:()=>'Drop them in the big noodle pot with '+KE+'. Be quick later: noodles left too long go <b>mushy</b>.',
+   at:()=>stNear('bask',s=>!G.big[s.i].k),done:()=>G.big.some(b=>b.k===1)},
+  {t:'Grab a clean bowl',d:()=>'Clean bowls are stacked on the <b>PLATING</b> counter. Press '+KE+' with empty hands.',
+   at:()=>stNear('bowls'),done:()=>cleanBowl()},
+  {t:'Ladle in the broth',bowl:1,d:()=>'Take the bowl to your broth pot. When the broth is ready, press '+KE+' to ladle some in.',
+   at:()=>stNear('pot',s=>G.pots[s.i].s>=2),done:()=>cleanBowl()&&me.hand[1]>=0},
+  {t:'Add the noodles',bowl:1,d:()=>'Now press '+KE+' at the noodle pot to scoop the noodles into the bowl.',
+   at:()=>stNear('bask',s=>G.big[s.i].k===1),done:()=>cleanBowl()&&me.hand[2]>0},
+  {t:'Add a topping',bowl:1,d:()=>'Toppings sit in the trays on the <b>TOPPINGS</b> counter. Press '+KE+' at the green onion tray. Empty trays need refilling: boil eggs, chop onions, grill pork.',
+   at:()=>stNear('bin',s=>s.i===1),done:()=>cleanBowl()&&me.hand[3]>0},
+  {t:'Serving customers',next:1,d:()=>'Nice bowl! Once the shop is open, <b>tickets</b> pop up in the top left with pictures of what each customer wants. Walk the bowl to their seat and press '+KE+'. A wrong order costs money, so check the broth, noodles and toppings.'},
+  {t:'Clean up: scrape the bowl',d:()=>'Nobody is here to eat it, so let\'s practise the dishes. Press '+KE+' at the <b>trash can</b> to scrape the bowl out.',
+   at:()=>stNear('trash'),done:()=>hk('bowl')&&me.hand[4]||G.sink>0},
+  {t:'Put it in the sink',d:()=>'Dirty bowls go in the sink. Press '+KE+' there.',at:()=>stNear('sink'),done:()=>G.sink>0,start:()=>{tut.c0=G.clean;}},
+  {t:'Wash it',d:()=>'With empty hands, '+KHE+' at the sink to wash the bowl. Run out of clean bowls and nobody gets served!',at:()=>stNear('sink'),done:()=>G.clean>tut.c0},
+  {t:'The rest of the kitchen',next:1,d:()=>'The <b>computer</b> orders more ingredients (trucks drop crates in the storage room) and buys upgrades. Watch for <b>events</b>: grab an extinguisher for a fire, flip the breaker in the stockroom in a blackout, and brace for the bus rush.'},
+  {t:'Stars keep you open',next:1,d:()=>'Each customer leaves a review. Keep your <b>stars</b> up: under 2 stars the shop gets shut down! The clock up top shows the night until 6 AM, then you get a receipt.'},
+  {t:'Open the shop',d:()=>'Pick tonight\'s menu in the lounge on the left, then press <b>OPEN THE SHOP</b>. Good luck, chef!',start:()=>{showLounge(true);},done:()=>!!G.open},
+];
+let tutArrow=null;
+function mkTutArrow(){const g=new THREE.Group(),m=new THREE.MeshBasicMaterial({color:0xffd23f,depthTest:false,transparent:true});
+  const c=new THREE.Mesh(new THREE.ConeGeometry(.26,.55,18),m);c.rotation.x=Math.PI;const s=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.4,10),m);s.position.y=.45;g.add(c,s);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.55,.72,36),new THREE.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;
+  g.renderOrder=c.renderOrder=s.renderOrder=999;scene.add(g,ring);g.visible=ring.visible=false;return{g,ring};}
+function tutStart(){if(!tutArrow)tutArrow=mkTutArrow();tut.on=true;tut.i=0;tut.t=performance.now();tut.sig='';tut.p0={x:me.p.x,z:me.p.z};tutForce=false;
+  if(isDir()&&!G.open){showLounge(false);lgHid=true;}$('tut').classList.remove('hide');tutDraw();}
+function tutEnd(done){if(!tut.on)return;tut.on=false;$('tut').classList.add('hide');if(tutArrow)tutArrow.g.visible=tutArrow.ring.visible=false;if(done!==null)lsSet('ss_tut','1');
+  if(done){banner('Tutorial complete!','Good luck tonight, chef',3);SFX.fanfare();}showPauseTut();}
+function tutGo(){const S0=TUT[tut.i];if(S0&&S0.start)S0.start();tut.t=performance.now();tut.sig='';SFX.ui();tutDraw();}
+function tutNext(){if(!tut.on)return;tut.i++;if(tut.i>=TUT.length){tutEnd(true);return;}tutGo();}
+function tutDraw(){const S0=TUT[tut.i];if(!S0)return;const needBowl=S0.bowl&&!cleanBowl(),sig=tut.i+'|'+needBowl;if(sig===tut.sig)return;tut.sig=sig;
+  $('tutN').textContent='STEP '+(tut.i+1)+' / '+TUT.length;$('tutT').textContent=needBowl?'Grab a clean bowl first':S0.t;
+  $('tutD').innerHTML=needBowl?'You need a clean bowl in your hands for this. They are on the <b>PLATING</b> counter.':S0.d();
+  $('tutNx').classList.toggle('hide',!S0.next);$('tutNk').classList.toggle('hide',!!TOUCH||!S0.next);$('tutBar').style.width=(tut.i/TUT.length*100)+'%';
+  const c=$('tut');c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');}
+function tutTick(dt){if(!tut.on){if(tutArrow)tutArrow.g.visible=tutArrow.ring.visible=false;return;}if(mode!=='game'||!G){tutEnd(null);return;}
+  // a practice kitchen: keep one broth base, one bag of noodles and a few green onions around while the shop is still closed
+  if(isDir()&&!G.open&&!G.rep){let ch=0;for(const i of[B0(),N0()])if(G.stock[i]<1){G.stock[i]=1;ch=1;}if(G.bins[1]<2){G.bins[1]=3;ch=1;}if(ch)dirtyG=true;}
+  let S0=TUT[tut.i];
+  if(!S0.next&&performance.now()-tut.t>400&&S0.done()){if(tut.i===TUT.length-1){tutEnd(true);return;}SFX.ui();tut.i++;tutGo();S0=TUT[tut.i];}
+  tutDraw();
+  const at=S0.bowl&&!cleanBowl()?stNear('bowls'):S0.at&&S0.at(),A=tutArrow;
+  if(at&&!lgOpen){const b=Math.sin(performance.now()/180)*.15;A.g.position.set(at.x,(at.y||1.5)+1.25+b,at.z);A.ring.position.set(at.x,.04,at.z);A.ring.scale.setScalar(1+Math.sin(performance.now()/260)*.12);A.g.visible=A.ring.visible=true;}
+  else A.g.visible=A.ring.visible=false;}
+function showPauseTut(){const b=$('bTutSkip');if(b)b.classList.toggle('hide',!tut.on);}
+$('tutNx').onclick=()=>tutNext();$('tutSkip').onclick=()=>{tutEnd(false);feed('Tutorial skipped. You can replay it from the main menu.');if(!TOUCH)lock();};
+$('bTut').onclick=()=>{tutForce=true;enterGame(null);};
+$('bTutSkip').onclick=()=>{tutEnd(false);setPause(false);if(!TOUCH)lock();};
+window.__tut=tut;window.__tutTick=tutTick;window.__tutNext=tutNext;
 </script>
 </body>
 </html>
