@@ -61,6 +61,25 @@ service cloud.firestore {
         && d.at == request.time;
     }
 
+    // ---------- Midnight Shift: ranked team profit board (one entry per run, updated by the host after each night)
+    match /ms_lb/{rid} {
+      allow read: if true;
+      allow create: if request.auth != null && msLbOk();
+      allow update: if request.auth != null && msLbOk() && resource.data.uid == request.auth.uid
+        && request.resource.data.nights >= resource.data.nights;
+      allow delete: if request.auth != null && (request.auth.token.email == 'daenii066@gmail.com'
+        && request.auth.token.email_verified == true);
+    }
+    function msLbOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['team', 'profit', 'nights', 'chefs', 'uid', 'at'])
+        && d.team is string && d.team.size() >= 1 && d.team.size() <= 60
+        && d.profit is int && d.profit >= -9999 && d.profit <= 4000 * d.nights
+        && d.nights is int && d.nights >= 1 && d.nights <= 99
+        && d.chefs is int && d.chefs >= 1 && d.chefs <= 8
+        && d.uid == request.auth.uid && d.at == request.time;
+    }
+
     // ---------- Frosty Peaks: all-time Jingle Race board (one best time per account)
     match /fp_lb/{uid} {
       allow read: if true;
