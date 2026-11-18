@@ -94,15 +94,23 @@ h2{margin:0 0 8px;font-size:28px;color:var(--red)}
 #pctabs{display:flex;gap:8px;margin-bottom:8px}#pctabs .btn{--c:#8d8f98}#pctabs .btn.on{--c:var(--red)}
 #pclist{overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:2px 4px 8px 0;touch-action:pan-y}
 .pr{display:flex;align-items:center;gap:10px;background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:6px 10px;font-size:15px}.pr img{width:34px;height:34px}.pr div{flex:1;min-width:0}.pr small{display:block;font-size:12px;opacity:.7;font-weight:700}.pr.lock{opacity:.5}
-#lounge{position:fixed;inset:0;z-index:28;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(20,14,24,.45)}
-#lounge .card{width:min(680px,100%);max-height:100%;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
-#lounge h2{margin:0;display:flex;justify-content:space-between;align-items:center}#lounge .set{flex-wrap:wrap}
-.tk .tl{display:inline-flex;flex-direction:column;align-items:center;gap:1px;margin:0 1px}.tk .tl b{font-size:8.5px;line-height:1;color:#fff;border-radius:4px;padding:2px 3px;letter-spacing:.2px;white-space:nowrap}
+#lounge{position:fixed;left:max(12px,env(safe-area-inset-left));top:12px;bottom:12px;z-index:28;width:min(400px,calc(100vw - 24px));pointer-events:none;display:flex}
+#lounge .lgp{pointer-events:auto;flex:1;overflow-y:auto;background:rgba(255,243,220,.95);border:3px solid var(--ink);border-radius:22px;box-shadow:0 7px 0 var(--ink),0 16px 30px rgba(0,0,0,.45);padding:14px 16px 0;display:flex;flex-direction:column;gap:8px;animation:lgIn .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes lgIn{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
+.lghd{display:flex;align-items:center;justify-content:space-between;gap:8px}.lglogo{font-size:28px;font-weight:900;line-height:.9;color:#5a4fd0;-webkit-text-stroke:1.5px var(--ink);text-shadow:0 3px 0 var(--ink);transform:rotate(-2deg)}.lglogo b{color:var(--gold)}
+.lgnight{background:#1d2148;color:#fff3dc;border:2.5px solid var(--ink);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:900;letter-spacing:1px;box-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.lgcode{background:#1d2148;border:3px solid var(--ink);border-radius:16px;padding:8px 12px 10px;color:#fff3dc;box-shadow:0 4px 0 var(--ink)}.lgcode small{font-size:11px;letter-spacing:2px;opacity:.75;font-weight:900}
+#lgCode{font-size:44px;line-height:1;letter-spacing:7px;color:var(--gold);text-shadow:0 3px 0 #0d0f24;font-variant-numeric:tabular-nums}
+#lgChefs{display:flex;flex-wrap:wrap;gap:5px}#lgChefs div{display:flex;align-items:center;gap:5px;background:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:2px 10px 2px 3px;font-size:13px;font-weight:900}#lgChefs i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}
+.lgsec{font-size:12px;font-weight:900;letter-spacing:2px;color:#fff;background:var(--ink);border-radius:8px;padding:3px 9px;margin-top:4px}.lgsec small{letter-spacing:0;font-size:11px;color:#c9c2ff;font-weight:800}
+#lounge .set{flex-wrap:wrap;font-size:14px}#lounge .seg b{padding:4px 8px;font-size:12.5px}
+.lgfoot{position:sticky;bottom:0;margin:4px -16px 0;padding:10px 16px 12px;background:linear-gradient(rgba(255,243,220,0),#fff3dc 22%);display:flex;flex-direction:column;gap:7px}.lgfoot .btn.big{font-size:22px;letter-spacing:1px}
+body.lg #left{display:none}@media (max-width:1100px){body.lg #clock{display:none}}
 .lgrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.lgrow>span{font-weight:900;font-size:13px;width:74px}
 .lgc{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border-radius:12px;border:2.5px solid var(--ink);background:#fff;font-weight:800;font-size:12px;cursor:pointer;opacity:.45}.lgc.on{opacity:1;background:#fff3dc;box-shadow:0 2px 0 var(--ink)}.lgc img{width:22px;height:22px}
-#lgEv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}#lgEv>span{grid-column:1/-1;font-weight:900;font-size:13px}
-.lgev{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px 7px;border-radius:14px;border:3px solid var(--ink);background:#eee9e0;cursor:pointer;text-align:center;opacity:.6;transition:transform .12s}.lgev img{width:40px;height:40px;filter:grayscale(.8)}
-.lgev b{font-size:13px}.lgev small{font-size:10.5px;line-height:1.2;opacity:.8}.lgev i{font-style:normal;font-weight:900;font-size:11px;padding:1px 8px;border-radius:99px;background:#8d8f98;color:#fff;margin-top:3px}
+#lgEv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}#lgEv>span{display:none}.lgrow>span{width:66px!important}
+.lgev{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px 6px;border-radius:14px;border:3px solid var(--ink);background:#eee9e0;cursor:pointer;text-align:center;opacity:.6;transition:transform .12s}.lgev img{width:32px;height:32px;filter:grayscale(.8)}
+.lgev b{font-size:12px}.lgev small{font-size:9.5px;line-height:1.2;opacity:.8}.lgev i{font-style:normal;font-weight:900;font-size:11px;padding:1px 8px;border-radius:99px;background:#8d8f98;color:#fff;margin-top:3px}
 .lgev.on{opacity:1;background:#fff3dc;box-shadow:0 3px 0 var(--ink)}.lgev.on img{filter:none}.lgev.on i{background:var(--green)}.lgev:active{transform:scale(.96)}
 #lounge.view .lgc,#lounge.view .lgev,#lounge.view .seg b{pointer-events:none}#lgWait{font-weight:900;text-align:center;padding:10px;border-radius:12px;background:#fff3dc}
 #closed{position:fixed;left:50%;top:104px;transform:translateX(-50%);z-index:11;cursor:pointer;background:#f2c14e;font-weight:900}
@@ -123,7 +131,7 @@ h2{margin:0 0 8px;font-size:28px;color:var(--red)}
 #tJump{right:40px;bottom:calc(126px + env(safe-area-inset-bottom));--c:var(--green)}
 #tDrop{right:122px;bottom:calc(100px + env(safe-area-inset-bottom));--c:var(--wood);width:56px;height:56px}
 @media (max-width:900px){#room span{display:none}#stats .chip{font-size:14px;padding:4px 8px}#stats{gap:5px}#lvl{display:none!important}#stars .sw{font-size:17px}#money{font-size:17px!important}#clkBar{width:120px}#clkN{display:none}#clkH{font-size:18px}#clock img{width:24px;height:24px}#warn{font-size:11.5px;top:52px}#goal{display:none}.tk img{width:22px;height:22px}}
-@media (max-height:480px){h1{font-size:30px}#menu{padding:8px}#menu .card{padding:12px 16px;gap:7px;width:min(430px,100%)}.tag,#best{display:none}.btn.big{font-size:18px;padding:9px 16px}.btn{padding:9px 13px}input.inp{padding:8px 11px}#sw b{width:27px;height:27px}#banner{font-size:22px}#banner small{font-size:13px}.tk{font-size:11px;padding:2px 6px 5px 3px}.tk img{width:19px;height:19px}}
+@media (max-height:480px){#lounge{top:6px;bottom:6px;width:min(310px,48vw)}body.lg #clock{display:none}#lgCode{font-size:32px}.lglogo{font-size:20px}#lounge .lgp{padding:10px 12px 0;gap:6px}.lgfoot{margin:4px -12px 0;padding:8px 12px 8px}.lgfoot .btn.big{font-size:17px;padding:9px 14px}h1{font-size:30px}#menu{padding:8px}#menu .card{padding:12px 16px;gap:7px;width:min(430px,100%)}.tag,#best{display:none}.btn.big{font-size:18px;padding:9px 16px}.btn{padding:9px 13px}input.inp{padding:8px 11px}#sw b{width:27px;height:27px}#banner{font-size:22px}#banner small{font-size:13px}.tk{font-size:11px;padding:2px 6px 5px 3px}.tk img{width:19px;height:19px}}
 @media (max-width:640px){h1{font-size:40px}#menu{padding:10px;align-items:flex-end}#menu .card{width:100%;padding:16px}#feed{font-size:12px}}
 </style>
 </head>
@@ -194,17 +202,23 @@ h2{margin:0 0 8px;font-size:28px;color:var(--red)}
 
 <div id="rcpt" class="hide"><div class="pp" id="rcptP"></div></div>
 
-<div id="lounge" class="hide"><div class="card">
-  <h2><span>Shop lounge <small id="lgDay" style="font-size:15px;color:#5a4fd0"></small></span><button class="btn sm" id="lgX" style="--c:#8d8f98">Walk around</button></h2>
+<div id="lounge" class="hide"><div class="lgp">
+  <div class="lghd"><div class="lglogo">MIDNIGHT <b>SHIFT</b></div><span class="lgnight" id="lgDayN">NIGHT 1</span></div>
+  <div class="lgcode"><small>ROOM CODE</small><div class="row"><b id="lgCode">SOLO</b><button class="btn sm" id="lgCopy" style="--c:#4d78c9;flex:0 0 auto">Copy invite</button></div></div>
+  <div id="lgChefs"></div>
   <p class="small" id="lgCrew" style="margin:0"></p>
-  <div class="set">How often customers come <div class="seg" id="lgF"><b data-v="0">Relaxed</b><b data-v="1">Normal</b><b data-v="2">Rush</b></div></div>
+  <div class="lgsec">TONIGHT'S SHIFT <small id="lgDay"></small></div>
+  <div class="set">Customers <div class="seg" id="lgF"><b data-v="0">Relaxed</b><b data-v="1">Normal</b><b data-v="2">Rush</b></div></div>
   <div class="set">Time to serve <div class="seg" id="lgP"><b data-v="0">Generous</b><b data-v="1">Normal</b><b data-v="2">Strict</b></div></div>
-  <div class="set">Night shift length <div class="seg" id="lgS"><b data-v="0">Short (5 min)</b><b data-v="1">Normal (6.5)</b><b data-v="2">Long (8 min)</b></div></div>
-  <div class="set">Menu <div class="seg" id="lgM"><b data-v="0">Starter</b><b data-v="1">Classic</b><b data-v="2">Everything</b></div></div>
+  <div class="set">Shift length <div class="seg" id="lgS"><b data-v="0">5 min</b><b data-v="1">6.5 min</b><b data-v="2">8 min</b></div></div>
+  <div class="lgsec">MENU</div>
+  <div class="set">Preset <div class="seg" id="lgM"><b data-v="0">Starter</b><b data-v="1">Classic</b><b data-v="2">Everything</b></div></div>
   <div id="lgItems"></div>
-  <button class="btn big" id="lgGo" style="--c:var(--green)">Open the shop!</button><div id="lgWait" class="hide">Waiting for the host to open the shop...</div>
+  <div class="lgsec">EVENTS</div>
   <div id="lgEv"></div>
-  <p class="small" style="margin:0">Customers only order what is ticked here. More chefs in the room means more customers, a little less patience and bigger orders.</p>
+  <p class="small" style="margin:0">Customers only order what is ticked. More chefs means more customers and bigger orders. Walk around while you wait: the panel stays here.</p>
+  <div class="lgfoot"><button class="btn big" id="lgGo" style="--c:var(--green)">OPEN THE SHOP</button><div id="lgWait" class="hide">Waiting for the host to open the shop...</div>
+    <div class="row"><span class="small" id="lgHint">Press <span class="k">Esc</span> for the cursor, <span class="k">L</span> to hide</span><button class="btn sm" id="lgX" style="--c:#8d8f98;flex:0 0 auto">Hide</button></div></div>
 </div></div>
 <div id="pause" class="hide"><div class="card">
   <h2>Paused</h2>
@@ -1384,7 +1398,7 @@ function findTarget(){const h=me.hand,fx=Math.sin(camYaw),fz=Math.cos(camYaw);le
   return best;}
 // hat perks for our own chef (others' perks only matter on the director: tips and throw range)
 const holdMul=()=>{const h=me.hat|0;return h===2?.6:h===4&&me.hand&&me.hand[0]==='ext'?1/3:1;};
-function updMe(dt){const b=me,now=performance.now()/1000,nt=netTime();b.hitCD-=dt;b.slipCD-=dt;if(b.stumT>0)b.stumT-=dt;const stum=b.stumT>0,busy=stum||pcOpen||lgOpen||(!!G&&!!G.rep&&!rcptHid);
+function updMe(dt){const b=me,now=performance.now()/1000,nt=netTime();b.hitCD-=dt;b.slipCD-=dt;if(b.stumT>0)b.stumT-=dt;const stum=b.stumT>0,busy=stum||pcOpen||(!!G&&!!G.rep&&!rcptHid);
   let mx=busy?0:IN.mx,mz=busy?0:IN.mz,l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;l=1;}
   const hat=b.hat|0,run=IN.run&&l>.2&&!b.tired;b.stam=clamp(b.stam+(run?-dt/(hat===1?8:5):dt/3),0,1);if(b.stam<=0)b.tired=1;else if(b.stam>.35)b.tired=0;
   const heavy=b.hand&&b.hand[0]==='crate',sp=(run?7.2:5.2)*(hat===1?1.25:1)*(heavy&&hat!==3?.8:1)*(holdT>0?0:1),fx=Math.sin(camYaw),fz=Math.cos(camYaw),wx=(fx*mz-fz*mx)*sp,wz=(fz*mz+fx*mx)*sp;
@@ -1532,11 +1546,15 @@ seg('sGfx','gfx',()=>{autoDrop=0;slowAcc=0;applyGfx();});seg('sSnd','snd',()=>{i
 function toggleFp(){S.fp=S.fp?0:1;lsSet('ss_fp',S.fp);[...$('sFp').children].forEach(b=>b.classList.toggle('on',+b.dataset.v===S.fp));if(!S.fp&&camPitch<-.1)camPitch=-.1;SFX.ui();}
 // ----- lounge: the host picks how busy the shift is and what is on the menu before opening -----
 let lgOpen=false,lgSig='';
-function showLounge(v){lgOpen=v;$('lounge').classList.toggle('hide',!v);if(v){if(document.pointerLockElement)document.exitPointerLock();IN.mx=IN.mz=0;IN.run=false;down.clear();lgSig='';drawLounge();}else if(!TOUCH&&mode==='game'&&!paused)lock();}
+// the lounge is a side panel (not a pop-up): chefs can walk around the closed shop while the host sets up the night
+let lgHid=false;
+function showLounge(v){lgOpen=v;$('lounge').classList.toggle('hide',!v);document.body.classList.toggle('lg',v);if(v){lgHid=false;if(document.pointerLockElement)document.exitPointerLock();lgSig='';drawLounge();}else if(!TOUCH&&mode==='game'&&!paused)lock();}
 function lgSet(f){if(!G||G.open||!isDir())return;f(G.cfg);if(!G.cfg.b)G.cfg.b=1;if(!G.cfg.n)G.cfg.n=1;dirtyG=true;lsSet('ss_cfg',JSON.stringify(G.cfg));drawMenu();lgSig='';drawLounge();SFX.ui();}
-function drawLounge(){if(!lgOpen||!G)return;const c=G.cfg,np=ents.size+1,host=isDir(),sig=JSON.stringify(c)+np+host;if(sig===lgSig)return;lgSig=sig;
+function drawLounge(){if(!lgOpen||!G)return;const c=G.cfg,np=ents.size+1,host=isDir(),dId=director(),chefs=[[me.id,me.name,me.ci],...[...ents.values()].filter(e=>e.name).map(e=>[e.id,e.name,e.ci])],sig=JSON.stringify(c)+JSON.stringify(chefs)+host+G.day+(Net.room||'');if(sig===lgSig)return;lgSig=sig;
+  setTxt('lgDayN','NIGHT '+G.day);if(TOUCH)setTxt('lgHint','Tap Hide to cook on the full screen');setTxt('lgCode',Net.room||'SOLO');show('lgCopy',!!Net.room);
+  setTxt('lgChefs',chefs.map(([id,n,ci])=>'<div><i style="background:'+hex(COLORS[ci&7])+'"></i>'+esc(n||'Chef')+(id===dId?' ★ host':'')+(id===me.id?' (you)':'')+'</div>').join(''),true);
   $('lounge').classList.toggle('view',!host);$('lgGo').classList.toggle('hide',!host);$('lgWait').classList.toggle('hide',host);
-  const mi=MENUP.findIndex(m=>m.b===c.b&&m.n2===c.n&&m.t===c.t&&m.d===c.d&&m.dr===c.dr);setTxt('lgDay','· Night '+G.day+(G.day>1?' · harder: '+nightTxt():''));for(const[id,v]of[['lgF',c.f],['lgP',c.p],['lgS',c.sl],['lgM',mi]])[...$(id).children].forEach(b=>b.classList.toggle('on',+b.dataset.v===v));
+  const mi=MENUP.findIndex(m=>m.b===c.b&&m.n2===c.n&&m.t===c.t&&m.d===c.d&&m.dr===c.dr);setTxt('lgDay',G.day>1?' · '+nightTxt():'');for(const[id,v]of[['lgF',c.f],['lgP',c.p],['lgS',c.sl],['lgM',mi]])[...$(id).children].forEach(b=>b.classList.toggle('on',+b.dataset.v===v));
   const chip=(k,i,icon,name,on)=>'<b class="lgc'+(on?' on':'')+'" data-k="'+k+'" data-i="'+i+'">'+img(icon)+name+'</b>';
   $('lgItems').innerHTML='<div class="lgrow"><span>Broths</span>'+BROTH.map((B,i)=>chip('b',i,'b'+i,B.name,c.b&(1<<i))).join('')+'</div><div class="lgrow"><span>Noodles</span>'+NOODLE.map((N,i)=>chip('n',i,'n'+i,N.name,c.n&(1<<i))).join('')+'</div><div class="lgrow"><span>Extras</span>'+TOP.map((T,i)=>chip('t',i,T.id,T.name,c.t&(1<<i))).join('')+'</div><div class="lgrow"><span>Rice bowls</span>'+DON.map((D,i)=>chip('d',i,'d'+i,D.name,c.d&(1<<i))).join('')+'</div><div class="lgrow"><span>Drinks</span>'+DRINK.map((D,i)=>chip('dr',i,'k'+i,D.name,c.dr&(1<<i))).join('')+'</div>';
   $('lgEv').innerHTML='<span>Events</span>'+EVN.map((E,i)=>'<div class="lgev'+(c.ev&(1<<i)?' on':'')+'" data-i="'+i+'">'+img(E.ic)+'<b>'+E.n+'</b><small>'+E.d+'</small><i>'+(c.ev&(1<<i)?'ON':'OFF')+'</i></div>').join('');
@@ -1545,7 +1563,7 @@ for(const[id,key]of[['lgF','f'],['lgP','p'],['lgS','sl']])[...$(id).children].fo
 [...$('lgM').children].forEach(b=>b.onclick=()=>lgSet(c=>{const m=MENUP[+b.dataset.v];c.b=m.b;c.n=m.n2;c.t=m.t;c.d=m.d;c.dr=m.dr;}));
 $('lgItems').onclick=e=>{const b=e.target.closest('.lgc');if(!b)return;const k=b.dataset.k,i=+b.dataset.i;lgSet(c=>{c[k]^=1<<i;});};
 $('lgEv').onclick=e=>{const b=e.target.closest('.lgev');if(!b)return;lgSet(c=>{c.ev^=1<<+b.dataset.i;});};
-$('lgGo').onclick=()=>{if(isDir()&&G&&!G.open){openShop();showLounge(false);}};$('lgX').onclick=()=>showLounge(false);$('closed').onclick=()=>{if(G&&G.rep){rcptHid=false;rcptSig='';}else showLounge(true);};
+$('lgGo').onclick=()=>{if(isDir()&&G&&!G.open){openShop();showLounge(false);}};$('lgX').onclick=()=>{showLounge(false);lgHid=true;};$('lgCopy').onclick=()=>$('room').onclick();$('closed').onclick=()=>{if(G&&G.rep){rcptHid=false;rcptSig='';}else showLounge(true);};
 $('sSens').value=S.sens;$('sSens').oninput=e=>{S.sens=+e.target.value;lsSet('ss_sens',S.sens);};
 if(TOUCH)$('keys').innerHTML='Left stick moves (push it all the way to run), drag the screen to look. <b>Use</b> does whatever the prompt says: hold it for jobs like chopping and washing. <b>Swing</b> smacks robbers and runners.';
 // ----- shop computer -----
@@ -1578,7 +1596,7 @@ const KEYS={KeyW:[0,1],ArrowUp:[0,1],KeyS:[0,-1],ArrowDown:[0,-1],KeyA:[-1,0],Ar
 function axes(){let x=0,z=0;for(const k of down){const a=KEYS[k];if(a){x+=a[0];z+=a[1];}}IN.mx=clamp(x,-1,1);IN.mz=clamp(z,-1,1);}
 addEventListener('keydown',e=>{if(mode!=='game')return;if(chatOpen){if(e.code==='Enter'){const s=$('chat').value.trim().slice(0,60);if(s){me.ch.say(s);feed('<b>'+esc(me.name)+':</b> '+esc(s));Net.send({t:'c',s});}closeChat();}else if(e.code==='Escape')closeChat();return;}
   if(pcOpen){if(e.code==='Escape'||e.code==='KeyE'||e.code==='Space'){closePC();e.preventDefault();}return;}
-  if(lgOpen){if(e.code==='Escape'||e.code==='KeyL'){showLounge(false);e.preventDefault();}return;}
+  if(lgOpen&&e.code==='KeyL'){showLounge(false);lgHid=true;e.preventDefault();return;}
   if(e.code==='KeyL'&&G&&!G.open&&!paused){if(G.rep){rcptHid=false;rcptSig='';}else showLounge(true);return;}if(e.code==='KeyV'&&!paused&&!e.repeat){toggleFp();return;}
   if(e.code==='Escape'){setPause(!paused);return;}if(paused||e.repeat)return;
   if(KEYS[e.code]){down.add(e.code);axes();e.preventDefault();}else if(e.code==='Space'){IN.jump=true;e.preventDefault();}else if(e.code==='ShiftLeft'||e.code==='ShiftRight')IN.run=true;
@@ -1689,7 +1707,7 @@ function drawRcpt(){const r=G.rep;if(r&&!hadRep){rcptHid=false;if(r.dead){SFX.lo
   const sig=JSON.stringify(r)+isDir();if(sig===rcptSig)return;rcptSig=sig;$('rcptP').innerHTML=rcptHTML(r);
   const g=$('rcGo');if(g)g.onclick=()=>{nextDay();SFX.ui();};$('rcX').onclick=()=>{rcptHid=true;show('rcpt',false);if(!TOUCH&&!paused)lock();};}
 function hud(dt){if(mode==='game'&&G&&me)hudStats(dt);if(bannerT>0){bannerT-=dt;if(bannerT<=0)$('banner').style.opacity=0;}hudT-=dt;if(hudT>0)return;hudT=.12;if(mode!=='game')return;const now=netTime(),h=me.hand;
-  if(G.open&&lgOpen)showLounge(false);$('closed').classList.toggle('hide',!!G.open||lgOpen||joining()||(!!G.rep&&!rcptHid));setTxt('closed',G.rep?'Shift is over · <b>L</b> receipt':'Shop is closed · <b>L</b> lounge',true);drawLounge();
+  if(G.open&&lgOpen)showLounge(false);else if(!G.open&&!G.rep&&!lgOpen&&!lgHid&&!joining()&&!pcOpen&&!paused)showLounge(true);if(G.open)lgHid=false;$('closed').classList.toggle('hide',!!G.open||lgOpen||joining()||(!!G.rep&&!rcptHid));setTxt('closed',G.rep?'Shift is over · <b>L</b> receipt':'Shop is closed · <b>L</b> lounge',true);drawLounge();
   if(G.lvl!==lastLvl){if(G.lvl>lastLvl){banner('Shop level '+G.lvl+'!','More customers are on the way',3.5);burst(_t.set(me.p.x,2,me.p.z),0xf2c14e,24,5,.12);}lastLvl=G.lvl;drawMenu();}
   if(G.rob.st!==lastRob){if(lastRob===0&&G.rob.st===1)banner('Robber!','Run over and smack him (left click)',3.5);else if(G.rob.st===3)banner('He has the cash!','Stop him before the street',3);else if(G.rob.st===4)banner('Robber chased off!','',2.5);lastRob=G.rob.st;}
   setTxt('lvl','Lv '+G.lvl+(G.lvl<LVL_AT.length?' · '+G.served+'/'+LVL_AT[G.lvl]:''));drawRcpt();if(me.hat&&!(G.hats&(1<<me.hat)))wearHat(0);
