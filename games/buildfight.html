@@ -280,7 +280,7 @@ let S;try{S=Object.assign({},DEF,JSON.parse(localStorage.getItem('buildfight_set
 const ACTIONS=[['forward','Move forward','KeyW'],['back','Move back','KeyS'],['left','Move left','KeyA'],['right','Move right','KeyD'],['jump','Jump','Space'],
   ['pickaxe','Pickaxe','KeyF'],['w1','Assault rifle','Digit1'],['w2','Pump shotgun','Digit2'],['w3','Sniper rifle','Digit3'],['reload','Reload','KeyR'],
   ['wall','Build wall','KeyZ'],['floor','Build floor','KeyX'],['ramp','Build ramp','KeyC'],['cone','Build cone','KeyV'],['build','Toggle build mode','KeyQ'],
-  ['edit','Edit build (hold)','KeyG'],['score','Scoreboard','Tab']];
+  ['edit','Edit build','KeyG'],['score','Scoreboard','Tab']];
 const DEF_BINDS=Object.fromEntries(ACTIONS.map(a=>[a[0],a[2]]));
 S.binds=Object.assign({},DEF_BINDS,S.binds||{});
 const keyLabel=c=>!c?'—':c.startsWith('Key')?c.slice(3):c.startsWith('Digit')?c.slice(5):c.startsWith('Numpad')?'NUM '+c.slice(6):
@@ -291,7 +291,7 @@ const validCol=c=>Number.isInteger(c)&&c>=0&&c<=0xffffff?c:null;
 const cleanName=n=>String(n||'').replace(/[^\w \-.!?]/g,'').trim().slice(0,16)||'Player';
 
 /* ================= Networking (same approach as Rocket Arena: PeerJS WebRTC + MQTT relay fallback) ================= */
-const VER=3, PEER_PREFIX='buildfight-v'+VER+'-', topicOf=c=>'buildfight/v'+VER+'/'+c;
+const VER=4, PEER_PREFIX='buildfight-v'+VER+'-', topicOf=c=>'buildfight/v'+VER+'/'+c;
 const LOCAL=/local/.test(location.hash); // test mode: tabs in the same browser talk over BroadcastChannel
 const RELAYS=LOCAL?['local']:['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
 const CODE_CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -437,7 +437,9 @@ const Sfx={ctx:null,noise:null,
   hit(hs){this.tone(hs?1600:1100,.07,.25,'square')},
   hurt(){this.tone(180,.18,.3,'sawtooth',-90)},
   kill(){this.tone(660,.1,.25,'triangle');setTimeout(()=>this.tone(990,.16,.25,'triangle'),90)},
-  reload(){this.tone(500,.05,.15,'square');setTimeout(()=>this.tone(700,.05,.15,'square'),120)}
+  reload(){this.tone(500,.05,.15,'square');setTimeout(()=>this.tone(700,.05,.15,'square'),120)},
+  launch(){this.tone(180,.45,.3,'sine',700);this.burst(.35,900,.6,.35)},
+  clear(){this.tone(520,.12,.25,'square',-300);this.burst(.5,400,.8,.5)}
 };
 
 /* ================= Constants ================= */
@@ -543,7 +545,15 @@ function placeMesh(m,p){const x=p.i*W,y=p.y*H,z=p.j*W;m.rotation.set(0,0,0);m.ro
 function setPieceMat(p){if(!p.mesh)return;const f=p.hp/PIECE_HP[p.t],mt=buildMats[f>.6?0:f>.3?1:2];for(const m of pieceMeshes(p))m.material=mt}
 function addPiece(p,anim=true){const k=keyOf(p);const old=G.builds.get(k);if(old){old.hp=p.hp;old.o=p.o;old.pending=false;if((old.e|0)!==(p.e|0)||old.d!==p.d)applyEdit(old,p.e|0,p.d);setPieceMat(old);return old}
   p.key=k;p.e=p.e|0;p.slope=p.t==='ramp'||p.t==='cone';p.boxes=pieceBoxes(p);p.mesh=makePieceMesh(p);scene.add(p.mesh);G.builds.set(k,p);G.targetsDirty=true;setPieceMat(p);
-  if(anim&&!p.e){p.mesh.scale.setScalar(.2);p.grow=0}return p}
+  if(anim&&!p.e){p.mesh.scale.setScalar(.2);p.grow=0}
+  if(G.screen==='game'){liftOnto(me(),p);if(isHost())for(const b of G.players.values())if(b.bot)liftOnto(b,p)}return p}
+// A new floor/ramp/cone that appears inside a player lifts them on top, like Fortnite, instead of trapping them underneath.
+function liftOnto(e,p){if(!e||!e.alive)return;const y=e.pos.y;let s=null;
+  if(p.t==='floor'){for(const b of p.boxes)if(overlaps(e,b)){s=b[4];if(s-y>1.25){e.pos.y=Math.max(0,b[1]-PH);e.vel.y=Math.min(e.vel.y,0);return}break}}
+  else if(p.slope){const h=slopeH(p,e.pos.x,e.pos.z);if(h!==null&&y<h&&y+PH>slopeBottom(p,h))s=h}
+  if(s===null||s<=y||s-y>H+.2)return;e.pos.y=s;
+  for(const q of nearby(e))if(q!==p)for(const b of q.boxes)if(b[1]>s-.05&&overlaps(e,b)){e.pos.y=y;return}
+  e.vel.y=Math.max(e.vel.y,0);e.onGround=true;e.groundPiece=p}
 function removePiece(k,fx){const p=G.builds.get(k);if(!p)return;G.builds.delete(k);scene.remove(p.mesh);G.targetsDirty=true;if(fx)spawnDebris(pieceCenter(p));if(ED.on&&ED.key===k)endEdit()}
 function clearBuilds(){for(const k of[...G.builds.keys()])removePiece(k)}
 // pieces that lost their path to the ground (host only)
@@ -789,11 +799,37 @@ function buildTarget(e,type){const fx=-Math.sin(e.yaw),fz=-Math.cos(e.yaw),p=e.p
   // ramp
   let i=ci,j=cj;if(pitch>-.75){i=Math.floor((p.x+fx*W*.55)/W);j=Math.floor((p.z+fz*W*.55)/W)}
   let y=lvl;const gp=e.groundPiece;
-  if(gp&&gp.t==='ramp'&&gp.d===dir&&(i!==gp.i||j!==gp.j))y=gp.y+1;
+  const ahead=dir===0?i-gp?.i:dir===2?gp?.i-i:dir===1?j-gp?.j:gp?.j-j;
+  if(gp&&gp.t==='ramp'&&gp.d===dir&&ahead>=1&&ahead<=2&&(dir%2?i===gp.i:j===gp.j))y=gp.y+ahead;
   else if(gp&&gp.t==='ramp'&&(i!==gp.i||j!==gp.j))y=gp.y;
   else y=Math.max(0,Math.floor((p.y+.4)/H));
   return{t:'ramp',d:dir,i,y,j}}
 const ghosts={};for(const t of PT){const m=new THREE.Mesh(GEO[t],ghostOk);m.visible=false;m.renderOrder=5;scene.add(m);ghosts[t]=m}
+
+/* ================= Center pads: step on one to clear every build, the other launches you up ================= */
+const PAD_R=1.9,LAUNCH_V=34,PADS=[{kind:'clear',x:-3.2,z:0,col:0xff3b3b,label:'CLEAR BUILDS'},{kind:'launch',x:3.2,z:0,col:0x2fe07a,label:'LAUNCH'}];
+function labelSprite(text,col){const c=document.createElement('canvas');c.width=512;c.height=128;const x=c.getContext('2d');
+  x.font='900 66px system-ui,Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';x.lineWidth=14;x.strokeStyle='rgba(0,0,0,.7)';x.strokeText(text,256,66);
+  x.fillStyle='#'+col.toString(16).padStart(6,'0');x.fillText(text,256,66);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));sp.scale.set(4,1,1);return sp}
+for(const P of PADS){const g=new THREE.Group();g.position.set(P.x,0,P.z);g.visible=false;
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(PAD_R+.3,PAD_R+.45,.16,40),new THREE.MeshStandardMaterial({color:0x2a2e35,metalness:.4,roughness:.5}));base.position.y=.08;base.receiveShadow=true;g.add(base);
+  P.mat=new THREE.MeshStandardMaterial({color:P.col,emissive:P.col,emissiveIntensity:.45,roughness:.35});
+  P.cap=new THREE.Mesh(new THREE.CylinderGeometry(PAD_R,PAD_R,.16,40),P.mat);P.cap.position.y=.2;g.add(P.cap);
+  P.ring=new THREE.Mesh(new THREE.RingGeometry(PAD_R+.6,PAD_R+.8,48),new THREE.MeshBasicMaterial({color:P.col,transparent:true,opacity:.5,side:THREE.DoubleSide,depthWrite:false}));P.ring.rotation.x=-Math.PI/2;P.ring.position.y=.03;g.add(P.ring);
+  const lab=labelSprite(P.label,P.col);lab.position.y=3.3;lab.scale.set(5,1.25,1);g.add(lab);scene.add(g);P.g=g;P.on=false;P.press=0}
+const onPad=(e,P)=>e.alive&&e.pos.y<.6&&Math.hypot(e.pos.x-P.x,e.pos.z-P.z)<PAD_R+.1;
+function updatePads(m,dt){const t=now();
+  for(const P of PADS){P.g.visible=true;let any=false;for(const p of G.players.values())if(onPad(p,P))any=true;
+    P.press+=((any?1:0)-P.press)*Math.min(1,dt*14);P.cap.position.y=.2-.1*P.press;P.mat.emissiveIntensity=.45+.9*P.press+.15*Math.sin(t/250);P.ring.material.opacity=.35+.2*Math.sin(t/300);
+    const on=onPad(m,P)&&m.onGround;
+    if(on&&!P.on){if(P.kind==='launch')launch(m);else if(isHost())hostClear(G.myId);else toHost({type:'clear'})}
+    P.on=on}
+  if(isHost())for(const b of G.players.values())if(b.bot&&b.onGround&&onPad(b,PADS[1]))launch(b)}
+function launch(e){e.vel.y=LAUNCH_V;e.onGround=false;e.groundPiece=null;if(e.id===G.myId)Sfx.launch()}
+let clearT=0;
+function hostClear(id){if(G.ended||!G.builds.size||now()-clearT<1500)return;clearT=now();bcast({type:'clr',id});onClear(id)}
+function onClear(id){endEdit();let n=0;for(const k of[...G.builds.keys()])removePiece(k,n++<60);Sfx.clear();addFeed(`${pname(id)} <span style="opacity:.7">cleared all builds</span>`)}
 
 /* ================= Host authority ================= */
 const isHost=()=>G.role==='host'||G.role==='offline';
@@ -875,6 +911,7 @@ function hostOnMsg(c,m){const p=G.players.get(c.id);
     case 'hit':if(G.screen==='game')hostDamage(c.id,m.t,m.d,m.w,m.h);break;
     case 'bhit':if(G.screen==='game')hostBuildDamage(String(m.k),m.d);break;
     case 'edit':if(G.screen==='game')hostEdit(c.id,String(m.k),m.e,m.d);break;
+    case 'clear':if(G.screen==='game'&&p&&p.alive)hostClear(c.id);break;
     case 'build':if(G.screen==='game'&&Array.isArray(m.p))hostBuild(c.id,m.p,c);break;
     case 'fx':if(G.screen==='game'){m.id=c.id;bcastFast(m,c.id);showFx(m)}break;
   }}
@@ -896,6 +933,7 @@ function clientOnMsg(m){
     case 'edit':{const p=G.builds.get(m.k);if(p)applyEdit(p,m.e|0,m.d|0);break}
     case 'bhp':{const p=G.builds.get(m.k);if(p){p.hp=m.hp;setPieceMat(p)}break}
     case 'fx':showFx(m);break;
+    case 'clr':if(G.screen==='game')onClear(m.id);break;
     case 'end':G.ended=true;showEnd(m.st);break;
     case 'tolobby':leaveGameScene();G.screen='lobby';showMenu('lobby');renderLobby();break;
     case 'full':$('j_status').textContent='That room is full.';break;
@@ -919,6 +957,11 @@ function doHit(t,d,w,h){if(isHost())hostDamage(G.myId,t,d,w,h);else toHost({type
 function doBuildHit(k,d){if(isHost())hostBuildDamage(k,d);else toHost({type:'bhit',k,d})}
 function doBuild(pc){const arr=enc({...pc,hp:PIECE_HP[pc.t],o:G.myId});
   if(isHost()){if(hostBuild(G.myId,arr))Sfx.build()}else{if(!canPlace(pc))return;const p=dec(arr);p.pending=true;addPiece(p);Sfx.build();toHost({type:'build',p:arr})}}
+// Fortnite-style: the camera picks the aim point, then the shot is traced from the player's head to that point,
+// so a camera (or gun barrel) poking past a corner can't shoot through the wall the player is behind.
+function aimShot(m,origin,d,range){const h=castShot(origin,d,range,G.myId);const T=h?h.pt.clone():origin.clone().addScaledVector(d,range);
+  const eye=new THREE.Vector3(m.pos.x,m.pos.y+1.5,m.pos.z),to=new THREE.Vector3().subVectors(T,eye);const len=to.length();if(len<.05)return h;to.divideScalar(len);
+  const h2=castShot(eye,to,h?len+.3:len,G.myId);return h2||h}
 function camDir(out){return out.set(0,0,-1).applyQuaternion(camera.quaternion)}
 const hitmark=$('hitmark');let hmT=0;
 function fire(){const m=me();if(!m||!m.alive||G.countdown>0)return;const wp=WEAPONS[L.w];
@@ -933,7 +976,7 @@ function fire(){const m=me();if(!m||!m.alive||G.countdown>0)return;const wp=WEAP
   m.av.muzzle.getWorldPosition(V);const muz=V.clone();muzzleFlash(muz);Sfx.shot(L.w,0);
   const ends=[];const hits=new Map,bh=new Map;let hsAny=false;
   for(let k=0;k<wp.pellets;k++){const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*spread;const d=dir.clone().addScaledVector(right,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r).normalize();
-    const h=castShot(origin,d,wp.range,G.myId);const end=h?h.pt:origin.clone().addScaledVector(d,wp.range);ends.push(end);
+    const h=aimShot(m,origin,d,wp.range);const end=h?h.pt:origin.clone().addScaledVector(d,wp.range);ends.push(end);
     if(h&&h.pid!==undefined){let dmg=wp.dmg*(h.head?wp.head:1);if(L.w===1&&h.dist>8)dmg*=Math.max(.35,1-(h.dist-8)/30);
       const cur=hits.get(h.pid)||{d:0,hs:false,pt:h.pt};cur.d+=dmg;cur.hs=cur.hs||h.head;hits.set(h.pid,cur);hsAny=hsAny||h.head}
     else if(h&&h.key){bh.set(h.key,(bh.get(h.key)||{d:0,pt:h.pt}));bh.get(h.key).d+=wp.bdmg}}
@@ -948,7 +991,7 @@ function fire(){const m=me();if(!m||!m.alive||G.countdown>0)return;const wp=WEAP
 function swingPickaxe(m,wp){if(L.cool>0||L.switchT>0)return;L.cool=wp.rate;L.swingT=wp.rate;Sfx.burst(.15,900,.6,.25,'bandpass');
   const dir=camDir(new THREE.Vector3()),head=new THREE.Vector3(m.pos.x,m.pos.y+1.5,m.pos.z),origin=camera.position.clone();
   origin.addScaledVector(dir,Math.max(0,head.clone().sub(origin).dot(dir)));
-  setTimeout(()=>{if(!m.alive)return;const h=castShot(origin,dir,wp.range,G.myId);if(!h)return;
+  setTimeout(()=>{if(!m.alive)return;const h=aimShot(m,origin,dir,wp.range);if(!h)return;
     if(h.pid!==undefined){doHit(h.pid,wp.dmg,3,false);damageNumber(h.pt,wp.dmg,'');hitmark.classList.remove('hs');hitmark.style.opacity=1;hmT=.18;Sfx.hit(false)}
     else if(h.key){doBuildHit(h.key,wp.bdmg);damageNumber(h.pt,wp.bdmg,'b');Sfx.tone(140,.12,.35,'square',-60);spawnChips(h.pt)}},140)}
 function spawnChips(pt){for(let i=0;i<4;i++){const c=new THREE.Mesh(debrisGeo,buildMats[1]);c.scale.setScalar(.3);c.position.copy(pt);scene.add(c);fxList.push({o:c,t:0,life:.5,kind:'deb',v:new THREE.Vector3(rnd(-2,2),rnd(1,4),rnd(-2,2))})}}
@@ -980,8 +1023,8 @@ function startEdit(){const m=me();if(!m||!m.alive||G.screen!=='game')return;cons
   else{for(const o of tileBoxes({...p,e:0})){const b=o.b,sz=[b[3]-b[0],b[4]-b[1],b[5]-b[2]].map(v=>v<.3?v+.14:v*.94);
       const t=new THREE.Mesh(new THREE.BoxGeometry(...sz),edMat);t.position.set((b[0]+b[3])/2,(b[1]+b[4])/2,(b[2]+b[5])/2);t.userData={tile:o.k};g.add(t);ED.tiles.push(t);if(p.e&(1<<o.k))ED.sel.add(o.k)}}
   scene.add(g);for(const t of PT)ghosts[t].visible=false;
-  const kl=keyLabel(S.binds.edit);$('edithint').textContent=p.t==='wall'?`EDITING · hold ${kl}, drag tiles: window, door, 2x2 or 2x3 at the bottom · trace removed tiles to undo · release ${kl} to apply`
-    :`EDITING · hold ${kl}, drag tiles${p.t==='ramp'?' (ramp rises toward them)':''} · trace removed tiles to undo · release ${kl} to apply`;$('edithint').classList.remove('hidden')}
+  const kl=keyLabel(S.binds.edit);$('edithint').textContent=p.t==='wall'?`EDITING · click or drag tiles: window, door, 2x2 or 2x3 at the bottom · trace removed tiles to undo · ${kl} to confirm`
+    :`EDITING · click or drag tiles${p.t==='ramp'?' (ramp rises toward them)':''} · trace removed tiles to undo · ${kl} to confirm`;$('edithint').classList.remove('hidden')}
 function editHover(){ray.set(camera.position,camDir(new THREE.Vector3()));ray.far=20;const h=ray.intersectObjects(ED.tiles,false)[0];return h?h.object.userData.tile:null}
 function editClick(){const h=editHover();if(h==null)return;ED.paint=!ED.sel.has(h);ED.down=true;if(ED.paint)ED.sel.add(h);else ED.sel.delete(h)}
 function editTick(){if(!ED.on)return;const m=me(),p=G.builds.get(ED.key);
@@ -1011,7 +1054,7 @@ const keys={};let locked=false;
 const KB={waiting:null};
 function onBind(code){const a=actionFor(code);if(!a)return;
   if(a==='score'){renderTab();$('tabboard').classList.remove('hidden');return}
-  if(a==='edit'){if(!ED.on)startEdit();return}
+  if(a==='edit'){if(ED.on)confirmEdit();else startEdit();return}
   if(ED.on&&['w1','w2','w3','pickaxe','wall','floor','ramp','cone','build'].includes(a))confirmEdit();
   switch(a){case 'w1':selectWeapon(0);break;case 'w2':selectWeapon(1);break;case 'w3':selectWeapon(2);break;case 'pickaxe':selectWeapon(3);break;
     case 'wall':case 'floor':case 'ramp':case 'cone':selectPiece(a);break;
@@ -1022,7 +1065,7 @@ addEventListener('keydown',e=>{if(KB.waiting){e.preventDefault();kbCapture(e.cod
   if(G.screen==='game'&&(e.code==='Tab'||e.code==='Space'||/^F\d/.test(e.code)||actionFor(e.code)))e.preventDefault();
   if(G.screen!=='game'||!$('pause').classList.contains('hidden'))return;
   keys[e.code]=true;if(!e.repeat)onBind(e.code)});
-function onBindUp(code){const a=actionFor(code);if(a==='score')$('tabboard').classList.add('hidden');if(a==='edit'&&ED.on)confirmEdit()}
+function onBindUp(code){const a=actionFor(code);if(a==='score')$('tabboard').classList.add('hidden');}
 addEventListener('keyup',e=>{keys[e.code]=false;onBindUp(e.code)});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;endEdit();L.fireHeld=false;L.ads=false});
 canvas.addEventListener('mousedown',e=>{Sfx.init();Sfx.vol(S.volume);if(G.screen!=='game')return;
@@ -1061,7 +1104,7 @@ function setShowcase(list){const key=JSON.stringify(list);if(key===SC.key)return
     const ring=new THREE.Mesh(new THREE.TorusGeometry(.63,.025,8,48),ringMat);ring.rotation.x=Math.PI/2;ring.position.y=.12;ped.add(top,ring);scene.add(ped);
     const plate=document.createElement('div');plate.className='lplate'+(p.me?' me':'');plate.textContent=p.name;$('lobbyplates').appendChild(plate);
     SC.items.push({av,ped,plate,ph:i*1.7,walk:0})})}
-function idleCam(dt){idleA+=dt;const inMenu=G.screen==='menu'||G.screen==='lobby';
+function idleCam(dt){idleA+=dt;for(const P of PADS)P.g.visible=false;const inMenu=G.screen==='menu'||G.screen==='lobby';
   const list=!inMenu?[]:G.screen==='lobby'&&G.lobby?G.lobby.players.map((p,i)=>({name:p.name,col:validCol(p.col)??COLORS[i%COLORS.length],me:p.id===G.myId})):[{name:S.name,col:S.col,me:true}];
   setShowcase(list);const n=SC.items.length,gap=1.45;
   SC.items.forEach((it,i)=>{const x=(i-(n-1)/2)*gap,z=-Math.abs(i-(n-1)/2)*.35;it.ped.position.set(x,0,z);
@@ -1104,6 +1147,7 @@ function update(dt){const m=me();if(!m)return;
     if(p.pos.distanceTo(p.tgt)>8)p.pos.copy(p.tgt);else p.pos.lerp(p.tgt,k);
     let dy=p.tyaw-p.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));p.yaw+=dy*k;p.pitch+=(p.tpitch-p.pitch)*k}
   // camera
+  updatePads(m,dt);
   updateCamera(m,dt);
   // build ghost + placement
   for(const t of PT)ghosts[t].visible=false;
@@ -1122,7 +1166,7 @@ function updateCamera(m,dt){const ads=L.ads&&L.mode==='combat'&&m.alive;const zo
   camera.rotation.set(m.pitch,m.yaw,0);
   const dir=camDir(new THREE.Vector3()),right=new THREE.Vector3(Math.cos(m.yaw),0,-Math.sin(m.yaw));
   // smooth the pivot height (ramps and step-ups snap the feet) so the camera glides instead of jolting
-  L.camY=L.camY==null||Math.abs(L.camY-m.pos.y)>3?m.pos.y:L.camY+(m.pos.y-L.camY)*(1-Math.exp(-12*dt));
+  L.camY=L.camY==null||Math.abs(L.camY-m.pos.y)>6?m.pos.y:clamp(L.camY+(m.pos.y-L.camY)*(1-Math.exp(-12*dt)),m.pos.y-1.2,m.pos.y+1.2);
   const pivot=new THREE.Vector3(m.pos.x,L.camY+1.65,m.pos.z).addScaledVector(right,ads?.55:.7);
   const back=ads?(L.w===2?.2:1.7):3.4;const want=pivot.clone().addScaledVector(dir,-back).add(new THREE.Vector3(0,ads?.15:.45,0));
   // camera distance eases in/out when builds get in the way instead of snapping every time a piece goes up
@@ -1273,7 +1317,7 @@ addEventListener('beforeunload',()=>{try{hostNet&&hostNet.close();clientNet&&cli
 Sfx.vol(S.volume);
 $('loading').style.display='none';$('menus').classList.remove('hidden');showMenu('main');window.__bfReady=true;
 const hc=location.hash.match(/join=([A-Za-z0-9]+)/);if(hc){selectMode('join');$('j_code').value=hc[1].toUpperCase()}
-window.__bf.api={ED,camera,doHit,doBuildHit,startOffline,doBuild,buildTarget,canPlace,fire,selectPiece,selectWeapon,keys,L,me,hostNet:()=>hostNet,clientNet:()=>clientNet,update};
+window.__bf.api={ED,PADS,aimShot,castShot,camera,doHit,doBuildHit,startOffline,doBuild,buildTarget,canPlace,fire,selectPiece,selectWeapon,keys,L,me,hostNet:()=>hostNet,clientNet:()=>clientNet,update};
 requestAnimationFrame(frame);
 </script>
 </body></html>
