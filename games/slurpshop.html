@@ -1338,7 +1338,7 @@ function genOrder(ty){const T=CUST[ty],c=G.cfg,pick=(mask,len)=>{const a=[];for(
   const dk=c.d&&Math.random()<nightDiff().don?pick(c.d,DON.length):-1,dr=c.dr&&Math.random()<nightDiff().drink?pick(c.dr,DRINK.length)+1:0;
   const av=[];for(let i=0;i<(dk>=0?2:TOP.length);i++)if(c.t&(1<<i))av.push(i);const NK=nightDiff();let n=clamp(T.top[0]+crewK(G.np).top+NK.top+(NK.top2&&Math.random()<.5?1:0)+((Math.random()*(T.top[1]-T.top[0]+1))|0),0,av.length),m=0;while(n-->0){const k=(Math.random()*av.length)|0;m|=1<<av[k];av.splice(k,1);}
   return{b,n:nn,m:dk>=0?m&3:m,tea:dr,dk};}
-function spawnCust(np,rush){const free=[];for(let i=0;i<NSEAT;i++)if(G.seats[i]===0&&!G.cust.some(c=>c.seat===i&&c.st<4))free.push(i);for(let k=free.length-1;k>=0;k--)if(G.scup&&G.scup[free[k]])free.splice(k,1);const act=G.cust.filter(c=>c.st<4).length;if(!free.length||act>=(rush?NSEAT:Math.min(NSEAT,2+G.lvl+np+nightDiff().extra)))return false;
+function spawnCust(np,rush){const free=[];for(let i=0;i<NSEAT;i++)if(G.seats[i]===0&&!G.cust.some(c=>c.seat===i&&c.st<4))free.push(i);for(let k=free.length-1;k>=0;k--)if(G.scup&&G.scup[free[k]])free.splice(k,1);const act=G.cust.filter(c=>c.st<4).length;if(!free.length||act>=(rush?Math.ceil(NSEAT*.65):Math.min(NSEAT,2+G.lvl+np+nightDiff().extra)))return false;
   const ok=CUST.map((c,i)=>G.lvl>=c.lvl?i:-1).filter(i=>i>=0);let tot=0;for(const i of ok)tot+=CUST[i].w;let r=Math.random()*tot,ty=ok[0];for(const i of ok){r-=CUST[i].w;if(r<=0){ty=i;break;}}
   const bar=free.filter(i=>SHOP.seats[i].bar),now=netTime(),side=rush&&G.rush.t0&&now>G.rush.t0+5.2&&now<G.rush.u?2+(Math.random()<.5?1:0):Math.random()<.5?-1:1,o=genOrder(ty);
   const pick=bar.length&&Math.random()<.75?bar[(Math.random()*bar.length)|0]:free[(Math.random()*free.length)|0];
@@ -1358,7 +1358,7 @@ function dirTick(){const now=netTime(),np=ents.size+1;
   if(G.up&8&&now>G.dwT){if(G.sink>0){G.sink--;G.clean++;}else if(G.dsink>0){G.dsink--;G.dclean++;}else if(G.csink>0){G.csink--;G.cups++;}G.dwT=now+3.5;}
   {const got=[];for(let i=G.deliv.length-1;i>=0;i--)if(now>=G.deliv[i][1]){const d=G.deliv[i];G.deliv.splice(i,1);const n=G.floor.filter(f=>f[3][0]==='crate'&&f[2]>3.5).length%12;G.floor.push([G.nid++,r2(DELIV[0]-1.2+(n%4)*.8),r2(DELIV[1]+.9-((n/4)|0)*.75),['crate',d[0]]]);got.push(ING[d[0]].name.toLowerCase());}
     if(got.length)say('The delivery truck dropped off '+got.reverse().join(', ')+' in the stockroom. Carry each crate to its spot in the kitchen','honk');}
-  if(!G.closing&&now>G.nextC){const iv=rush?3.6:2*Math.max(7,21-G.lvl*2)*nightDiff().iv*DIFF.f[G.cfg.f].k*crewK(np).iv/clamp(stars()/4.2,.75,1.15);G.nextC=now+(spawnCust(np,rush)?iv*(.7+Math.random()*.6):3);}
+  if(!G.closing&&now>G.nextC){const iv=rush?5.6:2*Math.max(7,21-G.lvl*2)*nightDiff().iv*DIFF.f[G.cfg.f].k*crewK(np).iv/clamp(stars()/4.2,.75,1.15);G.nextC=now+(spawnCust(np,rush)?iv*(.7+Math.random()*.6):3);}
   for(let i=G.cust.length-1;i>=0;i--){const c=G.cust[i],T=CUST[c.ty],el=now-c.t0,n=c.seat+1;
     if(c.st===0){if(el>=c.d){c.st=1;c.t0=now;}}
     else if(c.st===1||c.st===2){if(el>(c.st===1?45*(G.up&16?1.35:1)*DIFF.p[G.cfg.p].k:patience(c))){c.st=5;c.t0=now;c.d=r2(pathLen(pathTo(c.seat,c.side,1))/T.spd);rate(0,T.id==='crit'?3:1.5,c.seat);dst('walk');say('Seat '+n+' gave up and left angry','angry');}}
