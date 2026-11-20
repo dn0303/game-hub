@@ -178,7 +178,7 @@ body.lg #left{display:none}@media (max-width:1100px){body.lg #clock{display:none
     <li><b>Events</b> (turn them on or off in the lounge): kitchen fires (grab an extinguisher and hold Use on the flames), rush hour (a bus of customers), and power outages (flip the breaker in the stockroom).</li>
     <li><b>The night shift</b> runs from 10 PM to 6 AM (5 to 8 real minutes, set in the lounge). Watch the clock at the top. At 6 AM it is last call, then you get a receipt with the night's numbers and chef awards.</li>
     <li><b>Stars matter.</b> Every review pops up over the seat. Drop under 2 stars and the shop is <b>shut down for good</b>: money, upgrades and hats are gone.</li>
-    <li><b>Dishes:</b> ramen and rice use the same bowls. Dirty bowls go in either sink (kitchen or dish station). Drinks need no cups.</li>
+    <li><b>Dishes:</b> ramen and rice use the same bowls. Dirty bowls go in the kitchen sink. The shop has 12 bowls, and both bowl stacks show the same count. Drinks need no cups.</li>
     <li><b>Chef hats</b> on the shop computer: faster running, faster chopping, longer throws, fire-proof, bigger tips.</li>
     <li>Throw food and bowls (left click) across the kitchen: they land in the first tray, crate, pot or counter spot that takes them, and a teammate with empty hands can catch them.</li>
   </ul>
@@ -442,7 +442,9 @@ const NOODLE=[{id:'thin',name:'Thin',ing:0,t:5,extra:0,lvl:1,col:0xf6d77a,css:'#
 // bowl noodle field: 0 none, 1..3 = type+1, 11..13 = mushy type+1
 const nType=n=>n>10?n-11:n-1,nMushy=n=>n>10;
 const UPG=[{name:'Third stock pot',desc:'One more pot of broth on the stove',cost:220},{name:'Turbo burners',desc:'Broth, noodles and eggs cook much faster',cost:280},{name:'More bowls',desc:'Six extra bowls for the rack',cost:140},
-  {name:'Dishwasher',desc:'Bowls in the sink wash themselves',cost:380},{name:'Comfy cushions',desc:'Customers wait longer before giving up',cost:240},{name:'Tip jar',desc:'Tips are 40% bigger',cost:200}];
+  {name:'Dishwasher',desc:'Bowls in the sink wash themselves',cost:380},{name:'Comfy cushions',desc:'Customers wait longer before giving up',cost:240},{name:'Tip jar',desc:'Tips are 40% bigger',cost:200},
+  {name:'Hire a server',desc:'Takes orders and carries finished bowls from the counter spots to the right seat',cost:450,hire:1},{name:'Hire a cleaner',desc:'Mops puddles and clears dirty bowls into the sink',cost:320,hire:1},{name:'Hire a security guard',desc:'Chases off robbers before they reach the register',cost:360,hire:1}];
+const BOWLS=12;// every bowl in the shop, ramen and rice share them (18 with the More bowls upgrade)
 // customers: pat = seconds they wait for food, w = how often they show up
 const CUST=[{id:'reg',name:'Regular',pat:80,spd:2.3,tip:1,top:[0,2],w:5,lvl:1},{id:'sal',name:'Office worker',pat:48,spd:3.1,tip:2.2,top:[0,2],w:2,lvl:1},{id:'kid',name:'Kid',pat:70,spd:2.9,tip:.3,top:[0,1],w:2,lvl:1,sc:.72},
   {id:'gran',name:'Grandma',pat:130,spd:1.4,tip:1.3,top:[0,1],w:2,lvl:1,sc:.9},{id:'crit',name:'Food critic',pat:75,spd:2.2,tip:1.6,top:[2,4],w:1.4,lvl:3},{id:'big',name:'Big eater',pat:95,spd:1.9,tip:1.2,top:[1,3],w:1.2,lvl:2,sc:1.22},
@@ -580,7 +582,7 @@ for(let i=0;i<2;i++)addSt('board',i,BOARDX[i],BOARDZ,1.2,1.5);for(let i=0;i<5;i+
 // rice bowl wing and drinks counter
 for(let i=0;i<2;i++)addSt('rice',i,RICEX[i],BACKZ,1.35,1.7);for(let i=0;i<2;i++)addSt('wok',i,WOKX[i],BACKZ,1.3,1.7);for(let i=0;i<4;i++)addSt('dbin',i,DBINX[i],TOPZ,1.25,1.45);
 addSt('soda',0,DRX,DRZ.soda0,1.35,1.8);addSt('soda',1,DRX,DRZ.soda1,1.35,1.8);addSt('tea',0,DRX,DRZ.tea,1.35,1.8);addSt('ppot',0,DRX,DRZ.ppot,1.3,1.6);addSt('ptray',0,DRX,DRZ.ptray,1.3,1.45);
-addSt('sort',0,SORTP[0],SORTP[1],1.9,.4);addSt('sink2',0,SINK2[0]-.55,SINK2[1],1.6,1.6);addSt('dbowls',0,DBOWLP[0],DBOWLP[1],1.2,1.5);addSt('cups',0,CUPP[0],CUPP[1],1.25,1.6);
+addSt('sort',0,SORTP[0],SORTP[1],1.9,.4);addSt('dbowls',0,DBOWLP[0],DBOWLP[1],1.2,1.5);addSt('cups',0,CUPP[0],CUPP[1],1.25,1.6);
 EXTP.forEach((p,i)=>addSt('ext',i,p[0]+Math.sin(p[2])*.5,p[1]+Math.cos(p[2])*.5,1.5,1.4));addSt('fuse',0,FUSE[0]-.55,FUSE[1],1.5,1.7);
 addSt('pc',0,PCP[0],PCP[1],1.9,1.7);addSt('reg',0,REGP[0],.25,1.9,1.7);
 for(let i=0;i<8;i++)SHOP.seats.push({x:BARX[i],z:BARZ,yaw:Math.PI,bx:BARX[i],by:1.03,bz:.4,sy:.72,bar:1});
@@ -677,8 +679,8 @@ function donTop(A,ti,y,k=1,burnt=0){const c=burnt?[0x2e2420,0x3a2a24,0x241a16]:n
       if(!burnt){A(GEO.sphLo,mat(.02*k,y+.065*k,.02*k,.16*k,.018*k,.11*k),0xf6cf3d);A(GEO.sphLo,mat(-.04*k,y+.075*k,-.03*k,.06*k,.012*k,.05*k),0xfbf3dc);A(rboxC(.07*k,.006*k,.04*k,.003*k,4,1),mat(.08*k,y+.085*k,-.05*k,1,1,1,0,.6,0),0x5fae62);}break;
     case'curryr':A(GEO.sphLo,mat(-.03*k,y,0,.21*k,.05*k,.24*k),c?c[0]:0xb8761a);if(!burnt){A(GEO.sphLo,mat(-.03*k,y+.012*k,0,.19*k,.045*k,.22*k),0xc9871f);for(let i=0;i<6;i++)A(rboxC(.045*k,.04*k,.045*k,.012*k,4,1),mat(Math.cos(i*1.3)*.1*k-.03*k,y+.035*k,Math.sin(i*1.3)*.12*k,1,1,1,i,i,0),i%2?0xe8822f:0xf2d79a);}break;}}
 function donGeo(it){const m=new Merger(),A=(g,mm,c)=>m.add(g,mm,c,0);
-  const pts=[[0,0],[.13,0],[.14,.03],[.25,.13],[.3,.25],[.315,.27],[.29,.27],[.24,.15],[.13,.06],[0,.06]].map(p=>new THREE.Vector2(p[0],p[1]));const lg=new THREE.LatheGeometry(pts,20);A(lg,mat(0,0,0),0x25263a);lg.dispose();
-  A(THINTOR,mat(0,.268,0,.305,.305,.305,X90),0xc8402e);A(THINTOR,mat(0,.125,0,.262,.262,.262,X90),0xd9a441);
+  // same red bowl as ramen: one kind of bowl in the whole shop
+  const pts=[[0,0],[.17,0],[.3,.13],[.34,.23],[.31,.235],[.27,.14],[.15,.045],[0,.045]].map(p=>new THREE.Vector2(p[0],p[1]));const lg=new THREE.LatheGeometry(pts,18);A(lg,mat(0,0,0),0xc8402e);lg.dispose();A(GEO.cyl,mat(0,.05,0,.16,.012,.16),0xfff3dc);
   if(it[1]){A(GEO.sph,mat(0,.2,0,.27,.09,.27),0xfbf8ef);for(let i=0;i<14;i++)A(GEO.sphLo,mat(Math.cos(i*2.1)*.04*(1+i%4),.28+(i%3)*.004-(i%4)*.008,Math.sin(i*2.1)*.04*(1+i%4),.018,.01,.012),0xffffff);}
   if(it[2]>=0)donTop(A,it[2],.27);
   if(it[3]&1){A(GEO.sphLo,mat(.13,.33,-.1,.075,.035,.07),0xfbf6ea);A(GEO.sphLo,mat(.13,.35,-.1,.035,.025,.035),0xf6a93b);}
@@ -1041,7 +1043,8 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
   for(let i=0;i<14;i++){const m=new THREE.Mesh(cb,CLAY);m.castShadow=true;m.position.set(-6.36+(i%2)*.42,1.0+((i/2)|0)*.075,BACKZ);scene.add(m);VIS.bowls.push(m);}VIS.bowlLab=lab(-6.15,2.0,BACKZ);
   for(let i=0;i<6;i++){const m=new THREE.Mesh(db,CLAY);m.position.set(-8.45+(i%3)*.38+((i/3)|0)*.9,.99,BACKZ);m.rotation.z=((i%3)-1)*.12;scene.add(m);VIS.sink.push(m);}VIS.sinkLab=lab(-7.75,1.95,BACKZ);
   // dish station on the dining room's right wall: rice bowls and cups get washed here and go back to their stacks
-  {const[sx,sz]=SINK2;B(sx-.45,0,sz-1.25,sx+.47,.9,sz+1.3,0x3a6f8f,.04);B(sx-.5,.9,sz-1.3,sx+.48,.97,sz+1.35,PAL.steel,.02);
+  // (the old dish return by the rice bar is gone: every bowl washes at the kitchen sink)
+  if(0){const[sx,sz]=SINK2;B(sx-.45,0,sz-1.25,sx+.47,.9,sz+1.3,0x3a6f8f,.04);B(sx-.5,.9,sz-1.3,sx+.48,.97,sz+1.35,PAL.steel,.02);
     for(const dz of[-.62,.12])B(sx-.38,.93,sz+dz-.3,sx+.3,.985,sz+dz+.3,0x7fc4e8,.02,D);C(sx+.38,.96,sz-.25,.035,.45,PAL.steel);B(sx+.12,1.36,sz-.28,sx+.42,1.41,sz-.22,PAL.steel,.02,D);
     for(let k=0;k<5;k++)B(sx-.4,.97,sz+.62+k*.12,sx+.35,1.22,sz+.64+k*.12,PAL.woodL,.01,D);B(sx-.42,.97,sz+.58,sx+.37,1.0,sz+1.22,PAL.woodD,.01,D);
     B(sx+.42,.97,sz-1.3,sx+.48,1.42,sz+1.35,0xe9e4da,.01,D);
@@ -1049,9 +1052,9 @@ function buildShop(){const M=new Merger(),D=new Merger(),GL=new Merger(),FA=new 
     const pm=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.38),new THREE.MeshBasicMaterial({map:plate}));pm.position.set(17.94,1.22,sz);pm.rotation.y=-X90;scene.add(pm);
     const dd=itemGeo(['don',0,-1,0,1]),dc=itemGeo(['dcup']);VIS.sink2={d:[],c:[],lab:lab(sx-.05,1.75,sz)};
     for(let i=0;i<8;i++){const m=new THREE.Mesh(dd,CLAY);m.position.set(sx-.22+(i%2)*.3,.99+((i/4)|0)*.07,sz-.8+((i>>1)%2)*.3);m.rotation.z=((i%3)-1)*.15;m.scale.setScalar(.85);scene.add(m);VIS.sink2.d.push(m);}
-    for(let i=0;i<10;i++){const m=new THREE.Mesh(dc,CLAY);m.position.set(sx-.26+(i%3)*.2,.99,sz-.05+((i/3)|0)*.16);m.rotation.z=(i%2?.2:-.15);scene.add(m);VIS.sink2.c.push(m);}
-    const eb=itemGeo(['don',0,-1,0,0]),ec=itemGeo(['ecup']);VIS.dbowls={m:[],lab:lab(DBOWLP[0],1.85,DBOWLP[1],.8)};VIS.cups={m:[],lab:lab(CUPP[0]-.15,1.85,CUPP[1],.8)};
-    for(let i=0;i<10;i++){const m=new THREE.Mesh(eb,CLAY);m.castShadow=true;m.position.set(DBOWLP[0]+(i%2?.17:-.17),.98+((i/2)|0)*.085,DBOWLP[1]);scene.add(m);VIS.dbowls.m.push(m);}
+    for(let i=0;i<10;i++){const m=new THREE.Mesh(dc,CLAY);m.position.set(sx-.26+(i%3)*.2,.99,sz-.05+((i/3)|0)*.16);m.rotation.z=(i%2?.2:-.15);scene.add(m);VIS.sink2.c.push(m);}}
+  {const eb=itemGeo(['bowl',-1,0,0,0]),ec=itemGeo(['ecup']);VIS.dbowls={m:[],lab:lab(DBOWLP[0],1.85,DBOWLP[1],.8)};VIS.cups={m:[],lab:lab(CUPP[0]-.15,1.85,CUPP[1],.8)};
+    for(let i=0;i<18;i++){const m=new THREE.Mesh(eb,CLAY);m.castShadow=true;m.position.set(DBOWLP[0]+(i%2?.17:-.17),.98+((i/2)|0)*.085,DBOWLP[1]);scene.add(m);VIS.dbowls.m.push(m);}
     for(let i=0;i<10;i++){const m=new THREE.Mesh(ec,CLAY);m.position.set(CUPP[0]-.22+(i%2)*.22,.98+((i/2)|0)*.06,CUPP[1]-.05+((i>>2)%2)*.0);m.scale.setScalar(.85);scene.add(m);VIS.cups.m.push(m);}}
   for(let i=0;i<ING.length;i++){if(GONE(i)){VIS.shelf.push({boxes:[],lab:lab(0,-5,0,.1)});continue;}const[x,z]=DISP[i],g=itemGeo(['ing',i]),boxes=[];for(let k=0;k<4;k++){const m=new THREE.Mesh(g,CLAY);m.castShadow=true;m.position.set(x+(k%2?.15:-.15),1.0+(k>>1)*.07,z+(k>>1?.1:-.08));m.rotation.y=k*1.3;m.scale.setScalar(.95);scene.add(m);boxes.push(m);}
     VIS.shelf.push({boxes,lab:lab(x,1.72,z,.72)});}
@@ -1146,14 +1149,17 @@ Object.assign(SFX,{sizzle(v=1){nz(.6,.12*v,3800,{type:'highpass'});},water(v=1){
 let G=null;
 const pop5=m=>{let n=0;for(let i=0;i<5;i++)if(m&(1<<i))n++;return n;};
 function newGame(){const now=netTime();G={v:0,money:80,rs:22.5,rc:5,served:0,lvl:1,up:1,stock:ING.map(()=>0),bins:[0,0,0,0,0],pots:[0,1,2].map(()=>({s:0,b:0,t0:0,n:0})),big:BASK.map(()=>({k:0,v:0,t0:0})),grill:GRILLX.map(()=>({s:0,t0:0,ti:2,n:0})),boards:[-1,-1],
-    clean:10,sink:0,slots:SLOTS.map(()=>null),floor:[],seats:Array(NSEAT).fill(0),cust:[],pud:[],deliv:[],truck:0,rob:{st:0,t0:0,hp:3,amt:0,d0:0},ack:{},nid:1,nextC:1e12,nextR:1e12,dwT:0,open:0,np:1,cfg:loadCfg(),fly:[],
-    rice:RICEX.map(()=>({s:0,t0:0,n:0})),wok:WOKX.map(()=>({s:0,t0:0,ti:0,n:0})),dbins:[0,0,0,0],ppot:{s:0,t0:0},day:1,dayT0:0,dayLen:390,closing:0,rep:null,dead:0,hats:1,ds:{},ps:{},pearls:0,dclean:6,dsink:0,cups:8,csink:0,scup:Array(NSEAT).fill(0),fire:[],rush:{t0:0,u:0},out:{t0:0,u:0},nextF:1e12,nextRu:1e12,nextO:1e12,fireT:0};}
+    clean:12,sink:0,slots:SLOTS.map(()=>null),floor:[],seats:Array(NSEAT).fill(0),cust:[],pud:[],deliv:[],truck:0,rob:{st:0,t0:0,hp:3,amt:0,d0:0},ack:{},nid:1,nextC:1e12,nextR:1e12,dwT:0,open:0,np:1,cfg:loadCfg(),fly:[],
+    rice:RICEX.map(()=>({s:0,t0:0,n:0})),wok:WOKX.map(()=>({s:0,t0:0,ti:0,n:0})),dbins:[0,0,0,0],ppot:{s:0,t0:0},day:1,dayT0:0,dayLen:390,closing:0,rep:null,dead:0,hats:1,ds:{},ps:{},pearls:0,dclean:6,dsink:0,cups:8,csink:0,scup:Array(NSEAT).fill(0),fire:[],rush:{t0:0,u:0},out:{t0:0,u:0},nextF:1e12,nextRu:1e12,nextO:1e12,fireT:0};fillStock();}
 function loadCfg(){let c=null;try{c=JSON.parse(lsGet('ss_cfg','null'));}catch(e){}if(c&&typeof c==='object'&&c.sl===undefined)c.sl=1;if(c&&Number.isInteger(c.b))c.b=(c.b&7)||1;if(c&&typeof c==='object')delete c.rk;return okCfg(c)?c:Object.assign({},CFG0);}
 // the host opens the shop from the lounge: stock up on what the chosen menu needs, then customers start coming
+function baseStock(c){const st=ING.map(()=>0);NOODLE.forEach((N,i)=>{if(c.n&(1<<i))st[N.ing]=i?6:8;});BROTH.forEach((B,i)=>{if(c.b&(1<<i))st[B.base]=2;});TOP.forEach((T,i)=>{if(c.t&(1<<i))st[T.from]=Math.max(st[T.from],2);});
+  if(c.d){st[14]=2;DON.forEach((D,i)=>{if(c.d&(1<<i))st[D.from]=Math.max(st[D.from],2);});}if(c.dr&8)st[18]=2;return st;}
+function fillStock(){const st=baseStock(G.cfg);G.stock=G.stock.map((v,i)=>Math.max(v,st[i]));}
 function openShop(){if(!G||G.open||G.dead||G.rep)return;const now=netTime(),c=G.cfg;G.open=1;const P=PREP;if(c.rk){Object.assign(c,CFG_RANK);if(G.day===1||!G.rid)G.rid=Math.random().toString(36).slice(2,12)+Date.now().toString(36);}G.nextC=now+P+3;G.nextR=now+P+150;const st=ING.map(()=>0);
   NOODLE.forEach((N,i)=>{if(c.n&(1<<i))st[N.ing]=i?6:8;});BROTH.forEach((B,i)=>{if(c.b&(1<<i))st[B.base]=2;});TOP.forEach((T,i)=>{if(c.t&(1<<i))st[T.from]=Math.max(st[T.from],2);});
   if(c.d){st[14]=2;DON.forEach((D,i)=>{if(c.d&(1<<i))st[D.from]=Math.max(st[D.from],2);});}if(c.dr&8)st[18]=2;
-  G.stock=G.day>1?G.stock.map((v,i)=>Math.max(v,st[i])):st;G.dayT0=r2(now+P);G.dayLen=(SHIFT[c.sl]||SHIFT[1]).s;G.closing=0;G.rep=null;G.ds={m0:G.money,s0:r2(stars())};G.ps={};G.fire=[];G.out={t0:0,u:0};G.rush={t0:0,u:0};
+  G.stock=G.stock.map((v,i)=>Math.max(v,st[i]));G.dayT0=r2(now+P);G.dayLen=(SHIFT[c.sl]||SHIFT[1]).s;G.closing=0;G.rep=null;G.ds={m0:G.money,s0:r2(stars())};G.ps={};G.fire=[];G.out={t0:0,u:0};G.rush={t0:0,u:0};
   {const e=nightDiff().ev,now=netTime()+P;G.nextF=now+(90+Math.random()*60)*e;G.nextRu=now+(110+Math.random()*60)*e;G.nextO=now+(150+Math.random()*70)*e;G.nextR=now+150*e;}
   lsSet('ss_cfg',JSON.stringify(c));dirtyG=true;say('<b>Night '+G.day+': the shop is open!</b> '+nightTxt()+' '+DIFF.f[c.f].n+' crowd, '+DIFF.p[c.p].n.toLowerCase()+' timing. Check the menu board.','level');if(Net.room)Net.send({t:'ev',k:'open'});evAlert('open');drawMenu();}
 // ---------- day stats (for the receipt) and hats ----------
@@ -1328,9 +1334,23 @@ function execAction(a,h,pid){if(!a||typeof a!=='object'||!G)return null;const no
       pstat(pid,'th');G.fly.push([G.nid++,r2(x0),r2(z0),r2(lx),r2(lz),r2(now),h,dest?dest.k:'',dest?dest.i:0,fx,fz,pid==null?'':String(pid)]);return{h:null,fx:'dash'};}
     case'catch':{if(h)return null;const i=G.fly.findIndex(f=>f[0]===a.id);if(i<0)return null;pstat(pid,'ca');const f=G.fly[i];G.fly.splice(i,1);return{h:f[6],fx:'pop'};}
     case'hat':{const i=a.i|0,H=HATS[i];if(!H||i<1||G.hats&(1<<i)||G.money<H.cost)return null;G.money-=H.cost;G.hats|=1<<i;return{fx:'level'};}
-    case'buy':{const I=ING[a.i|0];if(!I||G.money<I.cost||G.deliv.length>=8)return null;G.money-=I.cost;let A=G.truck;if(!(A>=now+.3)){A=r2(now+8);G.truck=A;}G.deliv.push([a.i|0,A]);return{fx:'cash'};}
-    case'up':{const u=UPG[a.i|0],bit=1<<(a.i|0);if(!u||G.up&bit||G.money<u.cost)return null;G.money-=u.cost;G.up|=bit;if(bit===4)G.clean+=6;return{fx:'level'};}
+    case'buy':{const I=ING[a.i|0],n=Math.max(1,Math.min(10,a.n|0));if(!I||G.money<I.cost*n||(G.open&&G.deliv.length+n>40))return null;G.money-=I.cost*n;
+      if(!G.open){G.stock[a.i|0]=Math.min(99,G.stock[a.i|0]+I.qty*n);return{fx:'cash',now:1};}for(let k=1;k<n;k++)G.deliv.push([a.i|0,0]);let A=G.truck;if(!(A>=now+.3)){A=r2(now+8);G.truck=A;}G.deliv.push([a.i|0,A]);for(const d of G.deliv)if(!d[1])d[1]=A;return{fx:'cash'};}
+    case'up':{const u=UPG[a.i|0],bit=1<<(a.i|0);if(!u||G.up&bit||G.money<u.cost)return null;G.money-=u.cost;G.up|=bit;if(bit===4)G.clean+=6;if(u.hire&&isDir())say(u.name.replace('Hire a','A new')+' joined the crew!','level');return{fx:'level'};}
     default:{const s=findSt(a.k,a.i);if(!s)return null;const r=tryAct(s,h,true,pid);return r&&!r.off?r:null;}}}
+// ---------- hired help (upgrades) ----------
+function hireTick(now){if(!G.open)return;
+  if(G.up&64&&!(now<G.hsT)){G.hsT=now+3;// server: take one order, or run one finished bowl from a counter spot to the seat that wants exactly that
+    const w=G.cust.find(c=>c.st===1);if(w){w.st=2;w.t0=now;dirtyG=true;}else for(let i=0;i<G.slots.length;i++){const it=G.slots[i];if(!it||it[4]||!((it[0]==='bowl'&&(it[1]>=0||it[2]))||(it[0]==='don'&&it[1]&&it[2]>=0)))continue;
+      const c=G.cust.find(c=>c.st===2&&c.need>0&&!bowlErrors(it,c).length);if(!c)continue;G.slots[i]=null;c.need--;if(c.need>0){c.t0=now;}else finishServe(c,now);say('Your server took a bowl to seat '+(c.seat+1));dirtyG=true;break;}}
+  if(G.up&128&&!(now<G.hcT)){G.hcT=now+4;// cleaner: a puddle first, then a dirty table
+    if(G.pud.length){G.pud.shift();dirtyG=true;}else if(G.sink<10){const i=G.seats.findIndex(v=>v===2||v===3);if(i>=0&&!custAt(i)){G.seats[i]=0;G.sink++;dirtyG=true;}}}}
+// bowls never vanish: count every bowl (stacks, sink, tables, counters, floor, in the air, in hands) and fix the clean stack
+let bowlMiss=0;
+function bowlTick(now){if(!(now>(G.bwT||0)))return;G.bwT=now+3;const isB=it=>!!it&&(it[0]==='bowl'||it[0]==='don');let n=(G.clean|0)+(G.sink|0);
+  for(const v of G.seats)if(v===2||v===3)n++;for(const it of G.slots)if(isB(it))n++;for(const f of G.floor)if(isB(f[3]))n++;for(const f of G.fly)if(isB(f[6]))n++;
+  if(isB(me.hand))n++;for(const e of ents.values())if(isB(e.dh))n++;for(const c of G.cust)if(c.st===3)n++;
+  const want=BOWLS+(G.up&4?6:0),d=want-n;if(!d){bowlMiss=0;return;}if(++bowlMiss<2)return;bowlMiss=0;G.clean=Math.max(0,G.clean+d);dirtyG=true;}
 // ---------- director ----------
 let dirAcc=0,saveT=0,dirtyG=false;
 // orders only use what the host put on the menu in the lounge
@@ -1344,6 +1364,7 @@ function spawnCust(np,rush){const free=[];for(let i=0;i<NSEAT;i++)if(G.seats[i]=
   const pick=bar.length&&Math.random()<.75?bar[(Math.random()*bar.length)|0]:free[(Math.random()*free.length)|0];
   G.cust.push({id:G.nid++,ty,seat:pick,st:0,t0:now,d:r2(pathLen(pathTo(pick,side))/CUST[ty].spd),b:o.b,n:o.n,m:o.m,tea:o.tea,dk:o.dk,e:0,why:'',need:CUST[ty].id==='big'?2:1,gotT:0,q:2,side,left:1,pay:0});if(Net.room)Net.send({t:'t',s:'',k:'door'});SFX.door();return true;}
 function dirTick(){const now=netTime(),np=ents.size+1;
+  hireTick(now);bowlTick(now);
   for(let i=G.floor.length-1;i>=0;i--){const f=G.floor[i];if(f[3][0]==='crate'&&Math.abs(f[1]-SORTP[0])<SORTW/2+.2&&Math.abs(f[2]-SORTP[1])<SORTD/2+.2){const c=f[3][1];G.stock[c]=Math.min(99,G.stock[c]+ING[c].qty);G.floor.splice(i,1);dirtyG=true;}}
   if(np!==G.np){const up=np>G.np;G.np=np;if(G.open)say('Crew of '+np+' chef'+(np>1?'s':'')+': customers will come '+(up?'faster':'slower')+' and order '+(up?'more':'less')+'.');}
   for(let i=G.fly.length-1;i>=0;i--){const f=G.fly[i];if(now<f[5]+flyDur(f))continue;G.fly.splice(i,1);let done=false;if(f[7]){const s=findSt(f[7],f[8]);if(s){const r=tryAct(s,f[6],false,null);if(r&&!r.off&&r.h===null){tryAct(s,f[6],true,null);done=true;}}}
@@ -1373,6 +1394,7 @@ function dirTick(){const now=netTime(),np=ents.size+1;
         const l=lvlFor(G.served);if(l>G.lvl){G.lvl=l;say('<b>Shop level '+l+'!</b> Word is spreading: a few more customers will show up.','level');}}}
     else if(el>=c.d){if(c.st===6){say('The runner got away without paying $'+c.pay,'lost');rate(1,1,c.seat);dst('run');}G.cust.splice(i,1);}}
   const r=G.rob;
+  if(G.up&256&&r.st>=1&&r.st<=3&&now-r.t0>3){r.d0=robDist(now);r.st=4;r.t0=now;say('Your security guard chased the robber off!','win');}
   if(r.st===0){if(now>G.nextR){if(G.served>=3&&G.money>=60){r.st=1;r.t0=now;r.hp=3;r.amt=0;say('<b style="color:#c8402e">A robber is heading for the register!</b> Hit him before he empties it.','siren');}else G.nextR=now+30;}}
   else if(r.st===1){if(robDist(now)>=pathLen(ROBPATH)){r.st=2;r.t0=now;}}
   else if(r.st===2){if(now-r.t0>7){r.amt=Math.min(G.money,Math.max(40,Math.round(G.money*.4)));G.money-=r.amt;dst('rob',r.amt);r.st=3;r.t0=now;r.hp=2;say('<b style="color:#c8402e">The robber grabbed $'+r.amt+'!</b> Stop him before he reaches the street.','siren');}}
@@ -1480,13 +1502,12 @@ function syncSlow(){const now=netTime(),L=G.lvl;
     setBar(v.bar,st===1?e/GRILLT():st===2?(e-GRILLT())/BURNT:null,st===2?0xff6a3d:0x6fdc6f);setLabel(v.lab,st===0?'Grill':st===1?'Grilling':st===2?'Done!':'Burnt!');}
   for(let i=0;i<2;i++){const bi=G.boards[i];setItemMesh(VIS.board[i].m,bi>=10?['prep',bi-10,TOP[bi-10].yield]:bi>=0?['ing',bi]:null);setLabel(VIS.board[i].lab,bi>=10?'Ready':bi>=0?'Chop!':'Board');}
   for(let i=0;i<5;i++){const n=G.bins[i],v=VIS.bin[i],ok=true;for(let k=0;k<8;k++)v.ps[k].visible=ok&&k<n;setLabel(v.lab,ok?TOP[i].name+' tray '+n:'Lv '+TOP[i].lvl);}
-  for(let i=0;i<14;i++)VIS.bowls[i].visible=i<G.clean;setLabel(VIS.bowlLab,'Bowls '+G.clean);for(let i=0;i<6;i++)VIS.sink[i].visible=i<G.sink;setLabel(VIS.sinkLab,G.sink?'Dirty '+G.sink:'Sink');
+  for(let i=0;i<14;i++)VIS.bowls[i].visible=i<G.clean;setLabel(VIS.bowlLab,'Bowls '+G.clean+'/'+(BOWLS+(G.up&4?6:0)));for(let i=0;i<6;i++)VIS.sink[i].visible=i<G.sink;setLabel(VIS.sinkLab,G.sink?'Dirty '+G.sink:'Sink');
   for(let i=0;i<SLOTS.length;i++)setItemMesh(VIS.slot[i],G.slots[i]);
   for(let i=0;i<ING.length;i++){if(GONE(i)){const w=VIS.store[i];w.boxes.forEach(b=>b.visible=false);setLabel(w.lab,'');continue;}const v=VIS.shelf[i],ok=true,n=G.stock[i];for(let k=0;k<v.boxes.length;k++)v.boxes[k].visible=ok&&k<n;setLabel(v.lab,ok?ING[i].name+' ×'+n:'Lv '+ING[i].lvl);
     const w=VIS.store[i];for(let k=0;k<w.boxes.length;k++)w.boxes[k].visible=ok&&k<n;setLabel(w.lab,ok?(n?'×'+n:'empty'):'Lv '+ING[i].lvl);}
   for(let i=0;i<NSEAT;i++){const c=custAt(i),v=VIS.seat[i];setItemMesh(v.m,c&&c.st===3?(c.dk>=0?['don',1,c.dk,c.m,0]:['bowl',c.b,c.n+1,c.m,0]):G.seats[i]===2&&!c?['bowl',-1,0,0,1]:G.seats[i]===3&&!c?['don',0,-1,0,1]:null);setItemMesh(v.cup,c&&c.st===3&&c.tea?['cup',c.tea-1]:!c&&G.scup&&G.scup[i]?['dcup']:null);}
-  if(VIS.sink2){const ds=G.sink|0,cs=0;VIS.sink2.d.forEach((m,i)=>m.visible=i<ds);VIS.sink2.c.forEach((m,i)=>m.visible=i<cs);setLabel(VIS.sink2.lab,ds||cs?'Dirty: '+(ds?ds+' bowl'+(ds>1?'s':''):'')+(ds&&cs?', ':'')+(cs?cs+' cup'+(cs>1?'s':''):''):'Sink');
-    const db=G.clean|0;VIS.dbowls.m.forEach((m,i)=>m.visible=i<db);setLabel(VIS.dbowls.lab,'Bowls '+db);VIS.cups.m.forEach(m=>m.visible=false);VIS.cups.lab.visible=false;}
+  if(VIS.dbowls){const db=G.clean|0;VIS.dbowls.m.forEach((m,i)=>m.visible=i<db);setLabel(VIS.dbowls.lab,'Bowls '+db+'/'+(BOWLS+(G.up&4?6:0)));VIS.cups.m.forEach(m=>m.visible=false);VIS.cups.lab.visible=false;}
   setLabel(VIS.reg,'$'+G.money);
   // rice bowl wing and drinks
   for(let i=0;i<RICEX.length;i++){const r=G.rice[i],v=VIS.rice[i],e=now-r.t0,st=r.s===1?(e<RICET()?1:2):r.s;v.st=st;v.piv.rotation.x=st===2?-1.05:0;v.rc.visible=st===2;v.lt.material.color.set(st===1?0xff5a3d:st===2?0x6fdc6f:0x555555);
@@ -1627,12 +1648,13 @@ function openPC(){pcOpen=true;pcSig='';$('pc').classList.remove('hide');if(docum
 function closePC(quiet){if(!pcOpen&&quiet)return;pcOpen=false;$('pc').classList.add('hide');if(!quiet&&!TOUCH&&mode==='game')lock();}
 function drawPC(){if(!pcOpen)return;const sig=pcTab+'|'+G.money+'|'+G.lvl+'|'+G.up+'|'+G.hats+'|'+me.hat+'|'+G.stock.join()+'|'+G.deliv.length;if(sig===pcSig)return;pcSig=sig;setTxt('pcmoney','$'+G.money);let h='';
   if(pcTab===0)for(let i=0;i<ING.length;i++){if(GONE(i))continue;const I=ING[i],lock=false,way=G.deliv.filter(d=>d[0]===i).length;
-    h+='<div class="pr'+(lock?' lock':'')+'">'+img(I.id)+'<div>'+I.name+' <span style="opacity:.6">x'+I.qty+'</span><small>'+(lock?'Unlocks at shop level '+I.lvl:'In stock: '+G.stock[i]+(way?' · '+way+' crate'+(way>1?'s':'')+' on the way':''))+'</small></div><button class="btn sm" data-b="'+i+'" style="--c:var(--green)"'+(lock||G.money<I.cost||G.deliv.length>=8?' disabled':'')+'>$'+I.cost+'</button></div>';}
+    h+='<div class="pr'+(lock?' lock':'')+'">'+img(I.id)+'<div>'+I.name+' <span style="opacity:.6">x'+I.qty+'</span><small>'+(lock?'Unlocks at shop level '+I.lvl:'In stock: '+G.stock[i]+(way?' · '+way+' crate'+(way>1?'s':'')+' on the way':''))+'</small></div><button class="btn sm" data-b="'+i+'" data-n="1" style="--c:var(--green)"'+(lock||G.money<I.cost||(G.open&&G.deliv.length>=40)?' disabled':'')+'>$'+I.cost+'</button><button class="btn sm" data-b="'+i+'" data-n="5" style="--c:#2f8a55"'+(lock||G.money<I.cost*5||(G.open&&G.deliv.length+5>40)?' disabled':'')+'>x5 $'+I.cost*5+'</button></div>';}
+  if(pcTab===0)h='<p class="small" style="margin:0 0 6px">'+(G.open?'Orders arrive by truck in the stockroom. Drop the crates on the green sorting line.':'The shop is closed, so orders go straight onto the shelves.')+'</p>'+h;
   else if(pcTab===2)for(let i=0;i<HATS.length;i++){const H=HATS[i],own=i===0||(G.hats&(1<<i)),on=(me.hat|0)===i;
     h+='<div class="pr'+(on?' wear':'')+'"><img src="'+hatIcon(i)+'" alt=""><div>'+H.n+(on?' <span class="tag">WEARING</span>':'')+'<small>'+H.d+'</small></div><button class="btn sm" data-h="'+i+'" style="--c:'+(on?'#8d8f98':own?'#4d78c9':'var(--green)')+'"'+(on||(!own&&G.money<H.cost)?' disabled':'')+'>'+(on?'On':own?'Wear':'$'+H.cost)+'</button></div>';}
   else for(let i=0;i<UPG.length;i++){if(i===0)continue;const u=UPG[i],own=G.up&(1<<i);h+='<div class="pr">'+img('money')+'<div>'+u.name+'<small>'+u.desc+'</small></div><button class="btn sm" data-u="'+i+'" style="--c:'+(own?'#8d8f98':'var(--green)')+'"'+(own||G.money<u.cost?' disabled':'')+'>'+(own?'Owned':'$'+u.cost)+'</button></div>';}
   $('pclist').innerHTML=h;}
-$('pclist').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.h!=null){const i=+b.dataset.h;if(i===0||(G.hats&(1<<i))){wearHat(i);}else if(act({k:'hat',i})){wearHat(i);feed('Bought the '+HATS[i].n.toLowerCase()+'. '+HATS[i].d+'.');}else SFX.nope();pcSig='';drawPC();return;}const r=b.dataset.b!=null?act({k:'buy',i:+b.dataset.b}):act({k:'up',i:+b.dataset.u});if(!r)SFX.nope();else if(b.dataset.b!=null)feed('Ordered '+ING[+b.dataset.b].name.toLowerCase()+'. The truck will drop it in the stockroom.');pcSig='';drawPC();};
+$('pclist').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.h!=null){const i=+b.dataset.h;if(i===0||(G.hats&(1<<i))){wearHat(i);}else if(act({k:'hat',i})){wearHat(i);feed('Bought the '+HATS[i].n.toLowerCase()+'. '+HATS[i].d+'.');}else SFX.nope();pcSig='';drawPC();return;}const nb=+(b.dataset.n||1),r=b.dataset.b!=null?act({k:'buy',i:+b.dataset.b,n:nb}):act({k:'up',i:+b.dataset.u});if(!r)SFX.nope();else if(b.dataset.b!=null)feed('Ordered '+(nb>1?nb+' crates of ':'')+ING[+b.dataset.b].name.toLowerCase()+(r.now?'. It went straight onto the shelf.':'. The truck will drop it in the stockroom.'));pcSig='';drawPC();};
 $('pcX').onclick=()=>closePC();[...$('pctabs').children].forEach(b=>b.onclick=()=>{pcTab=+b.dataset.t;[...$('pctabs').children].forEach(x=>x.classList.toggle('on',x===b));pcSig='';drawPC();SFX.ui();});
 // ----- input -----
 function lock(){if(window.__nopause)return;const c=renderer.domElement;if(c.requestPointerLock&&!document.pointerLockElement){try{const p=c.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}catch(e){}}}
