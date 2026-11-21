@@ -443,7 +443,7 @@ const NOODLE=[{id:'thin',name:'Thin',ing:0,t:5,extra:0,lvl:1,col:0xf6d77a,css:'#
 const nType=n=>n>10?n-11:n-1,nMushy=n=>n>10;
 const UPG=[{name:'Third stock pot',desc:'One more pot of broth on the stove',cost:220},{name:'Turbo burners',desc:'Broth, noodles and eggs cook much faster',cost:280},{name:'More bowls',desc:'Six extra bowls for the rack',cost:140},
   {name:'Dishwasher',desc:'Bowls in the sink wash themselves',cost:380},{name:'Comfy cushions',desc:'Customers wait longer before giving up',cost:240},{name:'Tip jar',desc:'Tips are 40% bigger',cost:200},
-  {name:'Hire a server',desc:'Takes orders and carries finished bowls from the counter spots to the right seat',cost:450,hire:1},{name:'Hire a cleaner',desc:'Mops puddles and clears dirty bowls into the sink',cost:320,hire:1},{name:'Hire a security guard',desc:'Chases off robbers before they reach the register',cost:360,hire:1}];
+  {name:'Hire a server',desc:'Takes orders, carries finished bowls from the counter spots to the right seat and brings dirty bowls back to the sink',cost:500,hire:1},{name:'Hire a cleaner',desc:'Mops puddles and clears dirty bowls into the sink',cost:210,hire:1},{name:'Hire a security guard',desc:'Chases off robbers before they reach the register',cost:235,hire:1}];
 const BOWLS=12;// every bowl in the shop, ramen and rice share them (18 with the More bowls upgrade)
 // customers: pat = seconds they wait for food, w = how often they show up
 const CUST=[{id:'reg',name:'Regular',pat:80,spd:2.3,tip:1,top:[0,2],w:5,lvl:1},{id:'sal',name:'Office worker',pat:48,spd:3.1,tip:2.2,top:[0,2],w:2,lvl:1},{id:'kid',name:'Kid',pat:70,spd:2.9,tip:.3,top:[0,1],w:2,lvl:1,sc:.72},
@@ -1339,17 +1339,12 @@ function execAction(a,h,pid){if(!a||typeof a!=='object'||!G)return null;const no
     case'up':{const u=UPG[a.i|0],bit=1<<(a.i|0);if(!u||G.up&bit||G.money<u.cost)return null;G.money-=u.cost;G.up|=bit;if(bit===4)G.clean+=6;if(u.hire&&isDir())say(u.name.replace('Hire a','A new')+' joined the crew!','level');return{fx:'level'};}
     default:{const s=findSt(a.k,a.i);if(!s)return null;const r=tryAct(s,h,true,pid);return r&&!r.off?r:null;}}}
 // ---------- hired help (upgrades) ----------
-function hireTick(now){if(!G.open)return;
-  if(G.up&64&&!(now<G.hsT)){G.hsT=now+3;// server: take one order, or run one finished bowl from a counter spot to the seat that wants exactly that
-    const w=G.cust.find(c=>c.st===1);if(w){w.st=2;w.t0=now;dirtyG=true;}else for(let i=0;i<G.slots.length;i++){const it=G.slots[i];if(!it||it[4]||!((it[0]==='bowl'&&(it[1]>=0||it[2]))||(it[0]==='don'&&it[1]&&it[2]>=0)))continue;
-      const c=G.cust.find(c=>c.st===2&&c.need>0&&!bowlErrors(it,c).length);if(!c)continue;G.slots[i]=null;c.need--;if(c.need>0){c.t0=now;}else finishServe(c,now);say('Your server took a bowl to seat '+(c.seat+1));dirtyG=true;break;}}
-  if(G.up&128&&!(now<G.hcT)){G.hcT=now+4;// cleaner: a puddle first, then a dirty table
-    if(G.pud.length){G.pud.shift();dirtyG=true;}else if(G.sink<10){const i=G.seats.findIndex(v=>v===2||v===3);if(i>=0&&!custAt(i)){G.seats[i]=0;G.sink++;dirtyG=true;}}}}
+function hireTick(now){staffTick(now);}
 // bowls never vanish: count every bowl (stacks, sink, tables, counters, floor, in the air, in hands) and fix the clean stack
 let bowlMiss=0;
 function bowlTick(now){if(!(now>(G.bwT||0)))return;G.bwT=now+3;const isB=it=>!!it&&(it[0]==='bowl'||it[0]==='don');let n=(G.clean|0)+(G.sink|0);
   for(const v of G.seats)if(v===2||v===3)n++;for(const it of G.slots)if(isB(it))n++;for(const f of G.floor)if(isB(f[3]))n++;for(const f of G.fly)if(isB(f[6]))n++;
-  if(isB(me.hand))n++;for(const e of ents.values())if(isB(e.dh))n++;for(const c of G.cust)if(c.st===3)n++;
+  if(isB(me.hand))n++;for(const e of ents.values())if(isB(e.dh))n++;for(const c of G.cust)if(c.st===3)n++;if(G.stf)for(const k in G.stf){const it=G.stf[k].it;if(isB(it))n++;}
   const want=BOWLS+(G.up&4?6:0),d=want-n;if(!d){bowlMiss=0;return;}if(++bowlMiss<2)return;bowlMiss=0;G.clean=Math.max(0,G.clean+d);dirtyG=true;}
 // ---------- director ----------
 let dirAcc=0,saveT=0,dirtyG=false;
@@ -1394,7 +1389,6 @@ function dirTick(){const now=netTime(),np=ents.size+1;
         const l=lvlFor(G.served);if(l>G.lvl){G.lvl=l;say('<b>Shop level '+l+'!</b> Word is spreading: a few more customers will show up.','level');}}}
     else if(el>=c.d){if(c.st===6){say('The runner got away without paying $'+c.pay,'lost');rate(1,1,c.seat);dst('run');}G.cust.splice(i,1);}}
   const r=G.rob;
-  if(G.up&256&&r.st>=1&&r.st<=3&&now-r.t0>3){r.d0=robDist(now);r.st=4;r.t0=now;say('Your security guard chased the robber off!','win');}
   if(r.st===0){if(now>G.nextR){if(G.served>=3&&G.money>=60){r.st=1;r.t0=now;r.hp=3;r.amt=0;say('<b style="color:#c8402e">A robber is heading for the register!</b> Hit him before he empties it.','siren');}else G.nextR=now+30;}}
   else if(r.st===1){if(robDist(now)>=pathLen(ROBPATH)){r.st=2;r.t0=now;}}
   else if(r.st===2){if(now-r.t0>7){r.amt=Math.min(G.money,Math.max(40,Math.round(G.money*.4)));G.money-=r.amt;dst('rob',r.amt);r.st=3;r.t0=now;r.hp=2;say('<b style="color:#c8402e">The robber grabbed $'+r.amt+'!</b> Stop him before he reaches the street.','siren');}}
@@ -1439,6 +1433,63 @@ Net.onMsg=m=>{if(m.t==='x'){dropEnt(m.i);return;}const isNew=!ents.has(m.i),e=ge
     case'sw':e.ch.swing();break;
     case'c':{const s=String(m.s||'').slice(0,60);if(s){e.ch.say(s);feed('<b>'+esc(e.name||'Chef')+':</b> '+esc(s));}break;}
   }};
+// ============================================================
+// Hired staff you can see: a server, a cleaner and a security guard walk the shop and do their jobs.
+// The director owns G.stf (each worker's path, start time and what they carry); every client draws them from it.
+// ============================================================
+const STF_HOME={s:[2.9,-.6],c:[-6.9,-.6],g:[9.6,3.4]},STF_V={s:4.2,c:3.4,g:6.2};
+// walking lanes: dining aisle, the kitchen strip behind the bar, the lane between the islands, and the back lane
+const LANE=[3.2,-.45,-3.95,-7.25],LANE_LINK=[[10.5],[.95,4.8,11.3],[1.1,8.7]];
+const laneOf=z=>z>1.2?0:z>-1.95?1:z>-4.7?2:3;
+function stfRoute(a,b){const pts=[[a[0],a[1]]];let la=laneOf(a[1]);const lb=laneOf(b[1]);let x=a[0];
+  if(la!==lb)pts.push([x,LANE[la]]);
+  while(la!==lb){const d=lb>la?1:-1,links=LANE_LINK[d>0?la:la-1];let best=links[0];for(const l of links)if(Math.abs(l-x)+Math.abs(l-b[0])<Math.abs(best-x)+Math.abs(best-b[0]))best=l;
+    pts.push([best,LANE[la]]);la+=d;pts.push([best,LANE[la]]);x=best;}
+  if(pts.length>1)pts.push([b[0],LANE[lb]]);pts.push([b[0],b[1]]);
+  return pts.filter((p,i)=>i===0||Math.hypot(p[0]-pts[i-1][0],p[1]-pts[i-1][1])>.01).map(p=>[r2(p[0]),r2(p[1])]);}
+const _sp=[0,0,0];
+function stfPos(o,now,out=_sp){if(!o||!o.p||o.p.length<2){out[0]=o&&o.p?o.p[0][0]:0;out[1]=o&&o.p?o.p[0][1]:0;out[2]=0;return out;}return pathAt(o.p,Math.max(0,(now-o.t0)*o.v),out);}
+const stfDone=(o,now)=>!o.p||o.p.length<2||(now-o.t0)*o.v>=pathLen(o.p);
+function stfGo(o,to,now){const c=stfPos(o,now,[0,0,0]);o.p=stfRoute([c[0],c[1]],to);o.t0=r2(now);dirtyG=true;}
+// where a worker stands to reach things
+const seatStand=i=>{const s=SHOP.st.find(t=>t.k==='seat'&&t.i===i);return SHOP.seats[i].bar?[s.x,-.45]:[s.x,s.z-1.05];};
+const slotStand=i=>[SLOTS[i][0],SLOTS[i][1]>-4?SLOTS[i][1]+.95:SLOTS[i][1]+1.25];
+const SINK_STAND=[-7.75,-7.3];
+const readyBowl=it=>!!it&&!it[4]&&((it[0]==='bowl'&&(it[1]>=0||it[2]))||(it[0]==='don'&&it[1]&&it[2]>=0));
+function stfNew(k,now){const h=STF_HOME[k];return{p:[[h[0],h[1]]],t0:r2(now),v:STF_V[k],j:'',a:-1,b:-1,it:null};}
+function staffTick(now){if(!G.stf)G.stf={};const S=G.stf;
+  for(const[k,bit]of[['s',64],['c',128],['g',256]])if(G.up&bit){if(!S[k])S[k]=stfNew(k,now);}else if(S[k])delete S[k];
+  if(S.s)serverTick(S.s,now);if(S.c)cleanerTick(S.c,now);if(S.g)guardTick(S.g,now);}
+function dirtySeat(){return G.seats.findIndex((v,i)=>(v===2||v===3)&&!custAt(i));}
+function serverTick(o,now){if(!stfDone(o,now))return;const home=()=>{o.j='home';o.a=o.b=-1;stfGo(o,STF_HOME.s,now);};
+  switch(o.j){
+    case'order':{const c=G.cust.find(c=>c.seat===o.a&&c.st===1);if(c){c.st=2;c.t0=now;}home();return;}
+    case'pick':{const it=G.slots[o.a],c=G.cust.find(c=>c.seat===o.b&&c.st===2&&c.need>0);if(!readyBowl(it)||!c||bowlErrors(it,c).length){home();return;}
+      G.slots[o.a]=null;o.it=it;o.j='serve';stfGo(o,seatStand(o.b),now);return;}
+    case'serve':{const c=G.cust.find(c=>c.seat===o.b&&c.st===2&&c.need>0);const it=o.it;o.it=null;
+      if(c&&it&&!bowlErrors(it,c).length){c.need--;if(c.need>0)c.t0=now;else finishServe(c,now);say('Your server brought a bowl to seat '+(o.b+1));}else if(it)G.sink++;home();return;}
+    case'bus':{if(G.seats[o.a]===2||G.seats[o.a]===3){G.seats[o.a]=0;o.it=['bowl',-1,0,0,1];o.j='sink';stfGo(o,SINK_STAND,now);}else home();return;}
+    case'sink':{if(o.it){G.sink++;o.it=null;}home();return;}}
+  if(o.j==='home')o.j='';
+  if(o.wait>now)return;o.wait=r2(now+.8);
+  // 1) take a new order  2) run a finished bowl that matches a ticket  3) bring a dirty bowl back to the sink
+  const w=G.cust.find(c=>c.st===1&&!(G.stf.c&&G.stf.c.a===c.seat&&G.stf.c.j==='bus'));if(w){o.j='order';o.a=w.seat;stfGo(o,seatStand(w.seat),now);return;}
+  for(let i=0;i<G.slots.length;i++){const it=G.slots[i];if(!readyBowl(it))continue;const c=G.cust.find(c=>c.st===2&&c.need>0&&!bowlErrors(it,c).length);if(!c)continue;o.j='pick';o.a=i;o.b=c.seat;stfGo(o,slotStand(i),now);return;}
+  const d=dirtySeat();if(d>=0&&G.sink<10&&!(G.stf.c&&G.stf.c.a===d)){o.j='bus';o.a=d;stfGo(o,seatStand(d),now);}}
+function cleanerTick(o,now){if(!stfDone(o,now))return;const home=()=>{o.j='home';o.a=-1;o.it=['mop'];stfGo(o,STF_HOME.c,now);};if(!o.it)o.it=['mop'];
+  switch(o.j){
+    case'mop':{if(o.w0===undefined){o.w0=r2(now);return;}if(now-o.w0<1.4)return;delete o.w0;const i=G.pud.findIndex(p=>p[0]===o.a);if(i>=0)G.pud.splice(i,1);home();return;}
+    case'bus':{if(G.seats[o.a]===2||G.seats[o.a]===3){G.seats[o.a]=0;o.it=['bowl',-1,0,0,1];o.j='sink';stfGo(o,SINK_STAND,now);}else home();return;}
+    case'sink':{G.sink++;home();return;}}
+  if(o.j==='home')o.j='';
+  if(o.wait>now)return;o.wait=r2(now+1);
+  if(G.pud.length){const p=G.pud[0];o.j='mop';o.a=p[0];stfGo(o,[p[1],p[2]+(p[2]<1.2&&p[2]>-1.95?0:0)],now);return;}
+  const d=dirtySeat();if(d>=0&&G.sink<10&&!(G.stf.s&&G.stf.s.j==='bus'&&G.stf.s.a===d)){o.j='bus';o.a=d;stfGo(o,seatStand(d),now);}}
+// the guard runs straight at the robber; close enough and the robber bolts
+function guardTick(o,now){const r=G.rob;
+  if(r.st>=1&&r.st<=3&&robPos(now,_sp)[1]<7.6){if(o.j!=='chase'||!(now<o.re)){robPos(now,_sp);const t=[_sp[0],_sp[1]];const c=stfPos(o,now,[0,0,0]);o.p=[[r2(c[0]),r2(c[1])],[r2(t[0]),r2(t[1])]];o.t0=r2(now);o.j='chase';o.re=r2(now+.5);dirtyG=true;}
+    robPos(now,_sp);const c=stfPos(o,now,[0,0,0]);if(Math.hypot(c[0]-_sp[0],c[1]-_sp[1])<1.3){r.d0=robDist(now);r.st=4;r.t0=now;say('Your security guard chased the robber off!','win');o.j='';stfGo(o,STF_HOME.g,now);}return;}
+  if(o.j==='chase'){o.j='';stfGo(o,STF_HOME.g,now);}}
 // ============================================================
 // Local player + keeping the 3D shop in step with the shop state
 // ============================================================
@@ -1544,7 +1595,14 @@ function syncFast(dt){const now=netTime(),t=performance.now()/1000;
   const r=G.rob;if(r.st>0){if(!robVis){robVis={ch:new Person(ROB_LOOK),x:0,z:0,init:false};}robPos(now,_pp);const v=robVis;v.ch.g.visible=true;if(!v.init){v.init=true;v.x=_pp[0];v.z=_pp[1];}const ox=v.x,oz=v.z;v.x=lerp(v.x,_pp[0],damp(14,dt));v.z=lerp(v.z,_pp[1],damp(14,dt));
     v.ch.setHeld(r.st===3?['cash',r.amt]:null);v.ch.update(dt,{x:v.x,y:0,z:v.z,yaw:_pp[2],sp:Math.hypot(v.x-ox,v.z-oz)/Math.max(dt,.001),gr:true,work:r.st===2,hold:r.st===3});setBubble(v.ch.bub,r.st===2?['money']:null,r.st===2?clamp(1-(now-r.t0)/7,0,1):null);}
   else if(robVis){robVis.ch.g.visible=false;robVis.init=false;}
+  // hired staff
+  for(const k of['s','c','g']){const o=G.stf&&G.stf[k];let v=stfVis[k];if(!o){if(v)v.ch.g.visible=false;continue;}
+    if(!v){v=stfVis[k]={ch:new Person(STF_LOOK[k]),x:0,z:0,yaw:0,init:false};v.ch.setName(STF_NAME[k]);}v.ch.g.visible=true;stfPos(o,now,_pp);
+    if(!v.init){v.init=true;v.x=_pp[0];v.z=_pp[1];}const ox=v.x,oz=v.z;v.x=lerp(v.x,_pp[0],damp(12,dt));v.z=lerp(v.z,_pp[1],damp(12,dt));const sp=Math.hypot(v.x-ox,v.z-oz)/Math.max(dt,.001);
+    if(sp>.3)v.yaw+=wrapPi(_pp[2]-v.yaw)*damp(10,dt);v.ch.setHeld(o.it||null);v.ch.update(dt,{x:v.x,y:0,z:v.z,yaw:v.yaw,sp,gr:true,hold:!!o.it&&o.it[0]!=='mop',work:o.j==='mop'&&o.w0!==undefined});}
   {const tx=truckX(G.truck,now),T=VIS.truck;T.visible=tx!=null;if(tx!=null){T.position.set(tx,0,TRUCKZ);T.rotation.y=0;if(Math.random()<dt*6)burst(_t.set(tx-2.8,.5,TRUCKZ+.6),0x9aa0ad,1,.4,.12,.3,-.02);}}}
+const stfVis={},STF_NAME={s:'Server',c:'Cleaner',g:'Security'};
+const STF_LOOK={s:{skin:SKINS[2],hair:HAIRS[1],top:0xfbf8ef,pants:0x26262c,acc:0x26262c,hat:'none',x:'tie'},c:{skin:SKINS[3],hair:HAIRS[4],top:0x4fb3b3,pants:0x3a3f52,acc:0x2f8a7f,hat:'bandana',x:'apron'},g:{skin:SKINS[1],hair:HAIRS[0],top:0x2f4a6b,pants:0x1c2233,acc:0xf2c14e,hat:'cap',x:'none'}};
 // ---------- event visuals: flames, the bus, the blackout and flashlights ----------
 let outK=0,nightK=0;const _c1=new THREE.Color();const _fl=new THREE.Vector3();
 function flashCone(){const g=new THREE.ConeGeometry(.9,3.2,16,1,true);g.translate(0,-1.6,0);g.rotateX(-X90);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:.1,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));m.position.set(.22,1.25,.3);m.visible=false;return m;}
